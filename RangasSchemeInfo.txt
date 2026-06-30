@@ -1,0 +1,11 @@
+//Keystore data
+
+Keystore name : rangasscheme
+keystore password : rangasscheme
+alias name : rangasscheme
+
+//Google Login 
+Email : hkirubakarandeveloper08@gmail.com
+Web client ID :305260948341-u4ffnsr5tr0psmtr2ft940q8s5r4sq4d.apps.googleusercontent.com
+Android client ID : 305260948341-urpeahdujnglit6coo21au7uhbp0e9vp.apps.googleusercontent.com
+

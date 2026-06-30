@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Rangas-Scheme",
+    "slug": "rangas-scheme",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.brightechsoftware.rangasjewellery",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/logo.png",
+        "backgroundImage": "./assets/logo.png",
+        "monochromeImage": "./assets/logo.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
+    ],
+    "web": {
+      "favicon": "./assets/logo.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "08083d0b-79af-49cb-85bc-268b86581f16"
+      }
+    },
+    "owner": "kiruba08"
+  }
+}

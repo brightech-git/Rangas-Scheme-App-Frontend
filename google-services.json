@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "305260948341",
+    "project_id": "rangas-scheme",
+    "storage_bucket": "rangas-scheme.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:305260948341:android:2b042c2a3d6707c17c013c",
+        "android_client_info": {
+          "package_name": "com.brightechsoftware.rangasjewellery"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "305260948341-urpeahdujnglit6coo21au7uhbp0e9vp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.brightechsoftware.rangasjewellery",
+            "certificate_hash": "747a60579a3b527a90dab329d4ffd902a3a43e8d"
+          }
+        },
+        {
+          "client_id": "305260948341-u4ffnsr5tr0psmtr2ft940q8s5r4sq4d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu6UZtFxCvLz8NMF-4MbxaqkAvQ8p0Cbc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "305260948341-u4ffnsr5tr0psmtr2ft940q8s5r4sq4d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
