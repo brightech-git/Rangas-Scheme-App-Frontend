@@ -7,149 +7,143 @@ const { width, height } = Dimensions.get("window");
 // ============================================
 // 📏 RESPONSIVE SCALING SYSTEM
 // ============================================
-const guidelineBaseWidth = 375; // iPhone 11 Pro base
+const guidelineBaseWidth = 375;
 const guidelineBaseHeight = 812;
 
-// Scale based on device width
 const scale = (size) => (width / guidelineBaseWidth) * size;
-
-// Scale based on device height
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
-
-// Moderate scale with configurable factor (prevents extreme scaling)
 const moderateScale = (size, factor = 0.25) => {
   return size + (scale(size) - size) * factor;
 };
-
-// Font scale with pixel ratio consideration
 const fontScale = (size) => {
   const scaled = moderateScale(size, 0.2);
   return Math.round(PixelRatio.roundToNearestPixel(scaled));
 };
 
 // ============================================
-// 🎨 COLOR PALETTE - 
+// 🎨 COLOR PALETTE — Rangas DigiGold
+// Primary: #aa0404 (Deep Red) | Secondary: #ffcc00 (Gold Yellow)
 // ============================================
 export const COLORS = {
-  // ===== PRIMARY BRAND COLORS (WARM BROWN) =====
-  primary: "#7B5E2A",           // Warm Brown (Main Brand)
-  primaryLight: "#A0782E",      // Medium Brown
-  primaryDark: "#5C3F10",       // Deep Brown
-  primaryLighter: "#C9A84C",    // Champagne Gold
-  primaryPale: "#FAF6EE",       // Ivory (very light cream)
+  // ===== PRIMARY BRAND COLORS (DEEP RED) =====
+  primary: "#aa0404",
+  primaryLight: "#cc0505",
+  primaryDark: "#7a0303",
+  primaryLighter: "#dd2020",
+  primaryPale: "#fff5f5",
 
-  secondary: "#C9A84C",         // Champagne Gold
-  secondaryLight: "#D4B96A",    // Light Champagne
-  secondaryDark: "#A0782E",     // Dark Champagne
-  secondaryLighter: "#E8D5A3",  // Pale Gold
+  secondary: "#ffcc00",
+  secondaryLight: "#ffd633",
+  secondaryDark: "#cc9900",
+  secondaryLighter: "#ffe566",
 
-  accent: "#C9A84C",            // Champagne Gold
-  accentLight: "#E8D5A3",       // Pale Gold
-  accentDark: "#A0782E",        // Dark Gold
-  bottomGlow: "rgb(122, 90, 38)",
+  accent: "#ffcc00",
+  accentLight: "#ffe566",
+  accentDark: "#cc9900",
+  bottomGlow: "rgb(170, 4, 4)",
 
   // ===== NEUTRAL COLORS =====
   white: "#FFFFFF",
   black: "#000000",
-  background: "#FAF6EE",         // Ivory (page background)
-  backgroundSecondary: "#F5EFE0", // Warm cream
-  backgroundTertiary: "#EDE3CC",  // Deeper cream
-  backgroundDark: "#1A1200",      // Very dark brown-black
-  backgroundOrange: "#FAF6EE",    // Reuse ivory
-  backgroundGold: "#F5EFE0",      // Light gold tint
-  surface: "#FAF6EE",
+  background: "#fffbfb",
+  backgroundSecondary: "#fff5f5",
+  backgroundTertiary: "#ffebe8",
+  backgroundDark: "#1a0000",
+  backgroundOrange: "#fff5f5",
+  backgroundGold: "#fffbf0",
+  surface: "#fffbfb",
   card: "#FFFFFF",
-  softCard: "#F5EFE0",
-  overlay: "rgba(123, 94, 42, 0.7)",    // Brown overlay
+  softCard: "#fff5f5",
+  overlay: "rgba(170, 4, 4, 0.7)",
   overlayDark: "rgba(0, 0, 0, 0.7)",
-  overlayGold: "rgba(201, 168, 76, 0.1)",
-  overlayOrange: "rgba(123, 94, 42, 0.1)",
+  overlayGold: "rgba(255, 204, 0, 0.1)",
+  overlayOrange: "rgba(170, 4, 4, 0.1)",
 
   // ===== TEXT COLORS =====
-  textPrimary: "#2E1A05",        // Very dark brown (readable)
-  textSecondary: "#6B5740",      // Warm medium brown
-  textTertiary: "#A08060",       // Light warm brown
-  textDisabled: "#D4C5A9",       // Muted warm gray
-  textInverse: "#FFFFFF",        // White on dark
-  textOrange: "#7B5E2A",         // Reuse primary brown
-  textOrangeDark: "#5C3F10",     // Deep brown text
-  textGold: "#C9A84C",           // Champagne gold text
-  textGoldDark: "#A0782E",       // Dark gold text
+  textPrimary: "#1a0000",
+  textSecondary: "#5c1010",
+  textTertiary: "#9a4040",
+  textDisabled: "#ddb9b9",
+  textInverse: "#FFFFFF",
+  textOrange: "#aa0404",
+  textOrangeDark: "#7a0303",
+  textGold: "#cc9900",
+  textGoldDark: "#997700",
 
-  // ===== GRAY SCALE (warm-tinted) =====
-  gray50: "#FAF8F5",
-  gray100: "#F2EDE4",
-  gray200: "#E5DBD0",
-  gray300: "#D4C5A9",
-  gray400: "#A08060",
-  gray500: "#6B5740",
-  gray600: "#4E3B25",
-  gray700: "#3A2810",
-  gray800: "#2E1A05",
-  gray900: "#1A0E00",
+  // ===== GRAY SCALE (neutral) =====
+  gray50: "#fafafa",
+  gray100: "#f5f0f0",
+  gray200: "#ead8d8",
+  gray300: "#dbb9b9",
+  gray400: "#b07070",
+  gray500: "#7a4040",
+  gray600: "#5c2a2a",
+  gray700: "#3d1515",
+  gray800: "#2a0808",
+  gray900: "#1a0000",
 
-  // ===== BROWN VARIATIONS =====
-  orangeLight: "#FAF6EE",         // Ivory
-  orangeMedium: "#C9A84C",        // Champagne
-  orangeDark: "#5C3F10",          // Deep brown
-  orangeVivid: "#A0782E",         // Medium brown vivid
-  orangeIce: "#EDE3CC",           // Cream
-  orangeSoft: "#E8D5A3",          // Pale gold
-  orangeDeep: "#3E2A05",          // Darkest brown
+  // ===== RED VARIATIONS (replaces "orange") =====
+  orangeLight: "#fff5f5",
+  orangeMedium: "#dd2020",
+  orangeDark: "#7a0303",
+  orangeVivid: "#cc0505",
+  orangeIce: "#ffebe8",
+  orangeSoft: "#ffc9c9",
+  orangeDeep: "#550000",
 
   // ===== BORDER & DIVIDER =====
-  border: "#E5DBD0",
-  borderLight: "#F2EDE4",
-  borderMedium: "#D4C5A9",
-  borderDark: "#4E3B25",
-  borderOrange: "#7B5E2A",
-  borderGold: "#C9A84C",
-  divider: "#E5DBD0",
+  border: "#ead8d8",
+  borderLight: "#fff0f0",
+  borderMedium: "#dbb9b9",
+  borderDark: "#7a0303",
+  borderOrange: "#aa0404",
+  borderGold: "#ffcc00",
+  divider: "#ead8d8",
 
   // ===== INPUT COLORS =====
-  inputBackground: "#FAF8F5",
-  inputBorder: "#E5DBD0",
-  inputPlaceholder: "rgba(107, 87, 64, 0.5)",
-  inputFocused: "#7B5E2A",        // Brown focus ring
-  inputFocusedAlt: "#C9A84C",     // Gold alternative
+  inputBackground: "#fffbfb",
+  inputBorder: "#ead8d8",
+  inputPlaceholder: "rgba(170, 4, 4, 0.35)",
+  inputFocused: "#aa0404",
+  inputFocusedAlt: "#ffcc00",
 
   // ===== STATUS COLORS =====
-  success: "#4E7A34",
-  successLight: "#7BAE3A",
-  successDark: "#3A5A22",
-  error: "#C0392B",
-  errorLight: "#E74C3C",
-  errorDark: "#922B21",
-  warning: "#C9A84C",
-  warningLight: "#D4B96A",
-  warningDark: "#A0782E",
-  info: "#2E6DA4",
-  infoLight: "#5B9BD5",
-  infoDark: "#1A4A7A",
-  disabled: "#F2EDE4",
+  success: "#1e7a34",
+  successLight: "#27ae60",
+  successDark: "#155a24",
+  error: "#aa0404",
+  errorLight: "#cc0505",
+  errorDark: "#7a0303",
+  warning: "#ffcc00",
+  warningLight: "#ffd633",
+  warningDark: "#cc9900",
+  info: "#1a5fa4",
+  infoLight: "#2e86de",
+  infoDark: "#0e3d6e",
+  disabled: "#f5eded",
 
-  // ===== GOLD VARIATIONS =====
-  goldPrimary: "#C9A84C",         // Champagne Gold
-  goldSecondary: "#D4B96A",       // Light Champagne
-  goldTertiary: "#E8D5A3",        // Pale Gold
-  goldBronze: "#A0622A",          // Bronze
-  goldRose: "#B87060",            // Rose tint
-  goldLight: "#F5EFE0",           // Very light gold
-  goldMedium: "#C9A84C",          // Medium champagne
-  goldDark: "#A0782E",            // Dark champagne
+  // ===== YELLOW/GOLD VARIATIONS =====
+  goldPrimary: "#ffcc00",
+  goldSecondary: "#ffd633",
+  goldTertiary: "#ffe566",
+  goldBronze: "#cc8800",
+  goldRose: "#ff8844",
+  goldLight: "#fffbee",
+  goldMedium: "#ffcc00",
+  goldDark: "#cc9900",
 
   // ===== TRANSPARENT COLORS =====
   transparent: "transparent",
-  // Brown (primary) opacity
-  orangeOpacity10: "rgba(123, 94, 42, 0.1)",
-  orangeOpacity20: "rgba(123, 94, 42, 0.2)",
-  orangeOpacity30: "rgba(123, 94, 42, 0.3)",
-  orangeOpacity40: "rgba(123, 94, 42, 0.4)",
-  orangeOpacity50: "rgba(123, 94, 42, 0.5)",
-  orangeOpacity60: "rgba(123, 94, 42, 0.6)",
-  orangeOpacity70: "rgba(123, 94, 42, 0.7)",
-  orangeOpacity80: "rgba(123, 94, 42, 0.8)",
-  orangeOpacity90: "rgba(123, 94, 42, 0.9)",
+  // Red (primary) opacity
+  orangeOpacity10: "rgba(170, 4, 4, 0.1)",
+  orangeOpacity20: "rgba(170, 4, 4, 0.2)",
+  orangeOpacity30: "rgba(170, 4, 4, 0.3)",
+  orangeOpacity40: "rgba(170, 4, 4, 0.4)",
+  orangeOpacity50: "rgba(170, 4, 4, 0.5)",
+  orangeOpacity60: "rgba(170, 4, 4, 0.6)",
+  orangeOpacity70: "rgba(170, 4, 4, 0.7)",
+  orangeOpacity80: "rgba(170, 4, 4, 0.8)",
+  orangeOpacity90: "rgba(170, 4, 4, 0.9)",
   // Black opacity
   blackOpacity10: "rgba(0, 0, 0, 0.1)",
   blackOpacity20: "rgba(0, 0, 0, 0.2)",
@@ -169,45 +163,45 @@ export const COLORS = {
   whiteOpacity80: "rgba(255, 255, 255, 0.8)",
   whiteOpacity90: "rgba(255, 255, 255, 0.9)",
   // Gold opacity
-  goldOpacity10: "rgba(201, 168, 76, 0.1)",
-  goldOpacity20: "rgba(201, 168, 76, 0.2)",
-  goldOpacity30: "rgba(201, 168, 76, 0.3)",
-  goldOpacity50: "rgba(201, 168, 76, 0.5)",
+  goldOpacity10: "rgba(255, 204, 0, 0.1)",
+  goldOpacity20: "rgba(255, 204, 0, 0.2)",
+  goldOpacity30: "rgba(255, 204, 0, 0.3)",
+  goldOpacity50: "rgba(255, 204, 0, 0.5)",
 
   // ===== SHADOW & EFFECTS =====
-  shadow: "rgba(46, 26, 5, 0.08)",
-  shadowMedium: "rgba(46, 26, 5, 0.15)",
-  shadowStrong: "rgba(46, 26, 5, 0.25)",
-  shadowOrange: "rgba(123, 94, 42, 0.2)",
-  shadowGold: "rgba(201, 168, 76, 0.25)",
+  shadow: "rgba(170, 4, 4, 0.07)",
+  shadowMedium: "rgba(170, 4, 4, 0.14)",
+  shadowStrong: "rgba(170, 4, 4, 0.24)",
+  shadowOrange: "rgba(170, 4, 4, 0.2)",
+  shadowGold: "rgba(255, 204, 0, 0.25)",
 
   // ===== GRADIENT COLORS =====
   gradient: {
-    // Primary brown gradients
-    orangePrimary: ["#7B5E2A", "#A0782E"],      // Brown to medium brown (replaces orange header)
-    orangeDeep: ["#5C3F10", "#7B5E2A"],          // Deep to medium brown
-    orangeLight: ["#A0782E", "#C9A84C"],         // Brown to champagne
-    orangeVivid: ["#5C3F10", "#A0782E"],         // Deep vivid brown
-    orangeToWhite: ["#7B5E2A", "#FAF6EE"],       // Brown to ivory
-    orangeToRed: ["#7B5E2A", "#C9A84CE0"],       // Brown to champagne
+    // Primary red gradients
+    orangePrimary: ["#aa0404", "#cc0505"],
+    orangeDeep: ["#7a0303", "#aa0404"],
+    orangeLight: ["#cc0505", "#ee3333"],
+    orangeVivid: ["#550000", "#aa0404"],
+    orangeToWhite: ["#aa0404", "#fffbfb"],
+    orangeToRed: ["#7a0303", "#aa0404"],
 
-    // Gold / champagne gradients
-    goldLight: ["#C9A84C", "#D4B96A"],           // Champagne gradient
-    goldDark: ["#A0782E", "#C9A84C"],            // Dark to light champagne
-    luxuryGold: ["#C9A84C", "#D4B96A", "#E8D5A3"], // Full luxury champagne
-    shimmer: ["#C9A84C", "#E8D5A3", "#C9A84C"],    // Shimmer effect
+    // Gold / yellow gradients
+    goldLight: ["#ffcc00", "#ffd633"],
+    goldDark: ["#cc9900", "#ffcc00"],
+    luxuryGold: ["#ffcc00", "#ffd633", "#ffe566"],
+    shimmer: ["#ffcc00", "#ffe566", "#ffcc00"],
 
-    // Brown & Gold combinations
-    orangeToGold: ["#7B5E2A", "#C9A84C"],        // Brown to champagne gold
-    goldToOrange: ["#C9A84C", "#7B5E2A"],        // Champagne to brown
-    elegance: ["#5C3F10", "#C9A84C"],            // Deep brown to champagne
-    luxury: ["#7B5E2A", "#C9A84C", "#D4B96A"],  // Full luxury palette
-    premium: ["#5C3F10", "#7B5E2A", "#C9A84C"], // Deep to champagne
+    // Red & Gold combinations
+    orangeToGold: ["#aa0404", "#ffcc00"],
+    goldToOrange: ["#ffcc00", "#aa0404"],
+    elegance: ["#7a0303", "#ffcc00"],
+    luxury: ["#aa0404", "#cc0505", "#ffcc00"],
+    premium: ["#550000", "#aa0404", "#ffcc00"],
 
     // Neutral surfaces
-    surface: ["#F5EFE0", "#FAF6EE"],             // Warm ivory surface
-    surfaceWarm: ["#EDE3CC", "#FAF6EE"],          // Deeper cream surface
-    darkSurface: ["#1A0E00", "#2E1A05"],          // Dark brown surface
+    surface: ["#fff5f5", "#fffbfb"],
+    surfaceWarm: ["#ffebe8", "#fffbfb"],
+    darkSurface: ["#1a0000", "#330000"],
   },
 };
 
@@ -215,10 +209,8 @@ export const COLORS = {
 // 📐 SIZING SYSTEM
 // ============================================
 export const SIZES = {
-  // ===== BASE SIZE =====
   base: 16,
 
-  // ===== SPACING SCALE =====
   xs: moderateScale(4),
   sm: moderateScale(8),
   md: moderateScale(16),
@@ -227,7 +219,6 @@ export const SIZES = {
   xxl: moderateScale(48),
   xxxl: moderateScale(64),
 
-  // ===== PADDING & MARGIN =====
   padding: {
     xs: moderateScale(4),
     sm: moderateScale(8),
@@ -236,7 +227,7 @@ export const SIZES = {
     xl: moderateScale(20),
     xxl: moderateScale(24),
     xxxl: moderateScale(32),
-    container: moderateScale(5), // Standard container padding
+    container: moderateScale(5),
   },
 
   margin: {
@@ -249,7 +240,6 @@ export const SIZES = {
     xxxl: moderateScale(32),
   },
 
-  // ===== BORDER RADIUS =====
   radius: {
     xs: moderateScale(4),
     sm: moderateScale(8),
@@ -264,7 +254,6 @@ export const SIZES = {
     input: moderateScale(10),
   },
 
-  // ===== FONT SIZES =====
   font: {
     xxs: fontScale(8),
     xs: fontScale(10),
@@ -276,7 +265,6 @@ export const SIZES = {
     xxxl: fontScale(24),
   },
 
-  // ===== HEADING SIZES =====
   heading: {
     h1: fontScale(32),
     h2: fontScale(28),
@@ -286,7 +274,6 @@ export const SIZES = {
     h6: fontScale(16),
   },
 
-  // ===== ICON SIZES =====
   icon: {
     xs: moderateScale(12),
     sm: moderateScale(16),
@@ -298,7 +285,6 @@ export const SIZES = {
     xxxxl: moderateScale(64),
   },
 
-  // ===== DIMENSIONS =====
   screen: {
     width,
     height,
@@ -308,7 +294,6 @@ export const SIZES = {
     isTablet: width >= 768,
   },
 
-  // ===== COMPONENT SIZES =====
   button: {
     sm: moderateScale(36),
     md: moderateScale(44),
@@ -346,9 +331,7 @@ export const SIZES = {
 // 🔤 TYPOGRAPHY SYSTEM (POPPINS)
 // ============================================
 export const FONTS = {
-  // ===== FONT FAMILIES =====
   family: {
-    // Poppins weights
     thin:       "Poppins-Thin",
     extraLight: "Poppins-ExtraLight",
     light:      "Poppins-Light",
@@ -359,7 +342,6 @@ export const FONTS = {
     extraBold:  "Poppins-ExtraBold",
     black:      "Poppins-Black",
 
-    // Poppins italics
     thinItalic:       "Poppins-ThinItalic",
     extraLightItalic: "Poppins-ExtraLightItalic",
     lightItalic:      "Poppins-LightItalic",
@@ -370,7 +352,6 @@ export const FONTS = {
     extraBoldItalic:  "Poppins-ExtraBoldItalic",
     blackItalic:      "Poppins-BlackItalic",
 
-    // Other fonts
     dancing:        "DancingScript",
     dmSerif:        "DMSerif",
     domineBold:     "Domine-Bold",
@@ -382,13 +363,11 @@ export const FONTS = {
     trajanBold:     "TrajanPro-Bold",
     inter:          "InterDisplay-Medium",
 
-    // Aliases
     heading:  "Poppins-Bold",
     body:     "Poppins-Regular",
     bodyBold: "Poppins-SemiBold",
   },
 
-  // ===== FONT WEIGHTS =====
   weight: {
     thin: "100",
     light: "300",
@@ -399,7 +378,6 @@ export const FONTS = {
     extraBold: "800",
   },
 
-  // ===== HEADING STYLES =====
   h1: {
     fontFamily: "Poppins-Bold",
     fontSize: SIZES.heading.h1,
@@ -440,7 +418,6 @@ export const FONTS = {
     color: COLORS.textPrimary,
   },
 
-  // ===== BODY TEXT STYLES =====
   bodyLarge: {
     fontFamily: "Poppins-Regular",
     fontSize: SIZES.font.lg,
@@ -472,7 +449,6 @@ export const FONTS = {
     color: COLORS.textPrimary,
   },
 
-  // ===== LABEL & CAPTION =====
   label: {
     fontFamily: "Poppins-SemiBold",
     fontSize: SIZES.font.sm,
@@ -501,7 +477,6 @@ export const FONTS = {
     color: COLORS.textPrimary,
   },
 
-  // ===== BUTTON TEXT =====
   button: {
     fontFamily: "Poppins-SemiBold",
     fontSize: SIZES.font.md,
@@ -523,7 +498,6 @@ export const FONTS = {
     color: COLORS.white,
   },
 
-  // ===== SPECIAL STYLES (ORANGE & GOLD TEXT) =====
   orangeHeading: {
     fontFamily: "Poppins-Bold",
     fontSize: SIZES.heading.h2,
@@ -598,22 +572,20 @@ export const SHADOWS = {
     shadowRadius: 24,
     elevation: 12,
   },
-  // Orange shadow for brand feel
   orange: {
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.28,
     shadowRadius: 8,
     elevation: 4,
   },
   orangeStrong: {
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.38,
     shadowRadius: 16,
     elevation: 8,
   },
-  // Gold shadow for accents
   gold: {
     shadowColor: COLORS.goldPrimary,
     shadowOffset: { width: 0, height: 4 },
@@ -643,7 +615,6 @@ export const BREAKPOINTS = {
   isLargeDevice: width >= 768,
   isTablet: width >= 768,
 };
-
 
 // ============================================
 // 🎯 EXPORT DEFAULT THEME

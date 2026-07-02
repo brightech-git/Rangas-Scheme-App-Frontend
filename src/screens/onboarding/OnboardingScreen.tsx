@@ -46,8 +46,8 @@ function Dots({ count, current }: { count: number; current: number }) {
 const dot = StyleSheet.create({
   row:      { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 24 },
   base:     { height: 8, borderRadius: 4 },
-  active:   { width: 28, backgroundColor: COLORS.primary },
-  inactive: { width: 8,  backgroundColor: 'rgba(255,255,255,0.35)' },
+  active:   { width: 28, backgroundColor: '#ffcc00' },       // gold for active
+  inactive: { width: 8,  backgroundColor: 'rgba(255,255,255,0.3)' },
 });
 
 const OnboardingScreen = ({ navigation }: any) => {
@@ -93,9 +93,10 @@ const OnboardingScreen = ({ navigation }: any) => {
       {/* Full-screen background image */}
       <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
 
-      {/* Brand badge */}
+      {/* Brand badge — red pill with gold text */}
       <View style={styles.brandBadge}>
-        <Text style={styles.brandText}>✦ DigiGold</Text>
+        <View style={styles.brandDot} />
+        <Text style={styles.brandText}>Rangas DigiGold</Text>
       </View>
 
       {/* Bottom content */}
@@ -172,39 +173,36 @@ const OnboardingScreen = ({ navigation }: any) => {
 export default OnboardingScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
-  loader:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: '#1a0000' },
+  loader:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a0000' },
 
   slide: { width, height },
 
-  // overlayTop: {
-  //   ...StyleSheet.absoluteFillObject,
-  //   height: height * 0.4,
-  //   top: 0,
-  //   backgroundColor: 'rgba(0,0,0,0.45)',
-  // },
-  // overlayBottom: {
-  //   position: 'absolute',
-  //   bottom: 0, left: 0, right: 0,
-  //   height: height * 0.58,
-  //   backgroundColor: 'rgba(8,8,8,0.84)',
-  // },
-
+  // Brand badge: red pill, gold dot + text
   brandBadge: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 58 : 42,
     left: 24,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#aa0404',
+    borderRadius: 22,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: COLORS.primary + '55',
+    paddingVertical: 7,
+    borderWidth: 1.5,
+    borderColor: '#ffcc00',
+  },
+  brandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ffcc00',
   },
   brandText: {
-    fontFamily: FONTS.family.bold,
-    fontSize:   14,
-    color:      COLORS.primary,
+    fontFamily:    FONTS.family.bold,
+    fontSize:      13,
+    color:         '#ffcc00',
     letterSpacing: 0.8,
   },
 
@@ -213,13 +211,15 @@ const styles = StyleSheet.create({
     bottom: 0, left: 0, right: 0,
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === 'ios' ? 44 : 32,
+    // Red-to-transparent gradient via View + background
+    backgroundColor: 'transparent',
   },
 
   title: {
-    fontFamily: FONTS.family.extraBold,
-    fontSize:   30,
-    color:      '#FFFFFF',
-    marginBottom: 10,
+    fontFamily:    FONTS.family.extraBold,
+    fontSize:      30,
+    color:         '#FFFFFF',
+    marginBottom:  10,
     letterSpacing: -0.5,
   },
   description: {
@@ -230,24 +230,25 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
 
-  buttonGroup: { gap: 16 },
+  buttonGroup: { gap: 14 },
   primaryBtn: {
-    backgroundColor: COLORS.primary,
+    // Gold button — distinct from old primary color
+    backgroundColor: '#ffcc00',
     height:          56,
-    borderRadius:    16,
+    borderRadius:    14,
     alignItems:      'center',
     justifyContent:  'center',
-    shadowColor:     COLORS.primary,
-    shadowOffset:    { width: 0, height: 8 },
-    shadowOpacity:   0.55,
-    shadowRadius:    18,
-    elevation:       10,
+    shadowColor:     '#ffcc00',
+    shadowOffset:    { width: 0, height: 6 },
+    shadowOpacity:   0.5,
+    shadowRadius:    14,
+    elevation:       8,
   },
   primaryBtnText: {
-    fontFamily: FONTS.family.bold,
-    fontSize:   SIZES.font.lg,
-    color:      '#0a0a0a',
-    letterSpacing: 0.2,
+    fontFamily:    FONTS.family.bold,
+    fontSize:      SIZES.font.lg,
+    color:         '#1a0000',      // dark text on gold button
+    letterSpacing: 0.3,
   },
   secondaryText: {
     fontFamily: FONTS.family.regular,
@@ -257,9 +258,9 @@ const styles = StyleSheet.create({
   },
   signInLink: {
     fontFamily: FONTS.family.bold,
-    color:      COLORS.primary,
+    color:      '#ffcc00',
   },
 
-  tapLeft:  { position: 'absolute', top: 0, bottom: 220, left: 0,          width: width * 0.25 },
-  tapRight: { position: 'absolute', top: 0, bottom: 220, right: 0,         width: width * 0.25 },
+  tapLeft:  { position: 'absolute', top: 0, bottom: 220, left: 0,  width: width * 0.25 },
+  tapRight: { position: 'absolute', top: 0, bottom: 220, right: 0, width: width * 0.25 },
 });

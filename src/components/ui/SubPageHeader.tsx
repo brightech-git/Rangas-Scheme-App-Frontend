@@ -35,10 +35,12 @@ export default function SubPageHeader({
       backgroundColor: COLORS.card,
       borderBottomColor: COLORS.border,
     }]}>
+      {/* Red accent top line */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: '#aa0404', opacity: 0.7 }} />
 
       {/* Back button */}
-      <TouchableOpacity onPress={handleBack} style={s.iconBtn} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+      <TouchableOpacity onPress={handleBack} style={[s.iconBtn, { backgroundColor: '#fff5f5' }]} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Ionicons name="arrow-back" size={22} color="#aa0404" />
       </TouchableOpacity>
 
       {/* Title block */}

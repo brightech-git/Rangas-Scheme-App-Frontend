@@ -5,22 +5,22 @@ const darkTheme = {
   mode: "dark",
   COLORS: {
     ...baseTheme.COLORS,
-    background: "#0F1419",
-    backgroundSecondary: "#1A1F2E",
-    backgroundTertiary: "#232937",
-    card: "#1A1F2E",
-    surface: "#232937",
+    background: "#1a0000",
+    backgroundSecondary: "#2a0808",
+    backgroundTertiary: "#3d1515",
+    card: "#2a0808",
+    surface: "#3d1515",
 
     textPrimary: "#FFFFFF",
-    textSecondary: "#B0B7C3",
-    textTertiary: "#7A8494",
+    textSecondary: "#e8c0c0",
+    textTertiary: "#b08080",
 
-    border: "#2E3440",
-    divider: "#2E3440",
+    border: "#5c2020",
+    divider: "#5c2020",
 
-    inputBackground: "#1A1F2E",
-    inputBorder: "#2E3440",
-    inputPlaceholder: "rgba(176, 183, 195, 0.6)",
+    inputBackground: "#2a0808",
+    inputBorder: "#5c2020",
+    inputPlaceholder: "rgba(232, 192, 192, 0.5)",
   },
 };
 

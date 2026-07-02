@@ -10,7 +10,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.brightechsoftware.rangasjewellery",
+      "package": "com.brightechsoftware.rangasthangamaligai",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

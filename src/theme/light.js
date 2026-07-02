@@ -5,11 +5,11 @@ const lightTheme = {
   mode: "light",
   COLORS: {
     ...baseTheme.COLORS,
-    backgroundSecondary: "#F8F9FB",
+    backgroundSecondary: "#fff5f5",
     card: "#FFFFFF",
-    textPrimary: "#1A1D23",
-    textSecondary: "#5F6368",
-    border: "#E5E7EB",
+    textPrimary: "#1a0000",
+    textSecondary: "#5c1010",
+    border: "#ead8d8",
   },
 };
 

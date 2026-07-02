@@ -23,26 +23,25 @@ type Props = {
   location?: string;
 };
 
-export default function MainHeader({ onMenuPress, onProfilePress}: Props) {
+export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
   const { COLORS, FONTS, SIZES, moderateScale, verticalScale } = useTheme();
   const user = useAppSelector((s) => s.auth.user);
   const firstName = user?.username ?? 'User';
   const profilePic = (user as any)?.profilePic ?? (user as any)?.picture ?? null;
 
-  const slideY = useRef(new Animated.Value(-40)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const stripSlide = useRef(new Animated.Value(-20)).current;
-  const stripFade = useRef(new Animated.Value(0)).current;
+  const slideY     = useRef(new Animated.Value(-50)).current;
+  const fadeAnim   = useRef(new Animated.Value(0)).current;
+  const greetSlide = useRef(new Animated.Value(20)).current;
+  const greetFade  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(slideY, { toValue: 0, useNativeDriver: true, damping: 18, stiffness: 150 }),
-      Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.spring(slideY,   { toValue: 0, useNativeDriver: true, damping: 16, stiffness: 140 }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start(() => {
-      // Greeting strip animates in after header settles
       Animated.parallel([
-        Animated.spring(stripSlide, { toValue: 0, useNativeDriver: true, damping: 16, stiffness: 120 }),
-        Animated.timing(stripFade, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.spring(greetSlide, { toValue: 0, useNativeDriver: true, damping: 14, stiffness: 120 }),
+        Animated.timing(greetFade,  { toValue: 1, duration: 300, useNativeDriver: true }),
       ]).start();
     });
   }, []);
@@ -58,194 +57,250 @@ export default function MainHeader({ onMenuPress, onProfilePress}: Props) {
     <>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
+      {/* Deep red → rich red gradient */}
       <LinearGradient
-        colors={COLORS.gradient.orangeDeep as [string, string, ...string[]]}
+        colors={['#7a0303', '#aa0404', '#cc0505']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <SafeAreaView edges={['top']}>
-          {/* Decorative circles */}
-          <View pointerEvents="none" style={[styles.circle1, { backgroundColor: COLORS.whiteOpacity10 }]} />
-          <View pointerEvents="none" style={[styles.circle2, { backgroundColor: COLORS.goldOpacity20 }]} />
+          {/* ── Gold accent bar at very top ── */}
+          <View style={styles.goldBar} />
+
+          {/* ── Diagonal stripe decorations ── */}
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            {[0, 1, 2, 3].map((i) => (
+              <View
+                key={i}
+                style={[
+                  styles.stripe,
+                  {
+                    right: 8 + i * 20,
+                    backgroundColor:
+                      i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,204,0,0.07)',
+                  },
+                ]}
+              />
+            ))}
+          </View>
 
           {/* ── Main header row ── */}
           <Animated.View
             style={[
               styles.container,
               {
-                paddingHorizontal: SIZES.padding.container,
-                paddingVertical: SIZES.padding.xs,
-                minHeight: verticalScale(70),
+                paddingHorizontal: SIZES.padding.lg,
+                paddingTop: SIZES.padding.sm,
+                paddingBottom: SIZES.padding.xs,
                 transform: [{ translateY: slideY }],
                 opacity: fadeAnim,
               },
             ]}
           >
             {/* LEFT: logo + brand */}
-            <View style={styles.leftContainer}>
-              <View style={styles.brandContainer}>
-                <View style={styles.logoWrapper}>
-                  <Image source={LOGO} resizeMode="cover" style={styles.logo} />
-                </View>
-                <View>
-                  <Text style={{
-                    fontFamily: FONTS.family.trajanBold,
-                    fontSize: SIZES.font.xl,
-                    color: COLORS.white,
-                    lineHeight: moderateScale(24),
-                  }}>
-                    Rangas
+            <View style={styles.leftSide}>
+              <View style={styles.logoRing}>
+                <Image source={LOGO} resizeMode="cover" style={styles.logo} />
+              </View>
+              <View>
+                <Text style={[styles.brandName, { fontFamily: FONTS.family.trajanBold }]}>
+                  Rangas
+                </Text>
+                <View style={styles.tagRow}>
+                  <View style={styles.goldDot} />
+                  <Text style={[styles.tagline, { fontFamily: FONTS.family.regular }]}>
+                    DIGIGOLD
                   </Text>
-                  <Text style={{
-                    fontFamily: FONTS.family.trajanBold,
-                    fontSize: SIZES.font.xs,
-                    color: COLORS.primaryPale,
-                    textTransform: 'uppercase',
-                    letterSpacing: 1.5,
-                  }}>
-                    DigiGold
-                  </Text>
+                  <View style={styles.goldDot} />
                 </View>
               </View>
             </View>
 
-            {/* RIGHT: profile avatar → Profile tab (Google picture, else name initial) */}
-            <AnimatedIconButton onPress={onProfilePress} bg={COLORS.whiteOpacity20} size={moderateScale(42)}>
-              {profilePic ? (
-                <Image
-                  source={{ uri: profilePic }}
-                  style={{ width: moderateScale(32), height: moderateScale(32), borderRadius: moderateScale(16) }}
-                />
-              ) : (
-                <Text style={{
-                  fontFamily: FONTS.family.bold,
-                  fontSize: moderateScale(18),
-                  color: COLORS.white,
-                }}>
-                  {(firstName?.[0] ?? 'U').toUpperCase()}
-                </Text>
-              )}
-            </AnimatedIconButton>
+            {/* RIGHT: notification + avatar */}
+            <View style={styles.rightSide}>
+              <AnimatedIconButton
+                onPress={onMenuPress}
+                bg="rgba(255,255,255,0.15)"
+                size={moderateScale(40)}
+              >
+                <Ionicons name="notifications-outline" size={moderateScale(20)} color="#ffcc00" />
+              </AnimatedIconButton>
+
+              <AnimatedIconButton
+                onPress={onProfilePress}
+                bg="rgba(255,204,0,0.25)"
+                size={moderateScale(40)}
+              >
+                {profilePic ? (
+                  <Image
+                    source={{ uri: profilePic }}
+                    style={{
+                      width: moderateScale(30),
+                      height: moderateScale(30),
+                      borderRadius: moderateScale(15),
+                    }}
+                  />
+                ) : (
+                  <Text style={{ fontFamily: FONTS.family.bold, fontSize: moderateScale(17), color: '#ffcc00' }}>
+                    {(firstName?.[0] ?? 'U').toUpperCase()}
+                  </Text>
+                )}
+              </AnimatedIconButton>
+            </View>
           </Animated.View>
 
-          {/* ── Greeting strip (inside gradient, below header row) ── */}
+          {/* ── Greeting strip ── */}
           <Animated.View
             style={[
-              styles.greetingStrip,
+              styles.greetStrip,
               {
-                paddingHorizontal: SIZES.padding.container,
-                paddingBottom: verticalScale(12),
-                transform: [{ translateY: stripSlide }],
-                opacity: stripFade,
+                paddingHorizontal: SIZES.padding.lg,
+                paddingBottom: verticalScale(14),
+                transform: [{ translateY: greetSlide }],
+                opacity: greetFade,
               },
             ]}
           >
-            {/* Locatiing row */}
-            <View style={styles.greetingRow}>
-              <Text style={{
-                fontFamily: FONTS.family.semiBold ?? FONTS.family.bold,
-                fontSize: SIZES.font.lg,
-                color: COLORS.white,
-              }}>
-                {getGreeting()}, {firstName} 👋
-              </Text>
-            </View>
+            <Text style={[styles.greetText, { fontFamily: FONTS.family.semiBold }]}>
+              {getGreeting()},{' '}
+              <Text style={{ fontFamily: FONTS.family.bold, color: '#ffcc00' }}>
+                {firstName}
+              </Text>{' '}
+              👋
+            </Text>
+            <Text style={[styles.greetSub, { fontFamily: FONTS.family.regular }]}>
+              Your gold journey continues
+            </Text>
           </Animated.View>
+
+          {/* ── Two-tone bottom accent ── */}
+          <View style={styles.bottomAccent}>
+            <View style={[styles.accentLeft,  { backgroundColor: '#ffcc00' }]} />
+            <View style={[styles.accentRight, { backgroundColor: 'rgba(255,255,255,0.18)' }]} />
+          </View>
         </SafeAreaView>
       </LinearGradient>
     </>
   );
 }
 
-// ─── Reusable animated icon button ───────────────────────────────────────────
-
-function AnimatedIconButton({ children, onPress, bg, size }: {
-  children: React.ReactNode;
-  onPress?: () => void;
-  bg: string;
-  size: number;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
+// ─── Animated icon button ─────────────────────────────────────────
+function AnimatedIconButton({
+  children, onPress, bg, size,
+}: { children: React.ReactNode; onPress?: () => void; bg: string; size: number }) {
+  const sc = useRef(new Animated.Value(1)).current;
   return (
     <TouchableOpacity
       activeOpacity={1}
       onPress={onPress}
-      onPressIn={() => Animated.spring(scale, { toValue: 0.88, useNativeDriver: true, speed: 40 }).start()}
-      onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30 }).start()}
+      onPressIn={() => Animated.spring(sc, { toValue: 0.85, useNativeDriver: true, speed: 40 }).start()}
+      onPressOut={() => Animated.spring(sc, { toValue: 1,    useNativeDriver: true, speed: 30 }).start()}
     >
-      <Animated.View style={[
-        styles.iconBtn,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: bg, transform: [{ scale }] },
-      ]}>
+      <Animated.View
+        style={[
+          styles.iconBtn,
+          { width: size, height: size, borderRadius: size / 2, backgroundColor: bg, transform: [{ scale: sc }] },
+        ]}
+      >
         {children}
       </Animated.View>
     </TouchableOpacity>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
+// ─── Styles ──────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  goldBar: {
+    height: 3,
+    backgroundColor: '#ffcc00',
+    opacity: 0.9,
+  },
+  stripe: {
+    position: 'absolute',
+    top: -40,
+    bottom: -40,
+    width: 14,
+    transform: [{ rotate: '18deg' }],
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 58,
   },
-  leftContainer: {
+  leftSide: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
   },
-  brandContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  logoWrapper: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+  logoRing: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: 'rgba(255,204,0,0.65)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   logo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  brandName: {
+    fontSize: 20,
+    color: '#fff',
+    letterSpacing: 1,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 1,
+  },
+  goldDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#ffcc00',
+  },
+  tagline: {
+    fontSize: 9,
+    color: '#ffcc00',
+    letterSpacing: 2.5,
+  },
+  rightSide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   iconBtn: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circle1: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 100,
-    top: -50,
-    right: -30,
-  },
-  circle2: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    top: 20,
-    right: 80,
-  },
-  greetingStrip: {
+  greetStrip: {
     gap: 2,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  greetText: {
+    fontSize: 15,
+    color: '#fff',
   },
-  locationText: {
-    opacity: 0.85,
+  greetSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.3,
   },
-  greetingRow: {
+  bottomAccent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    height: 4,
+  },
+  accentLeft: {
+    width: 60,
+    borderTopRightRadius: 4,
+  },
+  accentRight: {
+    flex: 1,
   },
 });

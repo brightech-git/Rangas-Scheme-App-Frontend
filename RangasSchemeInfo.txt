@@ -6,6 +6,6 @@ alias name : rangasscheme
 
 //Google Login 
 Email : hkirubakarandeveloper08@gmail.com
-Web client ID :305260948341-u4ffnsr5tr0psmtr2ft940q8s5r4sq4d.apps.googleusercontent.com
-Android client ID : 305260948341-urpeahdujnglit6coo21au7uhbp0e9vp.apps.googleusercontent.com
+Web client ID :401290584973-93gehg6vq34t5p5arn5h90m22e2ckfkb.apps.googleusercontent.com
+Android client ID : 401290584973-8h1i4ua2ogrgok81qpmms9oudh6id7hu.apps.googleusercontent.com
 
