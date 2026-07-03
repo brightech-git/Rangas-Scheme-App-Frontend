@@ -38,7 +38,7 @@ export default function VerifyMpinScreen() {
           .register({ username: user.username, mobileNumber: user.contactNumber })
           .catch(() => { /* ignore — non-critical */ });
       }
-      await initNotifications();
+      await initNotifications().catch(() => { /* ignore — never blocks navigation */ });
       navigation.replace('Main');
     } else {
       const msg = (typeof res.payload === 'string' && res.payload.trim())

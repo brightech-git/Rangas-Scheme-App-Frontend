@@ -57,7 +57,7 @@ export default function CreateMpinScreen() {
     const res = await dispatch(createMpin(pin));
     if (createMpin.fulfilled.match(res)) {
       toast.success('MPIN Created!', { message: 'Your MPIN is set successfully' });
-      await initNotifications();
+      await initNotifications().catch(() => { /* ignore — never blocks navigation */ });
       navigation.replace('MpinLogin');
     } else {
       const msg = res.payload as string;
