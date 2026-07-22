@@ -18,7 +18,7 @@
       "autoIncrement": true,
       "env": {
         "API_BASE_URL": "https://rangasscheme.brightechsoftware.com/api/v1",
-        "IMAGE_BASE_URL": "https://scheme.dhanapaljewellery.com"
+        "IMAGE_BASE_URL": "https://rangasscheme.brightechsoftware.com"
       }
     }
   }

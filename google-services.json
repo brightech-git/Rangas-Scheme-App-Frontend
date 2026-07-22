@@ -14,21 +14,13 @@
       },
       "oauth_client": [
         {
-          "client_id": "401290584973-8h1i4ua2ogrgok81qpmms9oudh6id7hu.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.brightechsoftware.rangasthangamaligai",
-            "certificate_hash": "747a60579a3b527a90dab329d4ffd902a3a43e8d"
-          }
-        },
-        {
           "client_id": "401290584973-93gehg6vq34t5p5arn5h90m22e2ckfkb.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA_QS2QwdZVyDVQELzUmEYxA0vusssYN7A"
+          "current_key": "AIzaSyAXA1nVx9pE6b3NpE2M5PyHkeyvx5BjphM"
         }
       ],
       "services": {

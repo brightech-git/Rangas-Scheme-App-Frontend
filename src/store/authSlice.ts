@@ -98,12 +98,17 @@ export const googleLogin = createAsyncThunk(
   'auth/googleLogin',
   async (data: { idToken: string }, { rejectWithValue }: { rejectWithValue: (v: string) => any }) => {
     try {
+      console.log('[authSlice/googleLogin] Calling backend with idToken length:', data.idToken?.length);
       const res = await authService.googleLogin(data);
+      console.log('[authSlice/googleLogin] Backend raw response:', JSON.stringify(res, null, 2));
       if (res.token) {
         await AsyncStorageHelper.saveUserSession(res);
       }
       return res;
     } catch (err: any) {
+      console.error('[authSlice/googleLogin] Backend call FAILED:', err);
+      console.error('[authSlice/googleLogin] err.message:', err.message);
+      console.error('[authSlice/googleLogin] err.response:', JSON.stringify(err.response?.data, null, 2));
       return rejectWithValue(err.message);
     }
   }

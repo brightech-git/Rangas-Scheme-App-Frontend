@@ -42,7 +42,7 @@ export default function RegisterScreen() {
 
   const initializeGoogleSignIn = useCallback(() => {
     GoogleSignin.configure({
-      webClientId: '1038057958960-gg9fji7abv6php2ahfi6kf3ttmu33nea.apps.googleusercontent.com',
+      webClientId: '401290584973-93gehg6vq34t5p5arn5h90m22e2ckfkb.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       offlineAccess: true,
     });
