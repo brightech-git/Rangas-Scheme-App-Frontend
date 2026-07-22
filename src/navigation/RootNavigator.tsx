@@ -41,6 +41,9 @@ export type RootStackParamList = {
   SchemeJoin:              { scheme: SchemeItem };
   PayInstallment:          { ppData: PPData };
   Rates:                   { metal?: 'Gold' | 'Silver' };
+  BuyGold:                 undefined;
+  Portfolio:               undefined;
+  Transactions:            undefined;
 };
 
 type InitialRoute = 'Onboarding' | 'Register' | 'Login' | 'CreateMpin' | 'MpinLogin' | 'Main';
@@ -118,7 +121,9 @@ export default function RootNavigator() {
         <Stack.Screen name="MpinLogin"               component={Screens.VerifyMpinScreen} />
         <Stack.Screen name="ForgotMpin"              component={Screens.ForgotAndVerifyMpinScreen} />
         <Stack.Screen name="ResetMpin"               component={Screens.ResetMpinScreen} />
-        <Stack.Screen name="ComponentsUsage"         component={Screens.ComponentsUsageScreen} />
+        {__DEV__ && (
+          <Stack.Screen name="ComponentsUsage"         component={Screens.ComponentsUsageScreen} />
+        )}
         <Stack.Screen name="Main"                    component={Screens.BottomTabNavigator} />
         <Stack.Screen name="WebView"                 component={Screens.WebViewComponent} />
         <Stack.Screen name="Notifications"            component={Screens.NotificationScreen} />
@@ -128,6 +133,9 @@ export default function RootNavigator() {
         <Stack.Screen name="PayInstallment"   component={Screens.PayInstallmentScreen}   options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Rates"            component={Screens.RatesScreen}            options={{ animation: 'slide_from_bottom', headerShown: false }} />
         <Stack.Screen name="LoginLog"            component={Screens.LoginLog} />
+        <Stack.Screen name="BuyGold"         component={Screens.BuyGoldScreen}         options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Portfolio"       component={Screens.PortfolioScreen}       options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Transactions"    component={Screens.TransactionsScreen}    options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

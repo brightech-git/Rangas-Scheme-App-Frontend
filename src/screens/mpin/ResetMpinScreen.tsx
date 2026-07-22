@@ -1,6 +1,6 @@
 // src/screens/mpin/ResetMpinScreen.tsx
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { resetMpin } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -31,6 +32,9 @@ export default function ResetMpinScreen() {
   const toast = useToast();
 
   const { loading } = useAppSelector((s) => s.mpin);
+  const theme = useTheme();
+  const { COLORS, SIZES } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const oldRef = useRef<AppPinInputRef>(null);
   const newRef = useRef<AppPinInputRef>(null);
@@ -213,35 +217,36 @@ export default function ResetMpinScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: SIZES.xl,
-    gap: SIZES.xl,
-  },
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
+    content: {
+      flex: 1,
+      paddingTop: SIZES.xl,
+      gap: SIZES.xl,
+    },
 
-  header: {
-    gap: 6,
-  },
+    header: {
+      gap: 6,
+    },
 
-  title: {
-    fontFamily: FONTS.family.bold,
-    fontSize: SIZES.heading.h3,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.3,
-  },
+    title: {
+      fontFamily: FONTS.family.bold,
+      fontSize: SIZES.heading.h3,
+      color: COLORS.textPrimary,
+      letterSpacing: -0.3,
+    },
 
-  subtitle: {
-    fontFamily: FONTS.family.regular,
-    fontSize: SIZES.font.sm,
-    color: COLORS.textSecondary,
-  },
+    subtitle: {
+      fontFamily: FONTS.family.regular,
+      fontSize: SIZES.font.sm,
+      color: COLORS.textSecondary,
+    },
 
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: SIZES.radius.xl,
-    padding: SIZES.padding.xl,
-    alignItems: 'center',
-    ...SHADOWS.md,
-  },
-});
+    card: {
+      backgroundColor: COLORS.card,
+      borderRadius: SIZES.radius.xl,
+      padding: SIZES.padding.xl,
+      alignItems: 'center',
+      ...SHADOWS.md,
+    },
+  });

@@ -156,11 +156,11 @@ function RateRow({ entry, isLast, colors, fonts }: {
         ₹{entry.rate.toLocaleString('en-IN')}
       </Text>
       <View style={rr.changeCell}>
-        <Ionicons name={up ? 'caret-up' : 'caret-down'} size={10} color={up ? '#22C55E' : '#EF4444'} />
-        <Text style={[rr.changeTxt, { color: up ? '#22C55E' : '#EF4444', fontFamily: fonts.family.medium }]}>
+        <Ionicons name={up ? 'caret-up' : 'caret-down'} size={10} color={up ? colors.success : colors.error} />
+        <Text style={[rr.changeTxt, { color: up ? colors.success : colors.error, fontFamily: fonts.family.medium }]}>
           {up ? '+' : ''}{entry.change.toLocaleString('en-IN')}
         </Text>
-        <Text style={[rr.pctTxt, { color: up ? '#22C55E' : '#EF4444', fontFamily: fonts.family.regular }]}>
+        <Text style={[rr.pctTxt, { color: up ? colors.success : colors.error, fontFamily: fonts.family.regular }]}>
           ({up ? '+' : ''}{entry.changePct.toFixed(2)}%)
         </Text>
       </View>
@@ -264,9 +264,9 @@ export default function RatesScreen() {
                     {metal.purity}
                   </Text>
                 </View>
-                <View style={[s.changePill, { backgroundColor: isUp ? '#22C55E18' : '#EF444418', borderColor: isUp ? '#22C55E40' : '#EF444440' }]}>
-                  <Ionicons name={isUp ? 'trending-up' : 'trending-down'} size={14} color={isUp ? '#22C55E' : '#EF4444'} />
-                  <Text style={[s.changePillTxt, { color: isUp ? '#22C55E' : '#EF4444', fontFamily: FONTS.family.semiBold }]}>
+                <View style={[s.changePill, { backgroundColor: isUp ? COLORS.success + '18' : COLORS.error + '18', borderColor: isUp ? COLORS.success + '40' : COLORS.error + '40' }]}>
+                  <Ionicons name={isUp ? 'trending-up' : 'trending-down'} size={14} color={isUp ? COLORS.success : COLORS.error} />
+                  <Text style={[s.changePillTxt, { color: isUp ? COLORS.success : COLORS.error, fontFamily: FONTS.family.semiBold }]}>
                     {isUp ? '+' : ''}{metal.changePct.toFixed(2)}%
                   </Text>
                 </View>
@@ -279,8 +279,8 @@ export default function RatesScreen() {
                 ₹{metal.currentRate.toLocaleString('en-IN')}
               </Text>
               <View style={s.changeRow}>
-                <Ionicons name={isUp ? 'caret-up' : 'caret-down'} size={12} color={isUp ? '#22C55E' : '#EF4444'} />
-                <Text style={[s.changeAbs, { color: isUp ? '#22C55E' : '#EF4444', fontFamily: FONTS.family.medium }]}>
+                <Ionicons name={isUp ? 'caret-up' : 'caret-down'} size={12} color={isUp ? COLORS.success : COLORS.error} />
+                <Text style={[s.changeAbs, { color: isUp ? COLORS.success : COLORS.error, fontFamily: FONTS.family.medium }]}>
                   {isUp ? '+' : ''}₹{Math.abs(metal.change).toLocaleString('en-IN')} today
                 </Text>
                 <Text style={[s.updatedAt, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>

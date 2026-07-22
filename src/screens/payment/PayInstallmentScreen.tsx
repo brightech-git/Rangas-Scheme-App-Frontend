@@ -82,7 +82,7 @@ function SuccessModal({ visible, amount, schemeName, paymentId, onDone }: {
 
   return (
     <Modal visible={visible} transparent animationType="none">
-      <View style={s.modalOverlay}>
+      <View style={[s.modalOverlay, { backgroundColor: COLORS.blackOpacity50 }]}>
         <Animated.View style={[s.modalCard, { backgroundColor: COLORS.background, transform: [{ scale }], opacity }]}>
 
           {/* Icon */}
@@ -136,10 +136,10 @@ function FailureModal({ visible, message, onRetry, onCancel }: {
   const { COLORS, FONTS } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={s.modalOverlay}>
+      <View style={[s.modalOverlay, { backgroundColor: COLORS.blackOpacity50 }]}>
         <View style={[s.modalCard, { backgroundColor: COLORS.background }]}>
-          <View style={[s.modalIconWrap, { backgroundColor: '#E5393518' }]}>
-            <Ionicons name="close-circle" size={72} color="#E53935" />
+          <View style={[s.modalIconWrap, { backgroundColor: COLORS.error + '18' }]}>
+            <Ionicons name="close-circle" size={72} color={COLORS.error} />
           </View>
           <Text style={[s.modalTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
             Payment Failed
@@ -349,7 +349,7 @@ export default function PayInstallmentScreen() {
       >
 
         {/* ── Scheme Summary Card ── */}
-        <View style={[s.card, { backgroundColor: COLORS.white, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+        <View style={[s.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
           <View style={[s.cardIconWrap, { backgroundColor: COLORS.primary + '12' }]}>
             <Ionicons name="diamond-outline" size={22} color={COLORS.primary} />
           </View>
@@ -371,7 +371,7 @@ export default function PayInstallmentScreen() {
         </View>
 
         {/* ── Amount Section ── */}
-        <View style={[s.card, { backgroundColor: COLORS.white, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+        <View style={[s.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
           <Text style={[s.sectionTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
             {isFixed ? 'Installment Amount' : 'Enter Installment Amount'}
           </Text>
@@ -400,7 +400,7 @@ export default function PayInstallmentScreen() {
               <Text style={[s.inputLabel, { color: COLORS.textSecondary, fontFamily: FONTS.family.medium }]}>
                 Amount (₹) *
               </Text>
-              <View style={[s.inputBox, { borderColor: customAmount ? COLORS.primary : COLORS.borderLight, backgroundColor: customAmount ? COLORS.primary + '05' : COLORS.white }]}>
+              <View style={[s.inputBox, { borderColor: customAmount ? COLORS.primary : COLORS.borderLight, backgroundColor: customAmount ? COLORS.primary + '05' : COLORS.card }]}>
                 <Text style={[s.inputPrefix, { color: COLORS.textSecondary, fontFamily: FONTS.family.semiBold }]}>₹</Text>
                 <TextInput
                   style={[s.input, { color: COLORS.textPrimary, fontFamily: FONTS.family.regular }]}
@@ -538,7 +538,7 @@ const s = StyleSheet.create({
   payBtnText:      { fontSize: 16 },
 
   // Modal
-  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  modalOverlay:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard:       { width: '100%', borderRadius: 24, padding: 28, alignItems: 'center' },
   modalIconWrap:   { width: 108, height: 108, borderRadius: 54, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   modalTitle:      { fontSize: 22, marginBottom: 10 },

@@ -3,6 +3,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { mpinService } from '../api/services/mpinService';
 import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
+import { BiometricHelper } from '../utils/BiometricHelper';
 
 interface MpinState {
   mpinSet:  boolean;
@@ -24,6 +25,7 @@ export const createMpin = createAsyncThunk(
     try {
       const res = await mpinService.create(mpin);
       await AsyncStorageHelper.setMpinSet(true);
+      await BiometricHelper.saveMpin(mpin); // keep secure copy for biometric unlock
       return res;
     } catch (err: any) {
       // 409 = MPIN already exists on server → still mark as set locally
@@ -39,9 +41,10 @@ export const verifyMpin = createAsyncThunk(
     try {
     const res= await mpinService.verify(enteredMpin);
     console.log("DataFromMpin",res,"DataFromMpinEnd")
+      await BiometricHelper.saveMpin(enteredMpin); // refresh secure copy on each successful verify
       return res
 
-      
+
     } catch (err: any) { return rejectWithValue(err.message); }
   }
 );
@@ -50,7 +53,9 @@ export const resetMpin = createAsyncThunk(
   'mpin/reset',
   async ({ oldMpin, newMpin }: { oldMpin: string; newMpin: string }, { rejectWithValue }: any) => {
     try {
-      return await mpinService.reset(oldMpin, newMpin);
+      const res = await mpinService.reset(oldMpin, newMpin);
+      await BiometricHelper.saveMpin(newMpin); // update secure copy after change
+      return res;
     } catch (err: any) { return rejectWithValue(err.message); }
   }
 );
@@ -68,7 +73,9 @@ export const forgotMpinVerify = createAsyncThunk(
   'mpin/forgotVerify',
   async ({ otp, newMpin }: { otp: string; newMpin: string }, { rejectWithValue }: any) => {
     try {
-      return await mpinService.forgotVerify(otp, newMpin);
+      const res = await mpinService.forgotVerify(otp, newMpin);
+      await BiometricHelper.saveMpin(newMpin); // update secure copy after reset
+      return res;
     } catch (err: any) { return rejectWithValue(err.message); }
   }
 );

@@ -1,6 +1,6 @@
 // src/screens/login/LoginScreen.tsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   SafeAreaView, ScrollView,
@@ -9,7 +9,8 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loginUser, googleLogin } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
@@ -28,6 +29,9 @@ export default function LoginScreen() {
   const dispatch   = useAppDispatch();
   const { loading } = useAppSelector((s) => s.auth);
   const toast = useToast();
+  const theme = useTheme();
+  const { COLORS, SIZES } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [mobile,   setMobile]   = useState('');
   const [password, setPassword] = useState('');
@@ -163,19 +167,19 @@ export default function LoginScreen() {
         {/* Branded Header */}
         <View style={styles.headerBg}>
           {/* Gold top stripe */}
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: '#ffcc00', opacity: 0.9 }} />
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: COLORS.secondary, opacity: 0.9 }} />
           {/* Diagonal decorations */}
           {[0, 1, 2].map((i) => (
             <View key={i} style={{
               position: 'absolute', top: -30, bottom: -30,
               right: 10 + i * 22, width: 14,
-              backgroundColor: i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,204,0,0.08)',
+              backgroundColor: i % 2 === 0 ? COLORS.whiteOpacity10 : COLORS.goldOpacity10,
               transform: [{ rotate: '18deg' }],
             }} />
           ))}
           <View style={styles.headerInner}>
             <View style={styles.logoCircle}>
-              <Ionicons name="shield-checkmark" size={32} color="#ffcc00" />
+              <Ionicons name="shield-checkmark" size={32} color={COLORS.secondary} />
             </View>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to your Rangas account</Text>
@@ -249,60 +253,61 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  // Header: angled bottom + gold accent stripe at top
-  headerBg: {
-    backgroundColor: '#aa0404',
-    paddingTop: SIZES.md,
-    paddingBottom: SIZES.xxl,
-    paddingHorizontal: SIZES.padding.xl,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 0,
-    ...SHADOWS.orange,
-    overflow: 'hidden',
-  },
-  headerInner: { alignItems: 'center', gap: SIZES.sm },
-  logoCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,204,0,0.2)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,204,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SIZES.xs,
-  },
-  title:        { fontFamily: FONTS.family.bold, fontSize: SIZES.heading.h3, color: '#fff', letterSpacing: -0.3 },
-  subtitle:     { fontFamily: FONTS.family.regular, fontSize: SIZES.font.md, color: 'rgba(255,255,255,0.7)', marginBottom: SIZES.xs },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: SIZES.radius.xl,
-    padding: SIZES.padding.xl,
-    gap: SIZES.md,
-    borderWidth: 1,
-    borderColor: '#ead8d8',
-    ...SHADOWS.sm,
-  },
-  forgotRow:    { alignSelf: 'flex-end', marginTop: -SIZES.xs },
-  forgotText:   { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.sm, color: '#aa0404' },
-  dividerRow:   { flexDirection: 'row', alignItems: 'center', gap: SIZES.sm, marginVertical: SIZES.sm },
-  dividerLine:  { flex: 1, height: 1, backgroundColor: '#ead8d8' },
-  dividerText:  { fontFamily: FONTS.family.regular, fontSize: SIZES.font.sm, color: COLORS.textTertiary },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SIZES.sm,
-    backgroundColor: '#fff',
-    borderRadius: SIZES.radius.lg,
-    borderWidth: 1.5,
-    borderColor: '#ead8d8',
-    height: SIZES.button.height.lg,
-    ...SHADOWS.sm,
-  },
-  googleText:   { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.md, color: COLORS.textPrimary },
-  registerBtn:  { alignItems: 'center', marginTop: SIZES.md },
-  registerText: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.md, color: COLORS.textTertiary },
-  registerLink: { fontFamily: FONTS.family.semiBold, color: '#aa0404' },
-});
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
+    // Header: angled bottom + gold accent stripe at top (branded red — same in both themes)
+    headerBg: {
+      backgroundColor: COLORS.primary,
+      paddingTop: SIZES.md,
+      paddingBottom: SIZES.xxl,
+      paddingHorizontal: SIZES.padding.xl,
+      borderBottomLeftRadius: 40,
+      borderBottomRightRadius: 0,
+      ...SHADOWS.orange,
+      overflow: 'hidden',
+    },
+    headerInner: { alignItems: 'center', gap: SIZES.sm },
+    logoCircle: {
+      width: 68,
+      height: 68,
+      borderRadius: 20,
+      backgroundColor: COLORS.goldOpacity20,
+      borderWidth: 2,
+      borderColor: COLORS.goldOpacity50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: SIZES.xs,
+    },
+    title:        { fontFamily: FONTS.family.bold, fontSize: SIZES.heading.h3, color: COLORS.white, letterSpacing: -0.3 },
+    subtitle:     { fontFamily: FONTS.family.regular, fontSize: SIZES.font.md, color: COLORS.whiteOpacity70, marginBottom: SIZES.xs },
+    card: {
+      backgroundColor: COLORS.card,
+      borderRadius: SIZES.radius.xl,
+      padding: SIZES.padding.xl,
+      gap: SIZES.md,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      ...SHADOWS.sm,
+    },
+    forgotRow:    { alignSelf: 'flex-end', marginTop: -SIZES.xs },
+    forgotText:   { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.sm, color: COLORS.primary },
+    dividerRow:   { flexDirection: 'row', alignItems: 'center', gap: SIZES.sm, marginVertical: SIZES.sm },
+    dividerLine:  { flex: 1, height: 1, backgroundColor: COLORS.border },
+    dividerText:  { fontFamily: FONTS.family.regular, fontSize: SIZES.font.sm, color: COLORS.textTertiary },
+    googleBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SIZES.sm,
+      backgroundColor: COLORS.card,
+      borderRadius: SIZES.radius.lg,
+      borderWidth: 1.5,
+      borderColor: COLORS.border,
+      height: SIZES.button.height.lg,
+      ...SHADOWS.sm,
+    },
+    googleText:   { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.md, color: COLORS.textPrimary },
+    registerBtn:  { alignItems: 'center', marginTop: SIZES.md },
+    registerText: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.md, color: COLORS.textTertiary },
+    registerLink: { fontFamily: FONTS.family.semiBold, color: COLORS.primary },
+  });

@@ -17,6 +17,7 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 
 import { useSchemeSliders } from '../api/hooks/HomeBanner/useHomeBanner';
 import { SchemeSlider } from '../types/HomeBanner/HomeBanner';
+import { useTheme } from '../theme';
 
 const { width } = Dimensions.get('window');
 const ITEM_HEIGHT = 220;
@@ -30,6 +31,7 @@ const HomeBannerScreen = () => {
     const [activeIndex, setActiveIndex] = useState(0);
     const flatListRef = useRef<FlatList<SchemeSlider>>(null);
     const navigation = useNavigation<Nav>();
+    const { COLORS } = useTheme();
 
     const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const index = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -39,7 +41,7 @@ const HomeBannerScreen = () => {
     if (loading) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#D4AF37" />
+                <ActivityIndicator size="large" color={COLORS.secondary} />
             </View>
         );
     }
@@ -88,7 +90,11 @@ const HomeBannerScreen = () => {
                 {sliders.map((_, i) => (
                     <View
                         key={i}
-                        style={[styles.dot, i === activeIndex && styles.dotActive]}
+                        style={[
+                            styles.dot,
+                            { backgroundColor: COLORS.goldOpacity30 },
+                            i === activeIndex && [styles.dotActive, { backgroundColor: COLORS.secondary }],
+                        ]}
                     />
                 ))}
             </View>
@@ -133,12 +139,10 @@ const styles = StyleSheet.create({
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: '#D4AF3766',
         marginHorizontal: 4,
     },
 
     dotActive: {
         width: 16,
-        backgroundColor: '#D4AF37',
     },
 });

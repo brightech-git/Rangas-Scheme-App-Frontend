@@ -108,6 +108,12 @@ export const COLORS = {
   inputFocusedAlt: "#ffcc00",
 
   // ===== STATUS COLORS =====
+  // Subtle status backgrounds (for chips, badges, banners) — pair with the solid color for text/icon
+  successBg: "#e6f4ea",
+  warningBg: "#fff8e1",
+  errorBg: "#fdeaea",
+  infoBg: "#e7f1fb",
+
   success: "#1e7a34",
   successLight: "#27ae60",
   successDark: "#155a24",

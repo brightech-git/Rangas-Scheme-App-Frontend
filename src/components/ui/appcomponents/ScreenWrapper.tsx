@@ -35,20 +35,22 @@ export default function ScreenWrapper({
   onRefresh, refreshing = false,
   backgroundColor, paddingHorizontal,
   paddingTop = 0, paddingBottom = 24,
-  statusBarStyle = 'dark-content',
+  statusBarStyle,
   statusBarBg,
   edges = ['top', 'bottom'],
   header, footer,
   style, contentStyle,
 }: Props) {
-  const { COLORS, SIZES } = useTheme();
+  const { COLORS, SIZES, isDark } = useTheme();
 
   const bg = backgroundColor ?? COLORS.background;
   const ph = paddingHorizontal ?? SIZES.padding.container;
+  // Default the status-bar icon color to match the theme (light icons on dark bg)
+  const barStyle = statusBarStyle ?? (isDark ? 'light-content' : 'dark-content');
 
   return (
     <SafeAreaView edges={edges} style={[styles.safe, { backgroundColor: bg }, style]}>
-      <StatusBar barStyle={statusBarStyle} backgroundColor={statusBarBg ?? bg} />
+      <StatusBar barStyle={barStyle} backgroundColor={statusBarBg ?? bg} />
 
       {header}
 

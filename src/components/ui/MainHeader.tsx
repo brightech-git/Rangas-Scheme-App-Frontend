@@ -59,13 +59,13 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
 
       {/* Deep red → rich red gradient */}
       <LinearGradient
-        colors={['#7a0303', '#aa0404', '#cc0505']}
+        colors={[COLORS.primaryDark, COLORS.primary, COLORS.primaryLight]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <SafeAreaView edges={['top']}>
           {/* ── Gold accent bar at very top ── */}
-          <View style={styles.goldBar} />
+          <View style={[styles.goldBar, { backgroundColor: COLORS.secondary }]} />
 
           {/* ── Diagonal stripe decorations ── */}
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -77,7 +77,7 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
                   {
                     right: 8 + i * 20,
                     backgroundColor:
-                      i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,204,0,0.07)',
+                      i % 2 === 0 ? COLORS.whiteOpacity10 : COLORS.goldOpacity10,
                   },
                 ]}
               />
@@ -99,19 +99,19 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
           >
             {/* LEFT: logo + brand */}
             <View style={styles.leftSide}>
-              <View style={styles.logoRing}>
+              <View style={[styles.logoRing, { borderColor: COLORS.goldOpacity50 }]}>
                 <Image source={LOGO} resizeMode="cover" style={styles.logo} />
               </View>
               <View>
-                <Text style={[styles.brandName, { fontFamily: FONTS.family.trajanBold }]}>
+                <Text style={[styles.brandName, { fontFamily: FONTS.family.trajanBold, color: COLORS.white }]}>
                   Rangas
                 </Text>
                 <View style={styles.tagRow}>
-                  <View style={styles.goldDot} />
-                  <Text style={[styles.tagline, { fontFamily: FONTS.family.regular }]}>
+                  <View style={[styles.goldDot, { backgroundColor: COLORS.secondary }]} />
+                  <Text style={[styles.tagline, { fontFamily: FONTS.family.regular, color: COLORS.secondary }]}>
                     DIGIGOLD
                   </Text>
-                  <View style={styles.goldDot} />
+                  <View style={[styles.goldDot, { backgroundColor: COLORS.secondary }]} />
                 </View>
               </View>
             </View>
@@ -120,15 +120,15 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
             <View style={styles.rightSide}>
               <AnimatedIconButton
                 onPress={onMenuPress}
-                bg="rgba(255,255,255,0.15)"
+                bg={COLORS.whiteOpacity20}
                 size={moderateScale(40)}
               >
-                <Ionicons name="notifications-outline" size={moderateScale(20)} color="#ffcc00" />
+                <Ionicons name="notifications-outline" size={moderateScale(20)} color={COLORS.secondary} />
               </AnimatedIconButton>
 
               <AnimatedIconButton
                 onPress={onProfilePress}
-                bg="rgba(255,204,0,0.25)"
+                bg={COLORS.goldOpacity30}
                 size={moderateScale(40)}
               >
                 {profilePic ? (
@@ -141,7 +141,7 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
                     }}
                   />
                 ) : (
-                  <Text style={{ fontFamily: FONTS.family.bold, fontSize: moderateScale(17), color: '#ffcc00' }}>
+                  <Text style={{ fontFamily: FONTS.family.bold, fontSize: moderateScale(17), color: COLORS.secondary }}>
                     {(firstName?.[0] ?? 'U').toUpperCase()}
                   </Text>
                 )}
@@ -161,22 +161,22 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
               },
             ]}
           >
-            <Text style={[styles.greetText, { fontFamily: FONTS.family.semiBold }]}>
+            <Text style={[styles.greetText, { fontFamily: FONTS.family.semiBold, color: COLORS.white }]}>
               {getGreeting()},{' '}
-              <Text style={{ fontFamily: FONTS.family.bold, color: '#ffcc00' }}>
+              <Text style={{ fontFamily: FONTS.family.bold, color: COLORS.secondary }}>
                 {firstName}
               </Text>{' '}
               👋
             </Text>
-            <Text style={[styles.greetSub, { fontFamily: FONTS.family.regular }]}>
+            <Text style={[styles.greetSub, { fontFamily: FONTS.family.regular, color: COLORS.whiteOpacity70 }]}>
               Your gold journey continues
             </Text>
           </Animated.View>
 
           {/* ── Two-tone bottom accent ── */}
           <View style={styles.bottomAccent}>
-            <View style={[styles.accentLeft,  { backgroundColor: '#ffcc00' }]} />
-            <View style={[styles.accentRight, { backgroundColor: 'rgba(255,255,255,0.18)' }]} />
+            <View style={[styles.accentLeft,  { backgroundColor: COLORS.secondary }]} />
+            <View style={[styles.accentRight, { backgroundColor: COLORS.whiteOpacity20 }]} />
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -212,7 +212,6 @@ function AnimatedIconButton({
 const styles = StyleSheet.create({
   goldBar: {
     height: 3,
-    backgroundColor: '#ffcc00',
     opacity: 0.9,
   },
   stripe: {
@@ -239,7 +238,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: 'rgba(255,204,0,0.65)',
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -251,7 +249,6 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 20,
-    color: '#fff',
     letterSpacing: 1,
   },
   tagRow: {
@@ -264,11 +261,9 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#ffcc00',
   },
   tagline: {
     fontSize: 9,
-    color: '#ffcc00',
     letterSpacing: 2.5,
   },
   rightSide: {
@@ -285,11 +280,9 @@ const styles = StyleSheet.create({
   },
   greetText: {
     fontSize: 15,
-    color: '#fff',
   },
   greetSub: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.6)',
     letterSpacing: 0.3,
   },
   bottomAccent: {

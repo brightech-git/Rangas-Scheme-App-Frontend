@@ -1,10 +1,11 @@
 // src/screens/mpin/CreateMpinScreen.tsx
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { createMpin } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -21,6 +22,9 @@ export default function CreateMpinScreen() {
   const dispatch   = useAppDispatch();
   const { loading } = useAppSelector((s) => s.mpin);
   const toast = useToast();
+  const theme = useTheme();
+  const { COLORS } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const pinRef = useRef<AppPinInputRef>(null);
 
@@ -123,56 +127,57 @@ export default function CreateMpinScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding.xl,
-    paddingTop: SIZES.lg,
-    gap: SIZES.lg,
-    alignItems: 'center',
-  },
-  header: { gap: 6, alignItems: 'center' },
-  title: {
-    fontFamily: FONTS.family.bold,
-    fontSize:   SIZES.heading.h3,
-    color:      COLORS.textPrimary,
-    letterSpacing: -0.3,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontFamily: FONTS.family.regular,
-    fontSize:   SIZES.font.sm,
-    color:      COLORS.textSecondary,
-    textAlign:  'center',
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap: 0,
-  },
-  stepDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.gray200,
-  },
-  stepDotActive: {
-    backgroundColor: COLORS.primary,
-  },
-  stepLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: COLORS.gray200,
-  },
-  stepLineActive: {
-    backgroundColor: COLORS.primary,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius:    SIZES.radius.xl,
-    padding:         SIZES.padding.xl,
-    alignItems:      'center',
-    width:           '100%',
-    ...SHADOWS.md,
-  },
-});
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
+    content: {
+      flex: 1,
+      paddingHorizontal: SIZES.padding.xl,
+      paddingTop: SIZES.lg,
+      gap: SIZES.lg,
+      alignItems: 'center',
+    },
+    header: { gap: 6, alignItems: 'center' },
+    title: {
+      fontFamily: FONTS.family.bold,
+      fontSize:   SIZES.heading.h3,
+      color:      COLORS.textPrimary,
+      letterSpacing: -0.3,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontFamily: FONTS.family.regular,
+      fontSize:   SIZES.font.sm,
+      color:      COLORS.textSecondary,
+      textAlign:  'center',
+    },
+    stepRow: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap: 0,
+    },
+    stepDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: COLORS.gray200,
+    },
+    stepDotActive: {
+      backgroundColor: COLORS.primary,
+    },
+    stepLine: {
+      width: 40,
+      height: 2,
+      backgroundColor: COLORS.gray200,
+    },
+    stepLineActive: {
+      backgroundColor: COLORS.primary,
+    },
+    card: {
+      backgroundColor: COLORS.card,
+      borderRadius:    SIZES.radius.xl,
+      padding:         SIZES.padding.xl,
+      alignItems:      'center',
+      width:           '100%',
+      ...SHADOWS.md,
+    },
+  });

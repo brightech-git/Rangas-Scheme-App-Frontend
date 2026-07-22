@@ -20,3 +20,6 @@ export { default as SchemeJoinScreen }             from '../screens/scheme/Schem
 export { default as PayInstallmentScreen }         from '../screens/payment/PayInstallmentScreen';
 export { default as RatesScreen } from '../screens/rates/RatesScreen';
 export { default as LoginLog } from '../screens/login/LoginLogs';
+export { default as BuyGoldScreen } from '../screens/buygold/BuyGoldScreen';
+export { default as PortfolioScreen } from '../screens/portfolio/PortfolioScreen';
+export { default as TransactionsScreen } from '../screens/transactions/TransactionsScreen';

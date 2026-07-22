@@ -1,11 +1,12 @@
 // src/screens/register/RegisterOTPVerifyScreen.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Platform, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOtpVerify, removeListener } from 'react-native-otp-verify';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { verifyOtp } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
@@ -24,6 +25,9 @@ export default function RegisterOTPVerifyScreen() {
   const dispatch   = useAppDispatch();
   const { loading } = useAppSelector((s) => s.auth);
   const toast = useToast();
+  const theme = useTheme();
+  const { SIZES } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const { contactNumber } = route.params;
   const otpRef          = useRef<AppOTPInputRef>(null);
@@ -133,45 +137,46 @@ export default function RegisterOTPVerifyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding.xl,
-    paddingTop: SIZES.xl,
-    gap: SIZES.xl,
-  },
-  header: { gap: 8 },
-  subtitle: {
-    fontFamily: FONTS.family.regular,
-    fontSize: SIZES.font.md,
-    color: COLORS.textSecondary,
-    lineHeight: 22,
-  },
-  phone: {
-    fontFamily: FONTS.family.semiBold,
-    color: COLORS.textPrimary,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: SIZES.radius.xl,
-    padding: SIZES.padding.xl,
-    ...SHADOWS.md,
-  },
-  autoDetectRow: {
-    backgroundColor: COLORS.primaryPale,
-    borderRadius: SIZES.radius.sm,
-    paddingHorizontal: SIZES.padding.md,
-    paddingVertical: SIZES.padding.sm,
-    marginBottom: SIZES.md,
-    alignItems: 'center',
-  },
-  autoDetectText: {
-    fontFamily: FONTS.family.regular,
-    fontSize: SIZES.font.xs,
-    color: COLORS.primaryDark,
-  },
-});
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: SIZES.padding.xl,
+      paddingTop: SIZES.xl,
+      gap: SIZES.xl,
+    },
+    header: { gap: 8 },
+    subtitle: {
+      fontFamily: FONTS.family.regular,
+      fontSize: SIZES.font.md,
+      color: COLORS.textSecondary,
+      lineHeight: 22,
+    },
+    phone: {
+      fontFamily: FONTS.family.semiBold,
+      color: COLORS.textPrimary,
+    },
+    card: {
+      backgroundColor: COLORS.card,
+      borderRadius: SIZES.radius.xl,
+      padding: SIZES.padding.xl,
+      ...SHADOWS.md,
+    },
+    autoDetectRow: {
+      backgroundColor: COLORS.primaryPale,
+      borderRadius: SIZES.radius.sm,
+      paddingHorizontal: SIZES.padding.md,
+      paddingVertical: SIZES.padding.sm,
+      marginBottom: SIZES.md,
+      alignItems: 'center',
+    },
+    autoDetectText: {
+      fontFamily: FONTS.family.regular,
+      fontSize: SIZES.font.xs,
+      color: COLORS.primaryDark,
+    },
+  });

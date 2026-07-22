@@ -24,7 +24,13 @@ export type AppTheme = {
   fontScale: (size: number) => number;
 };
 
+export type ThemePreference = 'light' | 'dark' | 'system';
+
 export type ThemeContextType = AppTheme & {
   isDark: boolean;
   toggleTheme: () => void;
+  /** User's stored preference: 'light' | 'dark' | 'system' */
+  preference: ThemePreference;
+  /** Set (and persist) the theme preference explicitly */
+  setTheme: (pref: ThemePreference) => void;
 };

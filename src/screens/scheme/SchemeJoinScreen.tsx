@@ -77,17 +77,17 @@ const Field = React.forwardRef<View, FieldProps>(function Field({ label, icon, v
     }
   }, [error]);
 
-  const borderCol = error ? '#E53935' : focused ? colors.primary : colors.borderLight;
-  const bgCol     = error ? '#FFEBEE' : focused ? colors.primary + '05' : editable ? colors.card : colors.borderLight + '60';
+  const borderCol = error ? colors.error : focused ? colors.primary : colors.borderLight;
+  const bgCol     = error ? colors.errorBg : focused ? colors.primary + '05' : editable ? colors.card : colors.borderLight + '60';
 
   return (
     <Animated.View ref={ref as any} collapsable={false} style={[styles.fieldWrap, { transform: [{ translateX: shakeAnim }] }]}>
-      <Text style={[styles.fieldLabel, { color: error ? '#E53935' : colors.textSecondary, fontFamily: fonts.family.medium }]}>
+      <Text style={[styles.fieldLabel, { color: error ? colors.error : colors.textSecondary, fontFamily: fonts.family.medium }]}>
         {label}
-        {indicator === 'required' && <Text style={{ color: '#E53935' }}> *</Text>}
+        {indicator === 'required' && <Text style={{ color: colors.error }}> *</Text>}
       </Text>
       <View style={[styles.fieldBox, { borderColor: borderCol, backgroundColor: bgCol }]}>
-        <Ionicons name={icon} size={18} color={error ? '#E53935' : focused ? colors.primary : colors.textTertiary} style={styles.fieldIcon} />
+        <Ionicons name={icon} size={18} color={error ? colors.error : focused ? colors.primary : colors.textTertiary} style={styles.fieldIcon} />
         <TextInput
           style={[styles.fieldInput, { color: colors.textPrimary, fontFamily: fonts.family.regular }]}
           placeholder={placeholder}
@@ -108,8 +108,8 @@ const Field = React.forwardRef<View, FieldProps>(function Field({ label, icon, v
       </View>
       {error ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
-          <Ionicons name="alert-circle-outline" size={12} color="#E53935" />
-          <Text style={{ fontSize: 11, color: '#E53935', fontFamily: fonts.family.regular }}>{error}</Text>
+          <Ionicons name="alert-circle-outline" size={12} color={colors.error} />
+          <Text style={{ fontSize: 11, color: colors.error, fontFamily: fonts.family.regular }}>{error}</Text>
         </View>
       ) : indicator === 'optional' ? (
         <View style={{ marginTop: 5 }}>
@@ -118,9 +118,9 @@ const Field = React.forwardRef<View, FieldProps>(function Field({ label, icon, v
             borderRadius: 4,
             paddingHorizontal: 7,
             paddingVertical: 2,
-            backgroundColor: '#F2F4F7',
+            backgroundColor: colors.gray100,
           }}>
-            <Text style={{ fontSize: 10, color: '#6B7280', fontFamily: fonts.family.medium }}>
+            <Text style={{ fontSize: 10, color: colors.textTertiary, fontFamily: fonts.family.medium }}>
               ○ Optional
             </Text>
           </View>
@@ -267,9 +267,9 @@ function DatePickerModal({ visible, day, month, year, onConfirm, onCancel, color
 
           {/* Age validation hint */}
           {!valid && (
-            <View style={[dpModal.ageWarn, { backgroundColor: '#E5393512', borderColor: '#E5393530' }]}>
-              <Ionicons name="warning-outline" size={14} color="#E53935" />
-              <Text style={[dpModal.ageWarnTxt, { color: '#E53935', fontFamily: fonts.family.regular }]}>
+            <View style={[dpModal.ageWarn, { backgroundColor: colors.error + '12', borderColor: colors.error + '30' }]}>
+              <Ionicons name="warning-outline" size={14} color={colors.error} />
+              <Text style={[dpModal.ageWarnTxt, { color: colors.error, fontFamily: fonts.family.regular }]}>
                 Must be 18 years or older to join
               </Text>
             </View>
@@ -470,8 +470,8 @@ function FailureModal({ visible, message, onRetry, onCancel }: {
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.successOverlay}>
         <View style={[styles.successCard, { backgroundColor: COLORS.background }]}>
-          <View style={[styles.successIconWrap, { backgroundColor: '#E5393518' }]}>
-            <Ionicons name="close-circle" size={64} color="#E53935" />
+          <View style={[styles.successIconWrap, { backgroundColor: COLORS.error + '18' }]}>
+            <Ionicons name="close-circle" size={64} color={COLORS.error} />
           </View>
           <Text style={[styles.successTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>Payment Failed</Text>
           <Text style={[styles.successDesc, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
@@ -1131,7 +1131,7 @@ export default function SchemeJoinScreen() {
                 Date of Birth * <Text style={{ fontSize: 11, opacity: 0.7 }}>(Must be 18+)</Text>
               </Text>
               <TouchableOpacity
-                style={[styles.fieldBox, { borderColor: dobSet ? (dobAge >= 18 ? COLORS.primary : '#E53935') : COLORS.borderLight, backgroundColor: dobSet ? COLORS.primary + '05' : COLORS.card }]}
+                style={[styles.fieldBox, { borderColor: dobSet ? (dobAge >= 18 ? COLORS.primary : COLORS.error) : COLORS.borderLight, backgroundColor: dobSet ? COLORS.primary + '05' : COLORS.card }]}
                 onPress={openDobPicker}
                 activeOpacity={0.8}
               >
@@ -1140,14 +1140,14 @@ export default function SchemeJoinScreen() {
                   {dobSet ? dobLabel : 'Select date of birth'}
                 </Text>
                 {dobSet && (
-                  <Text style={{ fontSize: 12, color: dobAge >= 18 ? COLORS.success : '#E53935', fontFamily: FONTS.family.semiBold }}>
+                  <Text style={{ fontSize: 12, color: dobAge >= 18 ? COLORS.success : COLORS.error, fontFamily: FONTS.family.semiBold }}>
                     {dobAge}y
                   </Text>
                 )}
                 <Ionicons name="chevron-down" size={16} color={COLORS.textTertiary} style={{ marginLeft: 6 }} />
               </TouchableOpacity>
               {dobSet && dobAge < 18 && (
-                <Text style={{ fontSize: 11, color: '#E53935', marginTop: 4, fontFamily: FONTS.family.regular }}>
+                <Text style={{ fontSize: 11, color: COLORS.error, marginTop: 4, fontFamily: FONTS.family.regular }}>
                   Age must be 18 or older
                 </Text>
               )}

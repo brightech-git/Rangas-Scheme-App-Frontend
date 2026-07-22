@@ -60,7 +60,7 @@ function SectionHeader({
   const { COLORS, FONTS } = useTheme();
   return (
     <View style={sh.wrap}>
-      <View style={sh.leftBar} />
+      <View style={[sh.leftBar, { backgroundColor: COLORS.primary }]} />
       <View style={{ flex: 1 }}>
         <Text style={[sh.title, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
           {title}
@@ -72,9 +72,9 @@ function SectionHeader({
         ) : null}
       </View>
       {onViewAll && (
-        <TouchableOpacity onPress={onViewAll} style={sh.viewAllBtn}>
-          <Text style={[sh.viewAllTxt, { fontFamily: FONTS.family.semiBold }]}>See all</Text>
-          <Ionicons name="arrow-forward" size={12} color="#aa0404" />
+        <TouchableOpacity onPress={onViewAll} style={[sh.viewAllBtn, { backgroundColor: COLORS.primaryPale }]}>
+          <Text style={[sh.viewAllTxt, { fontFamily: FONTS.family.semiBold, color: COLORS.primary }]}>See all</Text>
+          <Ionicons name="arrow-forward" size={12} color={COLORS.primary} />
         </TouchableOpacity>
       )}
     </View>
@@ -82,15 +82,16 @@ function SectionHeader({
 }
 const sh = StyleSheet.create({
   wrap:       { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
-  leftBar:    { width: 4, height: 22, borderRadius: 2, backgroundColor: '#aa0404' },
+  leftBar:    { width: 4, height: 22, borderRadius: 2 },
   title:      { fontSize: 17 },
   sub:        { fontSize: 11, marginTop: 1 },
-  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fff5f5', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  viewAllTxt: { fontSize: 12, color: '#aa0404' },
+  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  viewAllTxt: { fontSize: 12 },
 });
 
 // ── Dot Indicator ────────────────────────────────────────────────
 function DotIndicator({ total, activeIndex }: { total: number; activeIndex: number }) {
+  const { COLORS } = useTheme();
   if (total === 0) return null;
   const maxDots   = 10;
   const display   = Math.min(total, maxDots);
@@ -106,13 +107,13 @@ function DotIndicator({ total, activeIndex }: { total: number; activeIndex: numb
               width: i === activeIndex ? 22 : 7,
               height: 7,
               borderRadius: 3.5,
-              backgroundColor: i === activeIndex ? '#aa0404' : '#ead8d8',
+              backgroundColor: i === activeIndex ? COLORS.primary : COLORS.border,
             },
           ]}
         />
       ))}
       {remaining > 0 && (
-        <Text style={{ fontSize: 11, color: '#9a4040', marginLeft: 4 }}>+{remaining}</Text>
+        <Text style={{ fontSize: 11, color: COLORS.textTertiary, marginLeft: 4 }}>+{remaining}</Text>
       )}
     </View>
   );
@@ -152,9 +153,9 @@ function RateTile({
           </Text>
         </Text>
       </View>
-      <View style={[rt.pill, { backgroundColor: up ? '#dcfce7' : '#fee2e2' }]}>
-        <Ionicons name={up ? 'trending-up' : 'trending-down'} size={12} color={up ? '#16a34a' : '#dc2626'} />
-        <Text style={[rt.pillTxt, { color: up ? '#16a34a' : '#dc2626', fontFamily: FONTS.family.semiBold }]}>
+      <View style={[rt.pill, { backgroundColor: up ? COLORS.successBg : COLORS.errorBg }]}>
+        <Ionicons name={up ? 'trending-up' : 'trending-down'} size={12} color={up ? COLORS.success : COLORS.error} />
+        <Text style={[rt.pillTxt, { color: up ? COLORS.success : COLORS.error, fontFamily: FONTS.family.semiBold }]}>
           {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
         </Text>
       </View>
@@ -176,13 +177,13 @@ const rt = StyleSheet.create({
 function QuickAction({ icon, label, color, onPress }: {
   icon: keyof typeof Ionicons.glyphMap; label: string; color: string; onPress: () => void;
 }) {
-  const { FONTS } = useTheme();
+  const { COLORS, FONTS } = useTheme();
   return (
     <TouchableOpacity style={qa.wrap} onPress={onPress} activeOpacity={0.8}>
       <View style={[qa.circle, { backgroundColor: color + '18' }]}>
         <Ionicons name={icon} size={22} color={color} />
       </View>
-      <Text style={[qa.label, { fontFamily: FONTS.family.medium, color: '#1a0000' }]}>{label}</Text>
+      <Text style={[qa.label, { fontFamily: FONTS.family.medium, color: COLORS.textPrimary }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -239,13 +240,13 @@ export default function HomeScreen() {
 
         {/* ── Quick Actions strip ── */}
         <View style={[qs.container, { backgroundColor: COLORS.card, marginHorizontal: SIZES.padding.container, ...SHADOWS.sm }]}>
-          <QuickAction icon="grid-outline"    label="Schemes"  color="#aa0404" onPress={() => (navigation as any).navigate('Scheme')} />
-          <View style={qs.divider} />
-          <QuickAction icon="diamond-outline" label="Buy Gold" color="#cc9900" onPress={() => (navigation as any).navigate('BuyGold')} />
-          <View style={qs.divider} />
-          <QuickAction icon="receipt-outline" label="History"  color="#2e86de" onPress={() => (navigation as any).navigate('Transactions')} />
-          <View style={qs.divider} />
-          <QuickAction icon="person-outline"  label="Profile"  color="#8b5cf6" onPress={() => (navigation as any).navigate('Profile')} />
+          <QuickAction icon="grid-outline"    label="Schemes"  color={COLORS.primary}  onPress={() => (navigation as any).navigate('Scheme')} />
+          <View style={[qs.divider, { backgroundColor: COLORS.border }]} />
+          <QuickAction icon="diamond-outline" label="Buy Gold" color={COLORS.goldDark} onPress={() => (navigation as any).navigate('BuyGold')} />
+          <View style={[qs.divider, { backgroundColor: COLORS.border }]} />
+          <QuickAction icon="receipt-outline" label="History"  color={COLORS.info}     onPress={() => (navigation as any).navigate('Transactions')} />
+          <View style={[qs.divider, { backgroundColor: COLORS.border }]} />
+          <QuickAction icon="person-outline"  label="Profile"  color={COLORS.success}  onPress={() => (navigation as any).navigate('Profile')} />
         </View>
 
         {/* ── Today's Rates ── */}
@@ -260,7 +261,7 @@ export default function HomeScreen() {
             rate={fmtRate(gold?.currentRate)}
             unit="/g"
             changePct={gold?.changePct ?? 0}
-            accentColor="#ffcc00"
+            accentColor={COLORS.secondary}
             icon="diamond-outline"
             onPress={() => (navigation as any).navigate('Rates', { metal: 'Gold' })}
           />
@@ -269,7 +270,7 @@ export default function HomeScreen() {
             rate={fmtRate(silver?.currentRate)}
             unit="/g"
             changePct={silver?.changePct ?? 0}
-            accentColor="#9ca3af"
+            accentColor={COLORS.gray400}
             icon="ellipse-outline"
             onPress={() => (navigation as any).navigate('Rates', { metal: 'Silver' })}
           />
@@ -291,7 +292,7 @@ export default function HomeScreen() {
 
           {mySchemesLoading ? (
             <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-              <ActivityIndicator color="#aa0404" />
+              <ActivityIndicator color={COLORS.primary} />
             </View>
           ) : (
             <>
@@ -313,18 +314,18 @@ export default function HomeScreen() {
                 viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
                 contentContainerStyle={{ alignItems: 'center' }}
                 ListEmptyComponent={
-                  <View style={[ms.emptyBox, { width: SCREEN_W - 40 }]}>
-                    <View style={ms.emptyIconRing}>
-                      <Ionicons name="diamond-outline" size={28} color="#aa0404" />
+                  <View style={[ms.emptyBox, { width: SCREEN_W - 40, backgroundColor: COLORS.primaryPale, borderColor: COLORS.border }]}>
+                    <View style={[ms.emptyIconRing, { backgroundColor: COLORS.card, borderColor: COLORS.orangeOpacity30 }]}>
+                      <Ionicons name="diamond-outline" size={28} color={COLORS.primary} />
                     </View>
-                    <Text style={[ms.emptyTitle, { fontFamily: FONTS.family.semiBold }]}>
+                    <Text style={[ms.emptyTitle, { fontFamily: FONTS.family.semiBold, color: COLORS.textPrimary }]}>
                       No schemes yet
                     </Text>
-                    <Text style={[ms.emptySub, { fontFamily: FONTS.family.regular }]}>
+                    <Text style={[ms.emptySub, { fontFamily: FONTS.family.regular, color: COLORS.textTertiary }]}>
                       Join a gold scheme to start saving
                     </Text>
-                    <TouchableOpacity style={ms.emptyBtn} onPress={() => (navigation as any).navigate('Scheme')}>
-                      <Text style={[ms.emptyBtnTxt, { fontFamily: FONTS.family.semiBold }]}>
+                    <TouchableOpacity style={[ms.emptyBtn, { backgroundColor: COLORS.primary }]} onPress={() => (navigation as any).navigate('Scheme')}>
+                      <Text style={[ms.emptyBtnTxt, { fontFamily: FONTS.family.semiBold, color: COLORS.white }]}>
                         Browse Schemes
                       </Text>
                     </TouchableOpacity>
@@ -350,7 +351,7 @@ export default function HomeScreen() {
 
           {schemesLoading ? (
             <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-              <ActivityIndicator color="#aa0404" />
+              <ActivityIndicator color={COLORS.primary} />
             </View>
           ) : (
             <>
@@ -397,24 +398,24 @@ export default function HomeScreen() {
             activeOpacity={0.88}
           >
             <LinearGradient
-              colors={['#aa0404', '#7a0303']}
+              colors={[COLORS.primary, COLORS.primaryDark]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={ref.banner}
             >
-              <View style={ref.goldStripe} />
-              <View style={ref.iconCircle}>
-                <Ionicons name="gift-outline" size={22} color="#ffcc00" />
+              <View style={[ref.goldStripe, { backgroundColor: COLORS.secondary }]} />
+              <View style={[ref.iconCircle, { backgroundColor: COLORS.goldOpacity20 }]}>
+                <Ionicons name="gift-outline" size={22} color={COLORS.secondary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[ref.title, { fontFamily: FONTS.family.bold }]}>
+                <Text style={[ref.title, { fontFamily: FONTS.family.bold, color: COLORS.white }]}>
                   Refer & Earn 1g Gold Free!
                 </Text>
-                <Text style={[ref.sub, { fontFamily: FONTS.family.regular }]}>
+                <Text style={[ref.sub, { fontFamily: FONTS.family.regular, color: COLORS.whiteOpacity70 }]}>
                   Share code GOLD2026 with friends
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.whiteOpacity70} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -438,7 +439,7 @@ const qs = StyleSheet.create({
     paddingHorizontal: 8,
     marginTop: 16,
   },
-  divider: { width: 1, height: 40, backgroundColor: '#ead8d8' },
+  divider: { width: 1, height: 40 },
 });
 
 // ── My schemes empty state ────────────────────────────────────────
@@ -449,26 +450,22 @@ const ms = StyleSheet.create({
     padding: 28,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#ead8d8',
     borderStyle: 'dashed',
     gap: 8,
-    backgroundColor: '#fff5f5',
   },
   emptyIconRing: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: '#aa040430',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
-  emptyTitle:   { fontSize: 15, color: '#1a0000' },
-  emptySub:     { fontSize: 12, color: '#9a4040', textAlign: 'center' },
-  emptyBtn:     { marginTop: 6, backgroundColor: '#aa0404', paddingHorizontal: 20, paddingVertical: 9, borderRadius: 20 },
-  emptyBtnTxt:  { color: '#fff', fontSize: 13 },
+  emptyTitle:   { fontSize: 15 },
+  emptySub:     { fontSize: 12, textAlign: 'center' },
+  emptyBtn:     { marginTop: 6, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 20 },
+  emptyBtnTxt:  { fontSize: 13 },
 });
 
 // ── Referral banner styles ────────────────────────────────────────
@@ -488,17 +485,15 @@ const ref = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: '#ffcc00',
     opacity: 0.9,
   },
   iconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,204,0,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontSize: 14, color: '#fff', marginBottom: 2 },
-  sub:   { fontSize: 11, color: 'rgba(255,255,255,0.75)' },
+  title: { fontSize: 14, marginBottom: 2 },
+  sub:   { fontSize: 11 },
 });

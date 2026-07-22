@@ -51,7 +51,7 @@ function ppStatus(pp: PPData): 'active' | 'pending' | 'completed' {
 function statusColor(status: string, COLORS: any): string {
   if (status === 'active')    return COLORS.success;
   if (status === 'completed') return COLORS.warning;
-  if (status === 'pending')   return '#FF9800';
+  if (status === 'pending')   return COLORS.warningDark;
   return COLORS.textTertiary;
 }
 
@@ -92,7 +92,7 @@ function AllSchemeCard({
   const canJoin = item.ADDNEWMEMBER === 'Y';
 
   return (
-    <Animated.View style={[styles.card, { backgroundColor: COLORS.white, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+    <Animated.View style={[styles.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
 
       {/* Header row */}
       <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.7} style={styles.cardHeader}>
@@ -173,7 +173,7 @@ function AllSchemeCard({
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Enrolment</Text>
               <Text style={[styles.detailValue, {
-                color: canJoin ? COLORS.success : COLORS.error ?? '#E53935',
+                color: canJoin ? COLORS.success : COLORS.error,
                 fontFamily: FONTS.family.semiBold,
               }]}>
                 {canJoin ? 'Open' : 'Closed'}
@@ -241,7 +241,7 @@ function MySchemeCard({
 
   return (
 
-    <Animated.View style={[styles.card, { backgroundColor: COLORS.white, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+    <Animated.View style={[styles.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
 
       {/* Header */}
       <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.7} style={styles.cardHeader}>
@@ -376,7 +376,7 @@ function SkeletonCard() {
     ).start();
   }, []);
   return (
-    <Animated.View style={[styles.card, { backgroundColor: COLORS.white, borderColor: COLORS.borderLight, opacity: pulse }]}>
+    <Animated.View style={[styles.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, opacity: pulse }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.borderLight }} />
         <View style={{ gap: 8, flex: 1 }}>

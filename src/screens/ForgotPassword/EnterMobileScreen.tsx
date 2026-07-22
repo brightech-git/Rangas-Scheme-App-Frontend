@@ -1,10 +1,11 @@
 // src/screens/ForgotPassword/EnterMobileScreen.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Platform, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { forgotPassword } from '../../store/authSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -21,6 +22,9 @@ export default function EnterMobileScreen() {
   const dispatch   = useAppDispatch();
   const { loading } = useAppSelector((s) => s.auth);
   const toast = useToast();
+  const theme = useTheme();
+  const { COLORS, SIZES } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [mobile, setMobile] = useState('');
   const [error, setError]   = useState('');
@@ -89,30 +93,31 @@ export default function EnterMobileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: SIZES.xl,
-    gap: SIZES.xl,
-  },
-  header: { gap: 8 },
-  title: {
-    fontFamily: FONTS.family.bold,
-    fontSize: SIZES.heading.h3,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontFamily: FONTS.family.regular,
-    fontSize: SIZES.font.sm,
-    color: COLORS.textSecondary,
-    lineHeight: 22,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: SIZES.radius.xl,
-    padding: SIZES.padding.xl,
-    gap: SIZES.md,
-    ...SHADOWS.md,
-  },
-});
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
+    content: {
+      flex: 1,
+      paddingTop: SIZES.xl,
+      gap: SIZES.xl,
+    },
+    header: { gap: 8 },
+    title: {
+      fontFamily: FONTS.family.bold,
+      fontSize: SIZES.heading.h3,
+      color: COLORS.textPrimary,
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontFamily: FONTS.family.regular,
+      fontSize: SIZES.font.sm,
+      color: COLORS.textSecondary,
+      lineHeight: 22,
+    },
+    card: {
+      backgroundColor: COLORS.card,
+      borderRadius: SIZES.radius.xl,
+      padding: SIZES.padding.xl,
+      gap: SIZES.md,
+      ...SHADOWS.md,
+    },
+  });

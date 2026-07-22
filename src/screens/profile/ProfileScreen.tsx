@@ -47,7 +47,9 @@ import AppText       from '../../components/ui/appcomponents/AppText';
 import AppButton     from '../../components/ui/appcomponents/AppButton';
 import AppDivider    from '../../components/ui/appcomponents/AppDivider';
 import AppInput      from '../../components/ui/appcomponents/AppInput';
+import AppSwitch     from '../../components/ui/appcomponents/AppSwitch';
 import CustomAlert   from '../../components/ui/CustomAlert';
+import { BiometricHelper, type BiometricLabel } from '../../utils/BiometricHelper';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -116,6 +118,27 @@ function ActionRow({ icon, label, badge, onPress, danger = false }: {
   );
 }
 
+function ToggleRow({ icon, label, sublabel, value, onValueChange, disabled = false }: {
+  icon: string; label: string; sublabel?: string;
+  value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean;
+}) {
+  const { COLORS } = useTheme();
+  return (
+    <View style={styles.actionRow}>
+      <View style={[styles.iconBox, { backgroundColor: COLORS.primaryPale }]}>
+        <Ionicons name={icon as any} size={14} color={COLORS.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <AppText variant="bodyMedium" style={{ color: COLORS.textPrimary }}>{label}</AppText>
+        {sublabel ? (
+          <AppText variant="caption" color={COLORS.textTertiary} style={{ marginTop: 1 }}>{sublabel}</AppText>
+        ) : null}
+      </View>
+      <AppSwitch value={value} onValueChange={onValueChange} disabled={disabled} size="sm" />
+    </View>
+  );
+}
+
 // ── Edit Modal ────────────────────────────────────────────────────
 // Self-contained with own local TextInput state to prevent blink
 function EditPersonalModal({ visible, initial, onClose, onSave, saving }: {
@@ -159,7 +182,7 @@ function EditPersonalModal({ visible, initial, onClose, onSave, saving }: {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, { backgroundColor: COLORS.blackOpacity50 }]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalKAV}>
           <View style={[styles.modalSheet, { backgroundColor: COLORS.card }]}>
             <View style={[styles.modalHandle, { backgroundColor: COLORS.border }]} />
@@ -293,7 +316,7 @@ function EditAddressModal({ visible, initial, onClose, onSave, saving }: {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, { backgroundColor: COLORS.blackOpacity50 }]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalKAV}>
           <View style={[styles.modalSheet, { backgroundColor: COLORS.card }]}>
             <View style={[styles.modalHandle, { backgroundColor: COLORS.border }]} />
@@ -400,6 +423,51 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [editPersonal, setEditPersonal] = useState(false);
   const [editAddress, setEditAddress]   = useState(false);
+
+  // ── Biometric unlock preference ────────────────────────────────
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioEnabled, setBioEnabled]     = useState(false);
+  const [bioLabel, setBioLabel]         = useState<BiometricLabel>('Biometrics');
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const supported = await BiometricHelper.isSupported();
+      if (!active) return;
+      setBioSupported(supported);
+      if (!supported) return;
+      const [label, enabled] = await Promise.all([
+        BiometricHelper.getLabel(),
+        BiometricHelper.isEnabled(),
+      ]);
+      if (!active) return;
+      setBioLabel(label);
+      setBioEnabled(enabled);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const handleToggleBiometric = useCallback(async (next: boolean) => {
+    if (!next) {
+      await BiometricHelper.setEnabled(false);
+      setBioEnabled(false);
+      return;
+    }
+    // Turning ON — require a stored MPIN and confirm identity first
+    const hasMpin = await BiometricHelper.hasStoredMpin();
+    if (!hasMpin) {
+      setAlert({
+        visible: true,
+        title: 'Set up MPIN first',
+        message: 'Please log in with your MPIN once, then enable biometric unlock.',
+      });
+      return;
+    }
+    const ok = await BiometricHelper.authenticate(`Enable ${bioLabel} unlock`);
+    if (!ok) return; // user cancelled / failed — leave it off
+    await BiometricHelper.setEnabled(true);
+    setBioEnabled(true);
+  }, [bioLabel]);
 
   // Alert state
   const [alert, setAlert] = useState<{
@@ -509,13 +577,13 @@ export default function ProfileScreen() {
             onEditPress={handlePickPhoto}
           />
           <View style={styles.heroInfo}>
-            <AppText variant="h4" color="#fff">
+            <AppText variant="h4" color={COLORS.white}>
               {reduxUser?.username || 'User'}
             </AppText>
-            <AppText variant="bodySmall" color="rgba(255,255,255,0.75)" style={{ marginTop: 2 }}>
+            <AppText variant="bodySmall" color={COLORS.whiteOpacity70} style={{ marginTop: 2 }}>
               {reduxUser?.contactNumber || '—'}
             </AppText>
-            <AppText variant="bodySmall" color="rgba(255,255,255,0.75)">
+            <AppText variant="bodySmall" color={COLORS.whiteOpacity70}>
               {reduxUser?.email || '—'}
             </AppText>
             {/* {reduxUser?.referralCode && (
@@ -565,7 +633,7 @@ export default function ProfileScreen() {
               }, true
             )}
           >
-            <AppText variant="caption" color="rgba(255,255,255,0.6)">Remove photo</AppText>
+            <AppText variant="caption" color={COLORS.whiteOpacity70}>Remove photo</AppText>
           </TouchableOpacity>
         )}
       </LinearGradient>
@@ -639,11 +707,25 @@ export default function ProfileScreen() {
         {/* ── ACCOUNT SETTINGS ─────────────────────────────────── */}
         <AppCard padding="none">
           <SectionHeader icon="settings-outline" title="Account & Security" />
+          <ActionRow icon="pie-chart-outline" label="My Portfolio"
+            onPress={() => navigation.navigate('Portfolio')} />
+          <ActionRow icon="receipt-outline" label="Transactions"
+            onPress={() => navigation.navigate('Transactions')} />
           <ActionRow icon="lock-closed-outline" label="Change MPIN"
             onPress={() => navigation.navigate('ResetMpin')} />
 
             <ActionRow icon="lock-closed-outline" label="Login Logs"
             onPress={() => navigation.navigate('LoginLog')} />
+
+          {bioSupported && (
+            <ToggleRow
+              icon="finger-print-outline"
+              label={`${bioLabel} Unlock`}
+              sublabel={`Use ${bioLabel} to unlock the app`}
+              value={bioEnabled}
+              onValueChange={handleToggleBiometric}
+            />
+          )}
 
 
           <AppDivider marginVertical={0} />
@@ -753,7 +835,7 @@ const styles = StyleSheet.create({
   editBtn:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
   footer:         { paddingVertical: 16, alignItems: 'center' },
   // Modal
-  modalOverlay:   { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
+  modalOverlay:   { flex: 1, justifyContent: 'center' },
   modalKAV:       { width: '100%',height: '100%', justifyContent: 'center' },
   modalSheet:     { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
   modalHandle:    { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10 },

@@ -46,8 +46,8 @@ function Dots({ count, current }: { count: number; current: number }) {
 const dot = StyleSheet.create({
   row:      { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 24 },
   base:     { height: 8, borderRadius: 4 },
-  active:   { width: 28, backgroundColor: '#ffcc00' },       // gold for active
-  inactive: { width: 8,  backgroundColor: 'rgba(255,255,255,0.3)' },
+  active:   { width: 28, backgroundColor: COLORS.secondary },       // gold for active
+  inactive: { width: 8,  backgroundColor: COLORS.whiteOpacity30 },
 });
 
 const OnboardingScreen = ({ navigation }: any) => {
@@ -173,8 +173,8 @@ const OnboardingScreen = ({ navigation }: any) => {
 export default OnboardingScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a0000' },
-  loader:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a0000' },
+  container: { flex: 1, backgroundColor: COLORS.backgroundDark },
+  loader:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.backgroundDark },
 
   slide: { width, height },
 
@@ -186,23 +186,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    backgroundColor: '#aa0404',
+    backgroundColor: COLORS.primary,
     borderRadius: 22,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderWidth: 1.5,
-    borderColor: '#ffcc00',
+    borderColor: COLORS.secondary,
   },
   brandDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ffcc00',
+    backgroundColor: COLORS.secondary,
   },
   brandText: {
     fontFamily:    FONTS.family.bold,
     fontSize:      13,
-    color:         '#ffcc00',
+    color:         COLORS.secondary,
     letterSpacing: 0.8,
   },
 
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily:    FONTS.family.extraBold,
     fontSize:      30,
-    color:         '#FFFFFF',
+    color:         COLORS.white,
     marginBottom:  10,
     letterSpacing: -0.5,
   },
@@ -226,19 +226,19 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.family.regular,
     fontSize:   SIZES.font.md,
     lineHeight: SIZES.font.md * 1.65,
-    color:      'rgba(255,255,255,0.65)',
+    color:      COLORS.whiteOpacity70,
     marginBottom: 30,
   },
 
   buttonGroup: { gap: 14 },
   primaryBtn: {
     // Gold button — distinct from old primary color
-    backgroundColor: '#ffcc00',
+    backgroundColor: COLORS.secondary,
     height:          56,
     borderRadius:    14,
     alignItems:      'center',
     justifyContent:  'center',
-    shadowColor:     '#ffcc00',
+    shadowColor:     COLORS.secondary,
     shadowOffset:    { width: 0, height: 6 },
     shadowOpacity:   0.5,
     shadowRadius:    14,
@@ -247,18 +247,18 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontFamily:    FONTS.family.bold,
     fontSize:      SIZES.font.lg,
-    color:         '#1a0000',      // dark text on gold button
+    color:         COLORS.backgroundDark,      // dark text on gold button
     letterSpacing: 0.3,
   },
   secondaryText: {
     fontFamily: FONTS.family.regular,
     fontSize:   SIZES.font.sm,
-    color:      'rgba(255,255,255,0.5)',
+    color:      COLORS.whiteOpacity50,
     textAlign:  'center',
   },
   signInLink: {
     fontFamily: FONTS.family.bold,
-    color:      '#ffcc00',
+    color:      COLORS.secondary,
   },
 
   tapLeft:  { position: 'absolute', top: 0, bottom: 220, left: 0,  width: width * 0.25 },

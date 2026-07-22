@@ -83,6 +83,10 @@ export const resetPassword = createAsyncThunk(
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
   await AsyncStorageHelper.clearSession();
   try {
+    const { BiometricHelper } = await import('../utils/BiometricHelper');
+    await BiometricHelper.clearAll(); // wipe stored MPIN + disable biometric unlock
+  } catch {}
+  try {
     const { deactivateDeviceToken } = await import('../utils/NotificationService');
     await deactivateDeviceToken();
   } catch {}

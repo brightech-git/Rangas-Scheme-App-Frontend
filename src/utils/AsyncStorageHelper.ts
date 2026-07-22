@@ -22,7 +22,10 @@ const KEYS = {
   SOCIAL_MEDIA:   '@social_media',
   PICTURE:        '@picture',
   DEVICE_ID:      '@device_id',
+  THEME:          '@theme_mode',
 } as const;
+
+export type ThemePreference = 'light' | 'dark' | 'system';
 
 // ── Save after login / register / verifyOtp ───────────────────────
 const saveUserSession = async (user: UserData): Promise<void> => {
@@ -76,6 +79,14 @@ const getSocialMedia  = () => AsyncStorage.getItem(KEYS.SOCIAL_MEDIA);
 const setDeviceId     = (id: string) => AsyncStorage.setItem(KEYS.DEVICE_ID, id);
 const getDeviceId     = () => AsyncStorage.getItem(KEYS.DEVICE_ID);
 
+// ── Theme preference (light | dark | system) ──────────────────────
+const setThemePreference = (pref: ThemePreference) =>
+  AsyncStorage.setItem(KEYS.THEME, pref);
+const getThemePreference = async (): Promise<ThemePreference> => {
+  const raw = await AsyncStorage.getItem(KEYS.THEME);
+  return raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system';
+};
+
 // ── Clear session (logout) ────────────────────────────────────────
 const clearSession = () =>
   AsyncStorage.multiRemove([
@@ -119,6 +130,8 @@ export const AsyncStorageHelper = {
   getFcmToken,
   setDeviceId,
   getDeviceId,
+  setThemePreference,
+  getThemePreference,
   getPicture,
   getSocialMedia,
   clearSession,

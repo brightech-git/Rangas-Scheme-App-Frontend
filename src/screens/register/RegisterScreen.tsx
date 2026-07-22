@@ -1,13 +1,14 @@
 // src/screens/register/RegisterScreen.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, SafeAreaView, ScrollView } from 'react-native';
 import { getHash } from 'react-native-otp-verify';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { registerUser, googleLogin } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
@@ -23,6 +24,9 @@ export default function RegisterScreen() {
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((s) => s.auth);
   const toast = useToast();
+  const theme = useTheme();
+  const { COLORS, SIZES } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [form, setForm] = useState({
     username: '',
@@ -201,7 +205,8 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
   header: { gap: 6 },
   headerBg: {
     backgroundColor: COLORS.primary,
@@ -282,7 +287,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SIZES.sm,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: SIZES.radius.lg,
     borderWidth: 1.5,
     borderColor: COLORS.border,
@@ -295,4 +300,4 @@ const styles = StyleSheet.create({
     fontSize: SIZES.font.md,
     color: COLORS.textPrimary,
   },
-});
+  });

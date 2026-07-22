@@ -1,11 +1,12 @@
 // src/screens/googlelogin/GoogleContactVerifyOTPScreen.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Platform, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOtpVerify, removeListener } from 'react-native-otp-verify';
-import { COLORS, FONTS, SIZES, SHADOWS } from '../../theme/theme';
+import { useTheme } from '../../theme';
+import type { ThemeContextType } from '../../theme/types';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { authService } from '../../api/services/authService';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
@@ -21,6 +22,9 @@ export default function GoogleContactVerifyOTPScreen() {
   const navigation = useNavigation<Nav>();
   const route      = useRoute<Route>();
   const toast      = useToast();
+  const theme = useTheme();
+  const { COLORS, SIZES } = theme;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const { newContactNumber, picture, userId } = route.params;
 
@@ -145,41 +149,42 @@ export default function GoogleContactVerifyOTPScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { flex: 1, paddingTop: SIZES.xl, gap: SIZES.xl },
-  header:  { gap: 8 },
-  title: {
-    fontFamily: FONTS.family.bold,
-    fontSize:   SIZES.heading.h3,
-    color:      COLORS.textPrimary,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontFamily: FONTS.family.regular,
-    fontSize:   SIZES.font.sm,
-    color:      COLORS.textSecondary,
-  },
-  phone: {
-    fontFamily: FONTS.family.semiBold,
-    color:      COLORS.textPrimary,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius:    SIZES.radius.xl,
-    padding:         SIZES.padding.xl,
-    gap:             SIZES.md,
-    ...SHADOWS.md,
-  },
-  autoDetectRow: {
-    backgroundColor: COLORS.primaryPale,
-    borderRadius:    SIZES.radius.sm,
-    paddingHorizontal: SIZES.padding.md,
-    paddingVertical:   SIZES.padding.sm,
-    alignItems: 'center',
-  },
-  autoDetectText: {
-    fontFamily: FONTS.family.regular,
-    fontSize:   SIZES.font.xs,
-    color:      COLORS.primaryDark,
-  },
-});
+const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
+  StyleSheet.create({
+    content: { flex: 1, paddingTop: SIZES.xl, gap: SIZES.xl },
+    header:  { gap: 8 },
+    title: {
+      fontFamily: FONTS.family.bold,
+      fontSize:   SIZES.heading.h3,
+      color:      COLORS.textPrimary,
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontFamily: FONTS.family.regular,
+      fontSize:   SIZES.font.sm,
+      color:      COLORS.textSecondary,
+    },
+    phone: {
+      fontFamily: FONTS.family.semiBold,
+      color:      COLORS.textPrimary,
+    },
+    card: {
+      backgroundColor: COLORS.card,
+      borderRadius:    SIZES.radius.xl,
+      padding:         SIZES.padding.xl,
+      gap:             SIZES.md,
+      ...SHADOWS.md,
+    },
+    autoDetectRow: {
+      backgroundColor: COLORS.primaryPale,
+      borderRadius:    SIZES.radius.sm,
+      paddingHorizontal: SIZES.padding.md,
+      paddingVertical:   SIZES.padding.sm,
+      alignItems: 'center',
+    },
+    autoDetectText: {
+      fontFamily: FONTS.family.regular,
+      fontSize:   SIZES.font.xs,
+      color:      COLORS.primaryDark,
+    },
+  });
