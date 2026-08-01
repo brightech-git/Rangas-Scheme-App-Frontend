@@ -181,8 +181,70 @@ export const COLORS = {
   shadowOrange: "rgba(170, 4, 4, 0.2)",
   shadowGold: "rgba(255, 204, 0, 0.25)",
 
+  // ============================================================
+  // ===== V2 — "NOIR HERO / LIGHT BODY" DESIGN LANGUAGE =========
+  // Additive tokens for the premium redesign. Nothing above is
+  // renamed or removed — existing screens keep working untouched.
+  // ============================================================
+
+  // ----- Hero zone (always dark, in BOTH light & dark mode) -----
+  // Deep oxblood-black. Reads as "vault" / "private banking".
+  heroCanvas:        "#130506",
+  heroCanvasAlt:     "#1E080A",
+  heroElevated:      "#260C0F",
+  heroElevatedAlt:   "#310F13",
+  heroHairline:      "rgba(255, 255, 255, 0.08)",
+  heroHairlineBold:  "rgba(255, 255, 255, 0.16)",
+  heroGlass:         "rgba(255, 255, 255, 0.06)",
+  heroGlassBold:     "rgba(255, 255, 255, 0.11)",
+  heroGoldVeil:      "rgba(255, 204, 0, 0.10)",
+  heroRedVeil:       "rgba(170, 4, 4, 0.28)",
+  heroTextPrimary:   "#FFFFFF",
+  heroTextSecondary: "rgba(255, 255, 255, 0.70)",
+  heroTextTertiary:  "rgba(255, 255, 255, 0.42)",
+  heroTextMuted:     "rgba(255, 255, 255, 0.26)",
+  heroAccent:        "#FFCC00",
+  heroAccentSoft:    "rgba(255, 204, 0, 0.18)",
+
+  // ----- Body zone (light in light mode, dark in dark mode) -----
+  // Warm paper neutral — deliberately cooler/greyer than the old
+  // pink-tinted #fffbfb so the new app reads differently on sight.
+  canvas:            "#F6F3F2",
+  canvasElevated:    "#FFFFFF",
+  canvasSunken:      "#EFEAE8",
+  canvasTint:        "#FBF8F7",
+  hairline:          "#E7E0DE",
+  hairlineBold:      "#D6CCC9",
+
+  // ----- Editorial text ramp for the body zone -----
+  inkPrimary:        "#191113",
+  inkSecondary:      "#4B3E41",
+  inkTertiary:       "#8A7A7D",
+  inkMuted:          "#B4A7A9",
+
+  // ----- Metal identity (used by scheme / rate surfaces) -----
+  metalGold:         "#C9A227",
+  metalGoldSoft:     "#F7EFD3",
+  metalSilver:       "#8C9199",
+  metalSilverSoft:   "#EEF0F2",
+  metalPlatinum:     "#6B7C88",
+  metalPlatinumSoft: "#E9EEF1",
+  metalDiamond:      "#3EA0B5",
+  metalDiamondSoft:  "#E2F2F6",
+
   // ===== GRADIENT COLORS =====
   gradient: {
+    // ----- V2 hero gradients -----
+    heroNoir:     ["#260C0F", "#150607", "#0C0304"],
+    heroOxblood:  ["#3A0E12", "#1B0709"],
+    heroEmber:    ["#4A0F12", "#1E080A", "#130506"],
+    heroGoldWash: ["rgba(255,204,0,0.22)", "rgba(255,204,0,0)"],
+    heroFade:     ["rgba(19,5,6,0)", "rgba(19,5,6,0.92)"],
+    goldFoil:     ["#F2D06B", "#C9A227", "#F7E7A8"],
+    goldEdge:     ["rgba(255,204,0,0.55)", "rgba(255,204,0,0)"],
+    paperLift:    ["#FFFFFF", "#F6F3F2"],
+    glassSheen:   ["rgba(255,255,255,0.14)", "rgba(255,255,255,0.02)"],
+
     // Primary red gradients
     orangePrimary: ["#aa0404", "#cc0505"],
     orangeDeep: ["#7a0303", "#aa0404"],
@@ -258,6 +320,26 @@ export const SIZES = {
     card: moderateScale(16),
     button: moderateScale(12),
     input: moderateScale(10),
+
+    // ----- V2 radii — larger, softer, more "product" than "app" -----
+    tile: moderateScale(20),
+    panel: moderateScale(24),
+    hero: moderateScale(28),
+    sheet: moderateScale(32),
+    pill: 9999,
+  },
+
+  // ----- V2 layout rhythm -----
+  // The old `padding.container` is 5px, which the redesign replaces
+  // with a real editorial gutter. Kept separate so nothing breaks.
+  layout: {
+    gutter: moderateScale(20),
+    gutterTight: moderateScale(16),
+    gutterWide: moderateScale(24),
+    section: moderateScale(32),
+    sectionTight: moderateScale(24),
+    block: moderateScale(14),
+    hairline: 1,
   },
 
   font: {
@@ -530,6 +612,79 @@ export const FONTS = {
     lineHeight: SIZES.font.md * 1.5,
     color: COLORS.goldPrimary,
   },
+
+  // ============================================================
+  // V2 EDITORIAL TYPOGRAPHY
+  // Big, tight, low-contrast-weight display numerals for balances
+  // and rates; wide-tracked micro caps for section eyebrows.
+  // ============================================================
+  displayXL: {
+    fontFamily: "Poppins-Bold",
+    fontSize: fontScale(44),
+    lineHeight: fontScale(44) * 1.06,
+    letterSpacing: -1.6,
+    color: COLORS.textPrimary,
+  },
+  displayLg: {
+    fontFamily: "Poppins-Bold",
+    fontSize: fontScale(36),
+    lineHeight: fontScale(36) * 1.08,
+    letterSpacing: -1.2,
+    color: COLORS.textPrimary,
+  },
+  displayMd: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(28),
+    lineHeight: fontScale(28) * 1.12,
+    letterSpacing: -0.8,
+    color: COLORS.textPrimary,
+  },
+  displaySm: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(22),
+    lineHeight: fontScale(22) * 1.16,
+    letterSpacing: -0.5,
+    color: COLORS.textPrimary,
+  },
+  /** Wide-tracked micro caps — section eyebrows, table headers */
+  eyebrow: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(10),
+    lineHeight: fontScale(10) * 1.4,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: COLORS.textTertiary,
+  },
+  /** Smallest legible metadata — timestamps, footnotes */
+  micro: {
+    fontFamily: "Poppins-Regular",
+    fontSize: fontScale(11),
+    lineHeight: fontScale(11) * 1.35,
+    letterSpacing: 0.1,
+    color: COLORS.textTertiary,
+  },
+  microBold: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(11),
+    lineHeight: fontScale(11) * 1.35,
+    letterSpacing: 0.2,
+    color: COLORS.textPrimary,
+  },
+  /** Tabular-ish numerals for money rows */
+  numeral: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: SIZES.font.lg,
+    lineHeight: SIZES.font.lg * 1.3,
+    letterSpacing: -0.3,
+    color: COLORS.textPrimary,
+  },
+  numeralSm: {
+    fontFamily: "Poppins-Medium",
+    fontSize: SIZES.font.md,
+    lineHeight: SIZES.font.md * 1.3,
+    letterSpacing: -0.2,
+    color: COLORS.textPrimary,
+  },
 };
 
 // ============================================
@@ -605,6 +760,50 @@ export const SHADOWS = {
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 8,
+  },
+
+  // ----- V2 shadows — wide, low-opacity, "floating paper" -----
+  hairline: {
+    shadowColor: "#191113",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  lift: {
+    shadowColor: "#191113",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  float: {
+    shadowColor: "#191113",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  heroLift: {
+    shadowColor: "#0C0304",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.34,
+    shadowRadius: 34,
+    elevation: 14,
+  },
+  goldGlow: {
+    shadowColor: COLORS.goldPrimary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.34,
+    shadowRadius: 22,
+    elevation: 8,
+  },
+  bar: {
+    shadowColor: "#191113",
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.09,
+    shadowRadius: 20,
+    elevation: 16,
   },
 };
 

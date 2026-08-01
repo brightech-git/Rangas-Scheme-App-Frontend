@@ -14,6 +14,9 @@ import {
 } from '../utils/NotificationHandler';
 import { ApiScheme } from '../types/Scheme/Scheme';
 import { PPData } from '../types/Account/PhoneDetails';
+import SplashScreen from '../screens/splash/SplashScreen';
+import WalletScreen from '../screens/wallet/WalletScreen';
+import LOGO from '../assets/company/logo.png';
 
 // SchemeItem = the real API shape (used as nav param for T&C + Join screens)
 export type SchemeItem = ApiScheme;
@@ -44,6 +47,7 @@ export type RootStackParamList = {
   BuyGold:                 undefined;
   Portfolio:               undefined;
   Transactions:            undefined;
+  Wallet:                  undefined;
 };
 
 type InitialRoute = 'Onboarding' | 'Register' | 'Login' | 'CreateMpin' | 'MpinLogin' | 'Main';
@@ -95,12 +99,10 @@ export default function RootNavigator() {
     },
   };
 
+  // Branded splash while the bootstrap effect resolves the initial route.
+  // Replaces the bare ActivityIndicator this branch used to render.
   if (!initialRoute) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
+    return <SplashScreen logo={LOGO} />;
   }
 
   return (
@@ -136,6 +138,7 @@ export default function RootNavigator() {
         <Stack.Screen name="BuyGold"         component={Screens.BuyGoldScreen}         options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Portfolio"       component={Screens.PortfolioScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Transactions"    component={Screens.TransactionsScreen}    options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Wallet"          component={WalletScreen}                  options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

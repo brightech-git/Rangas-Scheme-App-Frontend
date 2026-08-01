@@ -13,4 +13,8 @@ const lightTheme = {
   },
 };
 
+// Light mode uses the V2 body tokens exactly as defined in the base
+// theme, so no overrides are needed here. Kept explicit for symmetry
+// with dark.js.
+
 export default lightTheme;

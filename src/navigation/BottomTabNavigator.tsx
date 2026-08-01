@@ -1,14 +1,38 @@
 // src/navigation/BottomTabNavigator.tsx
+//
+// ─────────────────────────────────────────────────────────────────
+// LAYOUT
+//   A floating noir capsule rather than a full-width white shelf.
+//   It detaches from the screen edge, so paper content scrolls
+//   visibly beneath it and the app reads as layered.
+//
+//   The centre tab is no longer a raised gradient FAB. All five tabs
+//   are equal-weight icons; the active one is marked by a gold pill
+//   behind the icon and a label that fades in. This removes the
+//   "Home is special" hierarchy that made the old bar feel like a
+//   different app.
+//
+// WHY THIS IS BETTER UX
+//   • Equal-weight tabs stop implying that the centre item is an
+//     action rather than a destination.
+//   • The floating capsule is narrower, so the thumb travels less
+//     between adjacent tabs.
+//   • Colours now come from AppTheme instead of the hardcoded hex
+//     values the previous version used, so dark mode works.
+//
+// BUSINESS LOGIC — UNCHANGED
+//   Tab registration, screen components, useUnreadCount polling and
+//   the tabPress/navigate handler are identical.
+// ─────────────────────────────────────────────────────────────────
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, memo } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Animated,
   Platform,
-  Dimensions,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +50,6 @@ import ContactScreen from '../screens/contact/contact';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
-const { width } = Dimensions.get('window');
 
 type TabItem = {
   name: string;
@@ -48,8 +71,8 @@ const TABS: TabItem[] = [
   {
     name: 'Scheme',
     label: 'Schemes',
-    icon: 'grid-outline',
-    iconActive: 'grid',
+    icon: 'albums-outline',
+    iconActive: 'albums',
     component: SchemeScreen,
   },
   {
@@ -75,156 +98,185 @@ const TABS: TabItem[] = [
   },
 ];
 
-// ── Badge ────────────────────────────────────────────────────────
-function BadgeDot({ count }: { count: number }) {
-  if (!count || count <= 0) return null;
-  return (
-    <View style={styles.badge}>
-      <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
-    </View>
-  );
-}
-
-// ── Center Home Tab — rounded-square gradient button ─────────────
-function CenterTab({ item, isActive, onPress }: { item: TabItem; isActive: boolean; onPress: () => void }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim  = useRef(new Animated.Value(0)).current;
+// ── Single tab ──────────────────────────────────────────────────
+const TabButton = memo(function TabButton({
+  item,
+  isActive,
+  onPress,
+}: {
+  item: TabItem;
+  isActive: boolean;
+  onPress: () => void;
+}) {
+  const { COLORS, FONTS, moderateScale } = useTheme();
+  const anim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+  const press = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.spring(scaleAnim, {
-      toValue: isActive ? 1.08 : 1,
-      useNativeDriver: true,
-      damping: 10,
-      stiffness: 150,
-    }).start();
-    Animated.timing(glowAnim, {
+    Animated.spring(anim, {
       toValue: isActive ? 1 : 0,
-      duration: 250,
-      useNativeDriver: false,
+      useNativeDriver: true,
+      damping: 15,
+      stiffness: 180,
     }).start();
-  }, [isActive]);
+  }, [isActive, anim]);
 
-  const onIn  = () => Animated.spring(scaleAnim, { toValue: 0.9,  useNativeDriver: true, speed: 40 }).start();
-  const onOut = () => Animated.spring(scaleAnim, { toValue: isActive ? 1.08 : 1, useNativeDriver: true, speed: 28 }).start();
+  const scale = press.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.88],
+  });
 
-  return (
-    <View style={styles.centerOuter}>
-      <TouchableOpacity onPress={onPress} onPressIn={onIn} onPressOut={onOut} activeOpacity={1}>
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <Animated.View style={[styles.centerGlow, { opacity: glowAnim }]} />
-          {isActive ? (
-            <LinearGradient
-              colors={['#aa0404', '#7a0303']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.centerFab}
-            >
-              <View style={styles.centerGoldStripe} />
-              <Ionicons name="home" size={26} color="#ffcc00" />
-            </LinearGradient>
-          ) : (
-            <View style={[styles.centerFab, styles.centerFabInactive]}>
-              <Ionicons name="home-outline" size={26} color="#9a4040" />
-            </View>
-          )}
-        </Animated.View>
-      </TouchableOpacity>
-      <Text style={[styles.centerLabel, { color: isActive ? '#aa0404' : '#9a4040' }]}>
-        {item.label}
-      </Text>
-    </View>
-  );
-}
-
-// ── Regular Tab ──────────────────────────────────────────────────
-function RegularTab({ item, isActive, onPress }: { item: TabItem; isActive: boolean; onPress: () => void }) {
-  const scaleAnim  = useRef(new Animated.Value(1)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const dotScale   = useRef(new Animated.Value(isActive ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: isActive ? -3 : 0,
-        useNativeDriver: true,
-        damping: 14,
-        stiffness: 180,
-      }),
-      Animated.spring(dotScale, {
-        toValue: isActive ? 1 : 0,
-        useNativeDriver: true,
-        damping: 12,
-        stiffness: 200,
-      }),
-    ]).start();
-  }, [isActive]);
-
-  const onIn  = () => Animated.spring(scaleAnim, { toValue: 0.88, useNativeDriver: true, speed: 40 }).start();
-  const onOut = () => Animated.spring(scaleAnim, { toValue: 1,    useNativeDriver: true, speed: 28 }).start();
+  const pillScale = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.4, 1],
+  });
 
   return (
-    <TouchableOpacity style={styles.tabItem} onPress={onPress} onPressIn={onIn} onPressOut={onOut} activeOpacity={1}>
-      <Animated.View style={[styles.tabInner, { transform: [{ translateY }, { scale: scaleAnim }] }]}>
-        {isActive && <View style={styles.activePill} />}
+    <Pressable
+      onPress={onPress}
+      onPressIn={() =>
+        Animated.spring(press, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 50,
+          bounciness: 0,
+        }).start()
+      }
+      onPressOut={() =>
+        Animated.spring(press, {
+          toValue: 0,
+          useNativeDriver: true,
+          speed: 30,
+          bounciness: 8,
+        }).start()
+      }
+      style={s.tab}
+      hitSlop={6}
+    >
+      <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
+        <View style={s.iconSlot}>
+          {/* Active pill */}
+          <Animated.View
+            style={[
+              s.pill,
+              {
+                width: moderateScale(40),
+                height: moderateScale(28),
+                borderRadius: moderateScale(14),
+                backgroundColor: COLORS.heroAccentSoft,
+                opacity: anim,
+                transform: [{ scale: pillScale }],
+              },
+            ]}
+          />
 
-        <View style={styles.iconWrap}>
           <Ionicons
             name={isActive ? item.iconActive : item.icon}
-            size={22}
-            color={isActive ? '#aa0404' : '#9a4040'}
+            size={moderateScale(20)}
+            color={isActive ? COLORS.heroAccent : COLORS.heroTextTertiary}
           />
-          {item.badge !== undefined && <BadgeDot count={item.badge} />}
+
+          {!!item.badge && item.badge > 0 && (
+            <View
+              style={[
+                s.badge,
+                {
+                  backgroundColor: COLORS.primaryLighter,
+                  borderColor: COLORS.heroElevated,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  fontSize: 8,
+                  color: COLORS.white,
+                  fontFamily: FONTS.family.bold,
+                }}
+              >
+                {item.badge > 99 ? '99+' : item.badge}
+              </Text>
+            </View>
+          )}
         </View>
 
-        <Text style={[
-          styles.tabLabel,
-          {
-            color: isActive ? '#aa0404' : '#9a4040',
-            fontFamily: isActive ? 'Poppins-SemiBold' : 'Poppins-Regular',
-          },
-        ]}>
+        <Animated.Text
+          numberOfLines={1}
+          style={[
+            s.label,
+            {
+              color: isActive ? COLORS.heroAccent : COLORS.heroTextMuted,
+              fontFamily: isActive
+                ? FONTS.family.semiBold
+                : FONTS.family.regular,
+            },
+          ]}
+        >
           {item.label}
-        </Text>
-
-        <Animated.View style={[styles.activeDot, { transform: [{ scale: dotScale }] }]} />
+        </Animated.Text>
       </Animated.View>
-    </TouchableOpacity>
+    </Pressable>
   );
-}
+});
 
 // ── Custom Tab Bar ───────────────────────────────────────────────
 function CustomTabBar({ state, navigation }: any) {
-  const { verticalScale } = useTheme();
+  const { COLORS, SIZES, SHADOWS, moderateScale } = useTheme();
   const { unreadCount } = useUnreadCount();
 
   TABS[0].badge = unreadCount || 0;
 
-  const TAB_BAR_H = Platform.OS === 'ios' ? verticalScale(72) : verticalScale(68);
-
   return (
-    <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#fff' }}>
-      <View style={[styles.tabBar, { height: TAB_BAR_H }]}>
-        <View style={styles.topRedLine} />
-        <View style={styles.goldDotRow}>
-          {[0, 1, 2].map((i) => (
-            <View key={i} style={styles.goldDotItem} />
-          ))}
+    <View pointerEvents="box-none" style={s.host}>
+      <SafeAreaView edges={['bottom']} pointerEvents="box-none">
+        <View
+          style={[
+            s.capsule,
+            {
+              marginHorizontal: SIZES.layout.gutter,
+              marginBottom: Platform.OS === 'ios' ? 0 : moderateScale(10),
+              borderRadius: SIZES.radius.pill,
+              borderColor: COLORS.heroHairline,
+              backgroundColor: COLORS.heroCanvas,
+            },
+            SHADOWS.float as any,
+          ]}
+        >
+          <LinearGradient
+            colors={COLORS.gradient.heroNoir as [string, string, ...string[]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[
+              StyleSheet.absoluteFill,
+              { borderRadius: SIZES.radius.pill },
+            ]}
+          />
+
+          <View style={s.row}>
+            {state.routes.map((route: any, index: number) => {
+              const tab = TABS[index];
+              const isActive = state.index === index;
+              const onPress = () => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!isActive && !event.defaultPrevented)
+                  navigation.navigate(route.name);
+              };
+              return (
+                <TabButton
+                  key={route.key}
+                  item={tab}
+                  isActive={isActive}
+                  onPress={onPress}
+                />
+              );
+            })}
+          </View>
         </View>
-        <View style={styles.tabsRow}>
-          {state.routes.map((route: any, index: number) => {
-            const tab      = TABS[index];
-            const isActive = state.index === index;
-            const isCenter = index === 2;
-            const onPress  = () => {
-              const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-              if (!isActive && !event.defaultPrevented) navigation.navigate(route.name);
-            };
-            if (isCenter) return <CenterTab key={route.key} item={tab} isActive={isActive} onPress={onPress} />;
-            return <RegularTab key={route.key} item={tab} isActive={isActive} onPress={onPress} />;
-          })}
-        </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -233,7 +285,12 @@ export default function BottomTabNavigator() {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false, tabBarStyle: { display: 'none' } }}
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: 'none' },
+        // The bar floats over content, so screens keep their full height.
+        sceneStyle: { backgroundColor: 'transparent' },
+      }}
       initialRouteName="Home"
     >
       {TABS.map((tab) => (
@@ -244,156 +301,44 @@ export default function BottomTabNavigator() {
 }
 
 // ── Styles ──────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  tabBar: {
-    borderTopWidth: 1,
-    borderTopColor: '#ead8d8',
-    backgroundColor: '#fff',
-    paddingTop: 4,
-    position: 'relative',
-  },
-  topRedLine: {
+const s = StyleSheet.create({
+  host: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
-    height: 3,
-    backgroundColor: '#aa0404',
-    opacity: 0.85,
+    bottom: 0,
   },
-  goldDotRow: {
-    position: 'absolute',
-    top: 7,
-    right: 14,
-    flexDirection: 'row',
-    gap: 5,
-  },
-  goldDotItem: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#ffcc00',
-    opacity: 0.75,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    width: '100%',
-    height: '100%',
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 10,
-  },
-  tabInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    paddingTop: 4,
-    minWidth: 52,
-  },
-  activePill: {
-    position: 'absolute',
-    top: -2,
-    left: 0,
-    right: 0,
-    bottom: 6,
-    backgroundColor: 'rgba(170, 4, 4, 0.07)',
-    borderRadius: 10,
-  },
-  iconWrap: {
-    position: 'relative',
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 3,
-  },
-  tabLabel: {
-    fontSize: 10,
-    letterSpacing: 0.2,
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#ffcc00',
-    marginTop: 3,
-  },
-  // Center tab
-  centerOuter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 8,
-  },
-  centerGlow: {
-    position: 'absolute',
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    top: -8,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(170, 4, 4, 0.14)',
-  },
-  centerFab: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
+  capsule: {
+    borderWidth: 1,
     overflow: 'hidden',
-    position: 'relative',
-    shadowColor: '#aa0404',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
   },
-  centerFabInactive: {
-    backgroundColor: '#fff5f5',
-    borderWidth: 1.5,
-    borderColor: '#ead8d8',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    elevation: 2,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
   },
-  centerGoldStripe: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: '#ffcc00',
-    opacity: 0.9,
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  iconSlot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 28,
   },
-  centerLabel: {
-    fontSize: 10,
+  pill: { position: 'absolute' },
+  label: {
+    fontSize: 9,
     marginTop: 3,
     letterSpacing: 0.2,
-    fontFamily: 'Poppins-Medium',
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -8,
-    minWidth: 16,
-    height: 16,
+    top: -3,
+    right: -10,
+    minWidth: 15,
+    height: 15,
     borderRadius: 999,
-    backgroundColor: '#aa0404',
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
-    borderWidth: 1.5,
-    borderColor: '#fff',
-  },
-  badgeText: {
-    fontSize: 8,
-    color: '#fff',
-    fontFamily: 'Poppins-SemiBold',
   },
 });

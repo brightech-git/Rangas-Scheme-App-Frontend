@@ -53,6 +53,35 @@ const darkTheme = {
     warningBg: "#332b0f",
     errorBg: "#3a1414",
     infoBg: "#13263a",
+
+    // ── V2 body zone, inverted for dark mode ──
+    // The hero tokens are deliberately NOT overridden: the hero is
+    // dark in both modes, which is what keeps the design consistent.
+    canvas: "#0F0405",
+    canvasElevated: "#1B0709",
+    canvasSunken: "#080202",
+    canvasTint: "#160607",
+    hairline: "rgba(255, 255, 255, 0.09)",
+    hairlineBold: "rgba(255, 255, 255, 0.16)",
+
+    inkPrimary: "#FFFFFF",
+    inkSecondary: "rgba(255, 255, 255, 0.72)",
+    inkTertiary: "rgba(255, 255, 255, 0.46)",
+    inkMuted: "rgba(255, 255, 255, 0.28)",
+
+    // Metal soft-fills need dark equivalents or they blow out
+    metalGoldSoft: "#2E2711",
+    metalSilverSoft: "#1E2124",
+    metalPlatinumSoft: "#182025",
+    metalDiamondSoft: "#0E2B31",
+  },
+  SHADOWS: {
+    ...baseTheme.SHADOWS,
+    // Soft shadows are invisible on dark surfaces — deepen them
+    hairline: { ...baseTheme.SHADOWS.hairline, shadowColor: "#000", shadowOpacity: 0.4 },
+    lift: { ...baseTheme.SHADOWS.lift, shadowColor: "#000", shadowOpacity: 0.5 },
+    float: { ...baseTheme.SHADOWS.float, shadowColor: "#000", shadowOpacity: 0.6 },
+    bar: { ...baseTheme.SHADOWS.bar, shadowColor: "#000", shadowOpacity: 0.55 },
   },
 };
 

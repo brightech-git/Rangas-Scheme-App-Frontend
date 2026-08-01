@@ -1,198 +1,356 @@
 // src/screens/transactions/TransactionsScreen.tsx
+//
+// ─────────────────────────────────────────────────────────────────
+// LAYOUT
+//   A statement, not a feed. The hero carries the filtered total and
+//   payment count. The body groups payments under month headings and
+//   renders each month as a continuous timeline with a hairline spine,
+//   so a year of instalments reads as a ledger rather than a stack of
+//   identical cards.
+//
+// WHY THIS IS BETTER UX
+//   • Month grouping gives the list structure — previously 60 payments
+//     were one undifferentiated scroll with no temporal anchors.
+//   • The filter rail is horizontally scrollable and shows the active
+//     scheme's own total in the hero, so switching filters produces a
+//     visibly different answer.
+//   • Amount and weight are right-aligned in tabular numerals, so
+//     columns line up down the page.
+//
+// REUSED (unchanged business logic)
+//   useMySchemes (data, loading, error, refetch), PPData /
+//   PaymentHistory shapes, navigation target Main>Scheme
+//
+// NEW UI COMPONENTS
+//   ScreenCanvas, PageHeader, TimelineCard, SectionHeading,
+//   EmptyState, StatusChip, SkeletonTimeline
+// ─────────────────────────────────────────────────────────────────
 
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useTheme } from '../../theme';
-import type { ThemeContextType } from '../../theme/types';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useMySchemes } from '../../api/hooks/Account/useMySchemes';
 import { PPData, PaymentHistory } from '../../types/Account/PhoneDetails';
-import SubPageHeader from '../../components/ui/SubPageHeader';
-import AppEmptyState from '../../components/ui/appcomponents/AppEmptyState';
+
+import {
+  ScreenCanvas,
+  PageHeader,
+  TimelineCard,
+  EmptyState,
+  SkeletonTimeline,
+  SkeletonBlock,
+  asText,
+  money,
+  type TimelineEntry,
+} from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
 type Txn = PaymentHistory & { schemeName: string; regNo: number; ts: number };
 
 const num = (v: unknown): number => {
-  const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[^0-9.-]/g, ''));
-  return isNaN(n) ? 0 : n;
+  const n =
+    typeof v === 'number'
+      ? v
+      : parseFloat(String(v ?? '').replace(/[^0-9.-]/g, ''));
+  return Number.isNaN(n) ? 0 : n;
 };
-const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 function parseTs(raw?: string): number {
   if (!raw) return 0;
   const d = new Date(raw.replace(' ', 'T'));
-  return isNaN(d.getTime()) ? 0 : d.getTime();
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
-function fmtDate(raw?: string): string {
-  const t = parseTs(raw);
-  if (!t) return raw || '—';
-  return new Date(t).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+function dayLabel(ts: number, fallback?: string): string {
+  if (!ts) return fallback || '—';
+  return new Date(ts).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function monthKey(ts: number): string {
+  if (!ts) return 'Undated';
+  return new Date(ts).toLocaleDateString('en-IN', {
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 export default function TransactionsScreen() {
   const navigation = useNavigation<Nav>();
-  const theme = useTheme();
-  const { COLORS, SIZES } = theme;
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
 
   const { mySchemes, loading, error, refetch } = useMySchemes();
   const [filter, setFilter] = useState<number | 'all'>('all');
 
+  // ── Flatten payment history (same derivation as before) ──
   const allTxns: Txn[] = useMemo(() => {
     const rows: Txn[] = [];
     for (const s of mySchemes as PPData[]) {
-      const name = s.schemeSummary?.schemeName || s.pName || `Scheme ${s.regNo}`;
+      const name =
+        s.schemeSummary?.schemeName || s.pName || `Scheme ${s.regNo}`;
       for (const p of s.paymentHistoryList ?? []) {
-        rows.push({ ...p, schemeName: name, regNo: s.regNo, ts: parseTs(p.updateTime) });
+        rows.push({
+          ...p,
+          schemeName: name,
+          regNo: s.regNo,
+          ts: parseTs(p.updateTime),
+        });
       }
     }
     return rows.sort((a, b) => b.ts - a.ts);
   }, [mySchemes]);
 
   const txns = useMemo(
-    () => (filter === 'all' ? allTxns : allTxns.filter((t) => t.regNo === filter)),
-    [allTxns, filter]
+    () =>
+      filter === 'all'
+        ? allTxns
+        : allTxns.filter((t) => t.regNo === filter),
+    [allTxns, filter],
   );
 
-  const totalPaid = useMemo(() => txns.reduce((sum, t) => sum + num(t.amount), 0), [txns]);
+  const totalPaid = useMemo(
+    () => txns.reduce((sum, t) => sum + num(t.amount), 0),
+    [txns],
+  );
+
+  const totalWeight = useMemo(
+    () => txns.reduce((sum, t) => sum + num(t.weight), 0),
+    [txns],
+  );
+
+  // ── Group by month ──
+  const months = useMemo(() => {
+    const map = new Map<string, Txn[]>();
+    for (const t of txns) {
+      const k = monthKey(t.ts);
+      const arr = map.get(k);
+      if (arr) arr.push(t);
+      else map.set(k, [t]);
+    }
+    return Array.from(map.entries()).map(([label, items]) => ({
+      label,
+      items,
+      subtotal: items.reduce((sum, t) => sum + num(t.amount), 0),
+    }));
+  }, [txns]);
 
   const filterChips = useMemo(
-    () => [{ key: 'all' as const, label: 'All' }, ...mySchemes.map((s) => ({
-      key: s.regNo, label: s.schemeSummary?.schemeName || s.pName || `#${s.regNo}`,
-    }))],
-    [mySchemes]
+    () => [
+      { key: 'all' as const, label: 'All schemes' },
+      ...mySchemes.map((s) => ({
+        key: s.regNo,
+        label: s.schemeSummary?.schemeName || s.pName || `#${s.regNo}`,
+      })),
+    ],
+    [mySchemes],
   );
 
-  const renderItem = ({ item }: { item: Txn }) => (
-    <View style={styles.row}>
-      <View style={styles.rowIcon}>
-        <Ionicons name="arrow-up-outline" size={18} color={COLORS.success} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rowName} numberOfLines={1}>{item.schemeName}</Text>
-        <Text style={styles.rowSub}>
-          {fmtDate(item.updateTime)}{item.installment ? ` · Instalment ${item.installment}` : ''}
-        </Text>
-        {!!item.receiptNo && <Text style={styles.rowReceipt}>Receipt {item.receiptNo}</Text>}
-      </View>
-      <View style={{ alignItems: 'flex-end' }}>
-        <Text style={styles.rowAmount}>{inr(num(item.amount))}</Text>
-        {!!num(item.weight) && <Text style={styles.rowWeight}>{num(item.weight).toFixed(3)} g</Text>}
-      </View>
-    </View>
+  const toEntries = useCallback(
+    (items: Txn[]): TimelineEntry[] =>
+      items.map((t, i) => ({
+        id: `${t.regNo}-${t.receiptNo || i}`,
+        title: t.schemeName,
+        meta: [
+          t.receiptNo ? `Receipt ${t.receiptNo}` : null,
+          t.installment ? `Instalment ${t.installment}` : null,
+          t.chq_CardNo ? String(t.chq_CardNo) : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        value: money(num(t.amount)),
+        subValue: num(t.weight) ? `${num(t.weight).toFixed(3)} g` : undefined,
+        timestamp: dayLabel(t.ts, t.updateTime),
+        tone: 'success' as const,
+        icon: 'arrow-up',
+      })),
+    [],
   );
+
+  const G = SIZES.layout.gutter;
+  const isEmpty = !loading && allTxns.length === 0;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]} edges={['top']}>
-      <SubPageHeader title="Transactions" subtitle="Your payment history" />
-
-      {loading && allTxns.length === 0 ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>
-      ) : error && allTxns.length === 0 ? (
-        <View style={styles.center}>
-          <AppEmptyState illustration="⚠️" title="Couldn't load transactions" subtitle={error} cta={{ label: 'Retry', onPress: refetch }} />
-        </View>
-      ) : allTxns.length === 0 ? (
-        <View style={styles.center}>
-          <AppEmptyState
-            illustration="🧾"
-            title="No transactions yet"
-            subtitle="Your installment payments will appear here."
-            cta={{ label: 'Browse Schemes', onPress: () => (navigation as any).navigate('Main', { screen: 'Scheme' }) }}
-          />
-        </View>
-      ) : (
-        <FlatList
-          data={txns}
-          keyExtractor={(t, i) => `${t.regNo}-${t.receiptNo || i}`}
-          renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
-          contentContainerStyle={{ paddingBottom: SIZES.xxl }}
-          ListHeaderComponent={
-            <View>
-              {/* Summary strip */}
-              <View style={styles.summary}>
-                <View>
-                  <Text style={styles.summaryLabel}>{filter === 'all' ? 'Total paid' : 'Scheme total'}</Text>
-                  <Text style={styles.summaryValue}>{inr(totalPaid)}</Text>
-                </View>
-                <View style={styles.summaryCountWrap}>
-                  <Text style={styles.summaryCount}>{txns.length}</Text>
-                  <Text style={styles.summaryCountLabel}>payments</Text>
-                </View>
-              </View>
-
-              {/* Filter chips */}
-              {filterChips.length > 1 && (
-                <FlatList
-                  horizontal
-                  data={filterChips}
-                  keyExtractor={(c) => String(c.key)}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: SIZES.padding.lg, gap: SIZES.sm, paddingBottom: SIZES.sm }}
-                  renderItem={({ item }) => {
-                    const active = filter === item.key;
-                    return (
-                      <TouchableOpacity
-                        onPress={() => setFilter(item.key)}
-                        activeOpacity={0.8}
-                        style={[styles.chip, active && { backgroundColor: COLORS.primary, borderColor: COLORS.primary }]}
-                      >
-                        <Text style={[styles.chipTxt, active && { color: COLORS.white }]} numberOfLines={1}>{item.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  }}
-                />
-              )}
+    <ScreenCanvas
+      overlap={moderateScale(24)}
+      refreshing={loading && allTxns.length > 0}
+      onRefresh={refetch}
+      header={
+        <PageHeader
+          eyebrow="Statement"
+          title="Payments"
+          bleedBottom={moderateScale(24)}
+        >
+          {loading && allTxns.length === 0 ? (
+            <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
+              <SkeletonBlock width="42%" height={12} surface="hero" />
+              <SkeletonBlock width="66%" height={40} surface="hero" />
             </View>
+          ) : (
+            <View style={{ marginTop: SIZES.margin.xxl }}>
+              <Text
+                style={[
+                  asText(FONTS.eyebrow),
+                  { color: COLORS.heroTextTertiary },
+                ]}
+              >
+                {filter === 'all' ? 'Total paid' : 'Scheme total'}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  asText(FONTS.displayXL),
+                  { color: COLORS.heroTextPrimary, marginTop: 3 },
+                ]}
+              >
+                {money(totalPaid)}
+              </Text>
+              <Text
+                style={[
+                  asText(FONTS.micro),
+                  { color: COLORS.heroTextTertiary, marginTop: 2 },
+                ]}
+              >
+                {txns.length} payment{txns.length === 1 ? '' : 's'}
+                {totalWeight > 0
+                  ? ` · ${totalWeight.toFixed(3)} g accrued`
+                  : ''}
+              </Text>
+            </View>
+          )}
+
+          {/* Filter rail */}
+          {filterChips.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginTop: SIZES.margin.xxl, marginHorizontal: -G }}
+              contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}
+            >
+              {filterChips.map((c) => {
+                const on = filter === c.key;
+                return (
+                  <Pressable
+                    key={String(c.key)}
+                    onPress={() => setFilter(c.key)}
+                    style={({ pressed }) => [
+                      s.chip,
+                      {
+                        borderRadius: SIZES.radius.pill,
+                        paddingHorizontal: SIZES.padding.lg,
+                        paddingVertical: SIZES.padding.sm,
+                        backgroundColor: on
+                          ? COLORS.heroAccentSoft
+                          : 'transparent',
+                        borderColor: on
+                          ? COLORS.heroAccent
+                          : COLORS.heroHairlineBold,
+                        opacity: pressed ? 0.6 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        asText(FONTS.microBold),
+                        {
+                          color: on
+                            ? COLORS.heroAccent
+                            : COLORS.heroTextTertiary,
+                          maxWidth: 150,
+                        },
+                      ]}
+                    >
+                      {c.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+        </PageHeader>
+      }
+    >
+      {error && allTxns.length === 0 ? (
+        <EmptyState
+          icon="cloud-offline-outline"
+          title="Couldn't load payments"
+          body={error}
+          actionLabel="Retry"
+          onAction={refetch}
+        />
+      ) : loading && allTxns.length === 0 ? (
+        <View style={{ marginTop: SIZES.layout.sectionTight }}>
+          <SkeletonTimeline rows={6} />
+        </View>
+      ) : isEmpty ? (
+        <EmptyState
+          icon="receipt-outline"
+          title="No payments yet"
+          body="Your instalment payments will appear here as a running statement."
+          actionLabel="Browse schemes"
+          onAction={() =>
+            (navigation as any).navigate('Main', { screen: 'Scheme' })
           }
         />
+      ) : txns.length === 0 ? (
+        <EmptyState
+          compact
+          icon="funnel-outline"
+          title="No payments for this scheme"
+          body="Choose another scheme from the filter above."
+        />
+      ) : (
+        months.map((m, mi) => (
+          <View
+            key={m.label}
+            style={{
+              marginTop:
+                mi === 0 ? SIZES.layout.sectionTight : SIZES.layout.section,
+            }}
+          >
+            {/* Month heading with subtotal */}
+            <View
+              style={[
+                s.monthRow,
+                {
+                  paddingBottom: SIZES.padding.md,
+                  borderBottomColor: COLORS.hairline,
+                },
+              ]}
+            >
+              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primary }]}>
+                {m.label}
+              </Text>
+              <Text
+                style={[asText(FONTS.microBold), { color: COLORS.inkTertiary }]}
+              >
+                {money(m.subtotal)}
+              </Text>
+            </View>
+
+            <View style={{ marginTop: SIZES.margin.xl }}>
+              <TimelineCard entries={toEntries(m.items)} />
+            </View>
+          </View>
+        ))
       )}
-    </SafeAreaView>
+    </ScreenCanvas>
   );
 }
 
-const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
-  StyleSheet.create({
-    safe: { flex: 1 },
-    center: { flex: 1, padding: SIZES.padding.xxl, alignItems: 'center', justifyContent: 'center' },
-
-    summary: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      backgroundColor: COLORS.primary, borderRadius: SIZES.radius.xl,
-      padding: SIZES.padding.xl, margin: SIZES.padding.lg, ...SHADOWS.orange,
-    },
-    summaryLabel: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.sm, color: COLORS.whiteOpacity70 },
-    summaryValue: { fontFamily: FONTS.family.bold, fontSize: SIZES.heading.h2, color: COLORS.white, marginTop: 4 },
-    summaryCountWrap: { alignItems: 'center', backgroundColor: COLORS.whiteOpacity20, borderRadius: SIZES.radius.lg, paddingHorizontal: SIZES.padding.lg, paddingVertical: SIZES.padding.sm },
-    summaryCount: { fontFamily: FONTS.family.bold, fontSize: SIZES.font.xl, color: COLORS.white },
-    summaryCountLabel: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xxs, color: COLORS.whiteOpacity70 },
-
-    chip: {
-      paddingHorizontal: SIZES.padding.lg, paddingVertical: SIZES.padding.sm,
-      borderRadius: SIZES.radius.full, borderWidth: 1, borderColor: COLORS.border,
-      backgroundColor: COLORS.card, maxWidth: 160,
-    },
-    chipTxt: { fontFamily: FONTS.family.medium, fontSize: SIZES.font.sm, color: COLORS.textSecondary },
-
-    row: {
-      flexDirection: 'row', alignItems: 'center', gap: SIZES.md,
-      backgroundColor: COLORS.card, marginHorizontal: SIZES.padding.lg, marginBottom: SIZES.sm,
-      padding: SIZES.padding.lg, borderRadius: SIZES.radius.lg,
-      borderWidth: 1, borderColor: COLORS.borderLight, ...SHADOWS.xs,
-    },
-    rowIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.successBg, alignItems: 'center', justifyContent: 'center' },
-    rowName: { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.md, color: COLORS.textPrimary },
-    rowSub: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xs, color: COLORS.textTertiary, marginTop: 2 },
-    rowReceipt: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xxs, color: COLORS.textTertiary, marginTop: 1 },
-    rowAmount: { fontFamily: FONTS.family.bold, fontSize: SIZES.font.md, color: COLORS.textPrimary },
-    rowWeight: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xs, color: COLORS.textTertiary, marginTop: 2 },
-  });
+const s = StyleSheet.create({
+  chip: { borderWidth: 1, justifyContent: 'center' },
+  monthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+});

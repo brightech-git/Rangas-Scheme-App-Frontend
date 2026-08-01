@@ -1,499 +1,539 @@
 // src/screens/home/HomeScreen.tsx
+//
+// ─────────────────────────────────────────────────────────────────
+// LAYOUT
+//   1. Dark hero: greeting as the headline, with the LIVE RATES strip
+//      living inside the dark zone (market data = "outside world").
+//   2. A portfolio slab pulled up over the hero seam — the single
+//      biggest number on the screen, straddling dark and paper.
+//   3. Paper body: an engraved 3x2 action lattice, an asymmetric
+//      metrics pair, holdings as a vertical stack, and the catalogue
+//      as a horizontal rail.
+//
+// WHY THIS IS BETTER UX
+//   • Market rates and personal position are now visually separated
+//     into two zones, so a member never confuses "gold price" with
+//     "my savings" — the old screen stacked them identically.
+//   • The number a member opens the app to check (total saved) is the
+//     first and largest thing they see, above the fold, unscrolled.
+//   • Holdings are a vertical list with visible instalment progress
+//     instead of a paged carousel, so multiple schemes are comparable
+//     at a glance with no swiping.
+//   • Quick actions read as one engraved panel rather than five
+//     floating circles, which lowers visual noise near the fold.
+//
+// REUSED (unchanged business logic)
+//   useSchemes, useMySchemes, ratesService, useUnreadCount,
+//   useAppSelector(auth), HomeBanner, InAppMessageModal, useToast
+//
+// NEW UI COMPONENTS
+//   DashboardHeader, HeroCard, DashboardGrid, MetricCard,
+//   GoldRateWidget, SchemeCardV2, SectionHeading, FeatureCard,
+//   EmptyState, Skeleton*
+// ─────────────────────────────────────────────────────────────────
 
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  FlatList,
-  TouchableOpacity,
-  Dimensions,
-  ActivityIndicator,
-  ViewToken,
-} from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Dimensions, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { ApiScheme, METAL_COLOR, METAL_LABEL } from '../../types/Scheme/Scheme';
+import { ApiScheme, METAL_LABEL } from '../../types/Scheme/Scheme';
 import { PPData } from '../../types/Account/PhoneDetails';
 import { useSchemes } from '../../api/hooks/Schemes/useSchemes';
 import { useMySchemes } from '../../api/hooks/Account/useMySchemes';
+import { useUnreadCount } from '../../api/hooks/Notifications/useUnreadCount';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
+import { useAppSelector } from '../../store/hooks';
 import { useTheme } from '../../theme';
-import MainHeader from '../../components/ui/MainHeader';
-import PoweredByFooter from '../../components/ui/PoweredByFooter';
-import AppText from '../../components/ui/appcomponents/AppText';
-import AppIcon from '../../components/ui/appcomponents/AppIcons';
 import { useToast } from '../../components/ui/Toast';
 import HomeBanner from '../../components/HomeBanner';
-import InAppMessageModal from '../../components/InAppMessageModal';
-import GlassSchemeCard from '../../components/ui/GlassSchemeCard';
-import SchemeListCard from '../../components/ui/SchemeListCard';
+import LOGO from '../../assets/company/logo.png';
+
+import {
+  ScreenCanvas,
+  DashboardHeader,
+  HeroCard,
+  DashboardGrid,
+  MetricCard,
+  GoldRateWidget,
+  SchemeCardV2,
+  SectionHeading,
+  FeatureCard,
+  EmptyState,
+  SkeletonHero,
+  SkeletonSchemeCard,
+  SkeletonMetric,
+  money,
+  moneyCompact,
+  grams,
+  shortDate,
+  type GridAction,
+  type HeroStat,
+} from '../../components/ui/premium';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-type NavProps = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-// ── Helpers ───────────────────────────────────────────────────────
-function formatDate(raw: string): string {
-  if (!raw) return '—';
-  const d = new Date(raw);
-  if (isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function schemeStatus(pp: PPData): 'active' | 'pending' | 'completed' {
-  const ct = pp.schemeClosedSummary?.closeType ?? '';
-  if (ct && ct.trim() !== '') return 'completed';
-  const paid = parseInt(pp.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0');
+// ── Pure derivations from PPData (no business logic changed) ──────
+function schemeState(pp: PPData): 'active' | 'pending' | 'completed' {
+  const closeType = pp.schemeClosedSummary?.closeType ?? '';
+  if (closeType.trim() !== '') return 'completed';
+  const paid = parseInt(
+    pp.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
+    10,
+  );
   return paid > 0 ? 'active' : 'pending';
 }
 
-// ── Section Header — left red accent bar ─────────────────────────
-function SectionHeader({
-  title, subtitle, onViewAll,
-}: { title: string; subtitle?: string; onViewAll?: () => void }) {
-  const { COLORS, FONTS } = useTheme();
-  return (
-    <View style={sh.wrap}>
-      <View style={[sh.leftBar, { backgroundColor: COLORS.primary }]} />
-      <View style={{ flex: 1 }}>
-        <Text style={[sh.title, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={[sh.sub, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      {onViewAll && (
-        <TouchableOpacity onPress={onViewAll} style={[sh.viewAllBtn, { backgroundColor: COLORS.primaryPale }]}>
-          <Text style={[sh.viewAllTxt, { fontFamily: FONTS.family.semiBold, color: COLORS.primary }]}>See all</Text>
-          <Ionicons name="arrow-forward" size={12} color={COLORS.primary} />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
-const sh = StyleSheet.create({
-  wrap:       { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
-  leftBar:    { width: 4, height: 22, borderRadius: 2 },
-  title:      { fontSize: 17 },
-  sub:        { fontSize: 11, marginTop: 1 },
-  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  viewAllTxt: { fontSize: 12 },
-});
+const num = (v: unknown): number => {
+  const n = typeof v === 'string' ? parseFloat(v) : (v as number);
+  return Number.isFinite(n) ? n : 0;
+};
 
-// ── Dot Indicator ────────────────────────────────────────────────
-function DotIndicator({ total, activeIndex }: { total: number; activeIndex: number }) {
-  const { COLORS } = useTheme();
-  if (total === 0) return null;
-  const maxDots   = 10;
-  const display   = Math.min(total, maxDots);
-  const remaining = total - maxDots;
-  return (
-    <View style={dots.row}>
-      {Array.from({ length: display }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            dots.dot,
-            {
-              width: i === activeIndex ? 22 : 7,
-              height: 7,
-              borderRadius: 3.5,
-              backgroundColor: i === activeIndex ? COLORS.primary : COLORS.border,
-            },
-          ]}
-        />
-      ))}
-      {remaining > 0 && (
-        <Text style={{ fontSize: 11, color: COLORS.textTertiary, marginLeft: 4 }}>+{remaining}</Text>
-      )}
-    </View>
-  );
-}
-const dots = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, gap: 5 },
-  dot: {},
-});
-
-// ── Rate Tile — horizontal with left accent strip ─────────────────
-function RateTile({
-  label, rate, unit, changePct, accentColor, icon, onPress,
-}: {
-  label: string; rate: string; unit: string; changePct: number;
-  accentColor: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void;
-}) {
-  const { COLORS, FONTS, SHADOWS } = useTheme();
-  const up = changePct >= 0;
-  return (
-    <TouchableOpacity
-      style={[rt.card, { backgroundColor: COLORS.card, ...SHADOWS.sm }]}
-      onPress={onPress}
-      activeOpacity={0.82}
-    >
-      <View style={[rt.strip, { backgroundColor: accentColor }]} />
-      <View style={[rt.iconBox, { backgroundColor: accentColor + '1a' }]}>
-        <Ionicons name={icon} size={20} color={accentColor} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[rt.label, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
-          {label}
-        </Text>
-        <Text style={[rt.value, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-          {rate}
-          <Text style={[rt.unit, { fontFamily: FONTS.family.regular, color: COLORS.textTertiary }]}>
-            {' '}{unit}
-          </Text>
-        </Text>
-      </View>
-      <View style={[rt.pill, { backgroundColor: up ? COLORS.successBg : COLORS.errorBg }]}>
-        <Ionicons name={up ? 'trending-up' : 'trending-down'} size={12} color={up ? COLORS.success : COLORS.error} />
-        <Text style={[rt.pillTxt, { color: up ? COLORS.success : COLORS.error, fontFamily: FONTS.family.semiBold }]}>
-          {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-const rt = StyleSheet.create({
-  card:    { flexDirection: 'row', alignItems: 'center', borderRadius: 14, overflow: 'hidden', marginBottom: 10, paddingVertical: 14, paddingRight: 14, gap: 12 },
-  strip:   { width: 5, alignSelf: 'stretch' },
-  iconBox: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  label:   { fontSize: 11, marginBottom: 2 },
-  value:   { fontSize: 20, letterSpacing: -0.3 },
-  unit:    { fontSize: 12 },
-  pill:    { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
-  pillTxt: { fontSize: 11 },
-});
-
-// ── Quick Action ──────────────────────────────────────────────────
-function QuickAction({ icon, label, color, onPress }: {
-  icon: keyof typeof Ionicons.glyphMap; label: string; color: string; onPress: () => void;
-}) {
-  const { COLORS, FONTS } = useTheme();
-  return (
-    <TouchableOpacity style={qa.wrap} onPress={onPress} activeOpacity={0.8}>
-      <View style={[qa.circle, { backgroundColor: color + '18' }]}>
-        <Ionicons name={icon} size={22} color={color} />
-      </View>
-      <Text style={[qa.label, { fontFamily: FONTS.family.medium, color: COLORS.textPrimary }]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const qa = StyleSheet.create({
-  wrap:   { alignItems: 'center', gap: 6 },
-  circle: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
-  label:  { fontSize: 11, textAlign: 'center' },
-});
-
-// ── Main Screen ───────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { COLORS, FONTS, SIZES, SHADOWS } = useTheme();
-  const toast      = useToast();
-  const navigation = useNavigation<NavProps>();
+  const { COLORS, SIZES, moderateScale } = useTheme();
+  const navigation = useNavigation<Nav>();
+  const toast = useToast();
 
-  const { schemes, loading: schemesLoading }     = useSchemes();
-  const { mySchemes, loading: mySchemesLoading } = useMySchemes();
-  const activeSchemes = schemes.filter(s => s.ACTIVE === 'Y');
+  // ── Data (identical calls to before) ──
+  const { schemes, loading: schemesLoading, refetch: refetchSchemes } =
+    useSchemes();
+  const {
+    mySchemes,
+    loading: mySchemesLoading,
+    refetch: refetchMySchemes,
+  } = useMySchemes();
+  const { unreadCount } = useUnreadCount();
+  const user = useAppSelector((s) => s.auth.user);
 
   const [rates, setRates] = useState<RatesResponse | null>(null);
-  useEffect(() => { ratesService.getRates().then(setRates).catch(() => {}); }, []);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const gold    = rates?.gold;
-  const silver  = rates?.silver;
-  const fmtRate = (n?: number) => n != null ? `₹${Math.round(n).toLocaleString('en-IN')}` : '—';
+  const loadRates = useCallback(() => {
+    ratesService.getRates().then(setRates).catch(() => {});
+  }, []);
 
-  const [mySchemesIndex,  setMySchemesIndex]  = useState(0);
-  const [allSchemesIndex, setAllSchemesIndex] = useState(0);
+  useEffect(() => {
+    loadRates();
+  }, [loadRates]);
 
-  const mySchemesFlatListRef  = useRef<FlatList>(null);
-  const allSchemesFlatListRef = useRef<FlatList>(null);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      loadRates();
+      refetchSchemes();
+      await refetchMySchemes();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadRates, refetchSchemes, refetchMySchemes]);
 
-  const onMySchemesViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems.length > 0) setMySchemesIndex(viewableItems[0].index ?? 0);
-  }).current;
+  // ── Derived portfolio figures ──
+  const portfolio = useMemo(() => {
+    const active = mySchemes.filter((m) => schemeState(m) !== 'completed');
 
-  const onAllSchemesViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems.length > 0) setAllSchemesIndex(viewableItems[0].index ?? 0);
-  }).current;
+    const saved = mySchemes.reduce((sum, m) => sum + num(m.totalAmount), 0);
+    const withBonus = mySchemes.reduce(
+      (sum, m) => sum + num(m.totalAmountWithBonus),
+      0,
+    );
+    const bonus = mySchemes.reduce((sum, m) => sum + num(m.bonusAmount), 0);
+    const weight = mySchemes.reduce(
+      (sum, m) => sum + num(m.schemeSummary?.totalWeight),
+      0,
+    );
 
-  const PAD     = SIZES.padding.container;
-  const SLIDE_W = SCREEN_W - PAD * 2;
+    const dues = active
+      .map((m) => m.nextDueDate)
+      .filter(Boolean)
+      .map((d) => new Date(d))
+      .filter((d) => !Number.isNaN(d.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    return {
+      activeCount: active.length,
+      saved,
+      withBonus,
+      bonus,
+      weight,
+      nextDue: dues[0] ? dues[0].toISOString() : null,
+    };
+  }, [mySchemes]);
+
+  const heroStats: HeroStat[] = useMemo(
+    () => [
+      {
+        label: 'Active schemes',
+        value: String(portfolio.activeCount),
+      },
+      {
+        label: 'Metal accrued',
+        value: portfolio.weight > 0 ? grams(portfolio.weight, 3) : '—',
+        tone: 'gold',
+      },
+      {
+        label: 'Next due',
+        value: portfolio.nextDue ? shortDate(portfolio.nextDue) : '—',
+      },
+    ],
+    [portfolio],
+  );
+
+  // ── Quick actions ──
+  const actions: GridAction[] = useMemo(
+    () => [
+      {
+        key: 'schemes',
+        label: 'Browse\nschemes',
+        icon: 'albums-outline',
+        onPress: () => (navigation as any).navigate('Scheme'),
+      },
+      {
+        key: 'buy',
+        label: 'Buy\ngold',
+        icon: 'diamond-outline',
+        featured: true,
+        onPress: () => navigation.navigate('BuyGold'),
+      },
+      {
+        key: 'wallet',
+        label: 'My\nwallet',
+        icon: 'wallet-outline',
+        onPress: () => (navigation as any).navigate('Wallet'),
+      },
+      {
+        key: 'history',
+        label: 'Payment\nhistory',
+        icon: 'receipt-outline',
+        onPress: () => navigation.navigate('Transactions'),
+      },
+      {
+        key: 'portfolio',
+        label: 'Portfolio\nbreakdown',
+        icon: 'pie-chart-outline',
+        onPress: () => navigation.navigate('Portfolio'),
+      },
+      {
+        key: 'rates',
+        label: 'Rate\nhistory',
+        icon: 'analytics-outline',
+        onPress: () => navigation.navigate('Rates', { metal: 'Gold' }),
+      },
+    ],
+    [navigation],
+  );
+
+  const catalogue = useMemo(
+    () => schemes.filter((s) => s.ACTIVE === 'Y'),
+    [schemes],
+  );
+
+  const holdings = useMemo(
+    () => mySchemes.filter((m) => schemeState(m) !== 'completed').slice(0, 3),
+    [mySchemes],
+  );
+
+  const G = SIZES.layout.gutter;
+  const RAIL_CARD_W = Math.min(SCREEN_W - G * 2 - moderateScale(36), 320);
+
+  const gold = rates?.gold;
+  const silver = rates?.silver;
+
+  // ── Renderers ──
+  const renderCatalogueCard = useCallback(
+    ({ item }: { item: ApiScheme }) => (
+      <SchemeCardV2
+        variant="catalogue"
+        width={RAIL_CARD_W}
+        title={item.schemeName}
+        eyebrow={item.SchemeSName}
+        metal={item.MetalType}
+        metalLabel={METAL_LABEL[item.MetalType] ?? 'Gold'}
+        stats={[
+          { label: 'Instalments', value: String(item.Instalment) },
+          {
+            label: 'Type',
+            value: item.FixedIns === 'Y' ? 'Fixed' : 'Flexible',
+          },
+          {
+            label: 'Ledger',
+            value: item.WeightLedger === 'Y' ? 'Weight' : 'Amount',
+          },
+        ]}
+        actionLabel="View terms & join"
+        onAction={() => navigation.navigate('SchemeTerms', { scheme: item })}
+        onPress={() => navigation.navigate('SchemeTerms', { scheme: item })}
+      />
+    ),
+    [RAIL_CARD_W, navigation],
+  );
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <MainHeader onProfilePress={() => navigation.navigate('Profile' as any)} />
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
-
-        {/* ── Banner ── */}
-        <View style={{ paddingHorizontal: SIZES.padding.container, paddingTop: 16 }}>
-          <HomeBanner />
-        </View>
-
-        {/* ── Quick Actions strip ── */}
-        <View style={[qs.container, { backgroundColor: COLORS.card, marginHorizontal: SIZES.padding.container, ...SHADOWS.sm }]}>
-          <QuickAction icon="grid-outline"    label="Schemes"  color={COLORS.primary}  onPress={() => (navigation as any).navigate('Scheme')} />
-          <View style={[qs.divider, { backgroundColor: COLORS.border }]} />
-          <QuickAction icon="diamond-outline" label="Buy Gold" color={COLORS.goldDark} onPress={() => (navigation as any).navigate('BuyGold')} />
-          <View style={[qs.divider, { backgroundColor: COLORS.border }]} />
-          <QuickAction icon="receipt-outline" label="History"  color={COLORS.info}     onPress={() => (navigation as any).navigate('Transactions')} />
-          <View style={[qs.divider, { backgroundColor: COLORS.border }]} />
-          <QuickAction icon="person-outline"  label="Profile"  color={COLORS.success}  onPress={() => (navigation as any).navigate('Profile')} />
-        </View>
-
-        {/* ── Today's Rates ── */}
-        <View style={{ paddingHorizontal: SIZES.padding.container, marginTop: 24 }}>
-          <SectionHeader
-            title="Today's Rates"
-            subtitle="Live market prices"
-            onViewAll={() => (navigation as any).navigate('Rates', { metal: 'Gold' })}
-          />
-          <RateTile
-            label="Gold (91.6%) · per gram"
-            rate={fmtRate(gold?.currentRate)}
-            unit="/g"
-            changePct={gold?.changePct ?? 0}
-            accentColor={COLORS.secondary}
-            icon="diamond-outline"
-            onPress={() => (navigation as any).navigate('Rates', { metal: 'Gold' })}
-          />
-          <RateTile
-            label="Silver (91.6%) · per gram"
-            rate={fmtRate(silver?.currentRate)}
-            unit="/g"
-            changePct={silver?.changePct ?? 0}
-            accentColor={COLORS.gray400}
-            icon="ellipse-outline"
-            onPress={() => (navigation as any).navigate('Rates', { metal: 'Silver' })}
-          />
-        </View>
-
-        {/* ── My Schemes ── */}
-        <View style={{ marginTop: 24 }}>
-          <View style={{ paddingHorizontal: SIZES.padding.container }}>
-            <SectionHeader
-              title="My Schemes"
-              subtitle={
-                mySchemesLoading ? 'Loading…'
-                : mySchemes.length > 0 ? `${mySchemes.length} active enrolment${mySchemes.length !== 1 ? 's' : ''}`
-                : 'No schemes joined yet'
-              }
-              onViewAll={() => (navigation as any).navigate('Scheme')}
-            />
-          </View>
-
-          {mySchemesLoading ? (
-            <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-              <ActivityIndicator color={COLORS.primary} />
-            </View>
-          ) : (
-            <>
-              <FlatList
-                ref={mySchemesFlatListRef}
-                horizontal
-                data={mySchemes}
-                keyExtractor={(item) => String(item.regNo)}
-                renderItem={({ item }) => (
-                  <View style={{ width: SCREEN_W, alignItems: 'center', justifyContent: 'center' }}>
-                    <GlassSchemeCard item={item} width={SCREEN_W - 32} />
-                  </View>
-                )}
-                pagingEnabled
-                snapToAlignment="center"
-                decelerationRate="fast"
-                showsHorizontalScrollIndicator={false}
-                onViewableItemsChanged={onMySchemesViewable}
-                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-                contentContainerStyle={{ alignItems: 'center' }}
-                ListEmptyComponent={
-                  <View style={[ms.emptyBox, { width: SCREEN_W - 40, backgroundColor: COLORS.primaryPale, borderColor: COLORS.border }]}>
-                    <View style={[ms.emptyIconRing, { backgroundColor: COLORS.card, borderColor: COLORS.orangeOpacity30 }]}>
-                      <Ionicons name="diamond-outline" size={28} color={COLORS.primary} />
-                    </View>
-                    <Text style={[ms.emptyTitle, { fontFamily: FONTS.family.semiBold, color: COLORS.textPrimary }]}>
-                      No schemes yet
-                    </Text>
-                    <Text style={[ms.emptySub, { fontFamily: FONTS.family.regular, color: COLORS.textTertiary }]}>
-                      Join a gold scheme to start saving
-                    </Text>
-                    <TouchableOpacity style={[ms.emptyBtn, { backgroundColor: COLORS.primary }]} onPress={() => (navigation as any).navigate('Scheme')}>
-                      <Text style={[ms.emptyBtnTxt, { fontFamily: FONTS.family.semiBold, color: COLORS.white }]}>
-                        Browse Schemes
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                }
-              />
-              {mySchemes.length > 0 && (
-                <DotIndicator total={mySchemes.length} activeIndex={mySchemesIndex} />
-              )}
-            </>
-          )}
-        </View>
-
-        {/* ── All Schemes ── */}
-        <View style={{ marginTop: 24 }}>
-          <View style={{ paddingHorizontal: SIZES.padding.container }}>
-            <SectionHeader
-              title="All Schemes"
-              subtitle="Explore & start saving"
-              onViewAll={() => (navigation as any).navigate('Scheme')}
-            />
-          </View>
-
-          {schemesLoading ? (
-            <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-              <ActivityIndicator color={COLORS.primary} />
-            </View>
-          ) : (
-            <>
-              <FlatList
-                ref={allSchemesFlatListRef}
-                horizontal
-                data={activeSchemes}
-                keyExtractor={(item) => String(item.SchemeId)}
-                renderItem={({ item }) => (
-                  <SchemeListCard
-                    item={item}
-                    width={SLIDE_W}
-                    onJoin={(s) => (navigation as any).navigate('SchemeTerms', { scheme: s })}
-                  />
-                )}
-                contentContainerStyle={{ paddingHorizontal: PAD }}
-                ItemSeparatorComponent={() => <View style={{ width: PAD * 2 }} />}
-                snapToInterval={SCREEN_W}
-                snapToAlignment="start"
-                decelerationRate="fast"
-                disableIntervalMomentum
-                showsHorizontalScrollIndicator={false}
-                onViewableItemsChanged={onAllSchemesViewable}
-                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-                ListEmptyComponent={
-                  <View style={{ paddingHorizontal: SIZES.padding.container }}>
-                    <Text style={{ color: COLORS.textTertiary, fontFamily: FONTS.family.regular }}>
-                      No schemes available
-                    </Text>
-                  </View>
-                }
-              />
-              {activeSchemes.length > 0 && (
-                <DotIndicator total={activeSchemes.length} activeIndex={allSchemesIndex} />
-              )}
-            </>
-          )}
-        </View>
-
-        {/* ── Referral Banner ── */}
-        <View style={{ paddingHorizontal: SIZES.padding.container, marginTop: 24 }}>
-          <TouchableOpacity
-            onPress={() => toast.success('Refer & Earn', { message: 'Share code GOLD2026 and get 1g free!' })}
-            activeOpacity={0.88}
+    <ScreenCanvas
+      overlap={moderateScale(56)}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      header={
+        <DashboardHeader
+          name={user?.username ?? 'User'}
+          avatarUri={
+            (user as any)?.profilePic ?? (user as any)?.picture ?? null
+          }
+          logo={LOGO}
+          brand="RANGAS DIGIGOLD"
+          unreadCount={unreadCount}
+          bleedBottom={moderateScale(56)}
+          onAvatarPress={() => (navigation as any).navigate('Profile')}
+          onBellPress={() => navigation.navigate('Notifications')}
+        >
+          {/* Live market strip — lives in the DARK zone, deliberately
+              separated from the member's own position below. */}
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: 10,
+              marginTop: SIZES.margin.xxl,
+            }}
           >
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={ref.banner}
-            >
-              <View style={[ref.goldStripe, { backgroundColor: COLORS.secondary }]} />
-              <View style={[ref.iconCircle, { backgroundColor: COLORS.goldOpacity20 }]}>
-                <Ionicons name="gift-outline" size={22} color={COLORS.secondary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[ref.title, { fontFamily: FONTS.family.bold, color: COLORS.white }]}>
-                  Refer & Earn 1g Gold Free!
-                </Text>
-                <Text style={[ref.sub, { fontFamily: FONTS.family.regular, color: COLORS.whiteOpacity70 }]}>
-                  Share code GOLD2026 with friends
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.whiteOpacity70} />
-            </LinearGradient>
-          </TouchableOpacity>
+            <GoldRateWidget
+              surface="hero"
+              style={{ flex: 1 }}
+              metal="Gold"
+              rate={gold ? money(gold.currentRate) : '—'}
+              purity={gold?.purity}
+              unit={gold?.unit}
+              changePct={gold?.changePct ?? 0}
+              history={gold?.history?.map((h) => h.rate) ?? []}
+              sparkWidth={moderateScale(52)}
+              onPress={() => navigation.navigate('Rates', { metal: 'Gold' })}
+            />
+            <GoldRateWidget
+              surface="hero"
+              style={{ flex: 1 }}
+              metal="Silver"
+              rate={silver ? money(silver.currentRate) : '—'}
+              purity={silver?.purity}
+              unit={silver?.unit}
+              changePct={silver?.changePct ?? 0}
+              history={silver?.history?.map((h) => h.rate) ?? []}
+              sparkWidth={moderateScale(52)}
+              onPress={() => navigation.navigate('Rates', { metal: 'Silver' })}
+            />
+          </View>
+        </DashboardHeader>
+      }
+    >
+      {/* ── 1. Portfolio slab, straddling the seam ── */}
+      {mySchemesLoading ? (
+        <SkeletonHero />
+      ) : (
+        <HeroCard
+          eyebrow="Total saved"
+          value={money(portfolio.saved)}
+          note={
+            portfolio.bonus > 0
+              ? `Incl. ${money(portfolio.bonus)} bonus · ${money(
+                  portfolio.withBonus,
+                )} at maturity`
+              : 'Across all your active schemes'
+          }
+          noteTone={portfolio.bonus > 0 ? 'gold' : 'default'}
+          stats={heroStats}
+          actionIcon="pie-chart-outline"
+          onActionPress={() => navigation.navigate('Portfolio')}
+          onPress={() => navigation.navigate('Portfolio')}
+        />
+      )}
+
+      {/* ── 2. Action lattice ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <DashboardGrid actions={actions} columns={3} />
+      </View>
+
+      {/* ── 3. Asymmetric metric pair ── */}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: SIZES.layout.block }}>
+        {mySchemesLoading ? (
+          <>
+            <SkeletonMetric flex={1.4} />
+            <SkeletonMetric flex={1} />
+          </>
+        ) : (
+          <>
+            <MetricCard
+              flex={1.4}
+              emphasis
+              label="Maturity value"
+              value={moneyCompact(portfolio.withBonus)}
+              caption="Principal plus accrued bonus"
+              tone="primary"
+              icon="trending-up-outline"
+              onPress={() => navigation.navigate('Portfolio')}
+            />
+            <MetricCard
+              flex={1}
+              label="Bonus earned"
+              value={moneyCompact(portfolio.bonus)}
+              tone="gold"
+              icon="gift-outline"
+            />
+          </>
+        )}
+      </View>
+
+      {/* ── 4. Holdings ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <SectionHeading
+          eyebrow="Your position"
+          title="Holdings"
+          caption={
+            mySchemesLoading
+              ? 'Loading…'
+              : portfolio.activeCount > 0
+              ? `${portfolio.activeCount} scheme${
+                  portfolio.activeCount === 1 ? '' : 's'
+                } in progress`
+              : 'Nothing enrolled yet'
+          }
+          actionLabel={holdings.length > 0 ? 'All' : undefined}
+          onAction={
+            holdings.length > 0
+              ? () => (navigation as any).navigate('Scheme')
+              : undefined
+          }
+        />
+
+        <View style={{ marginTop: SIZES.margin.lg, gap: 12 }}>
+          {mySchemesLoading ? (
+            <>
+              <SkeletonSchemeCard />
+              <SkeletonSchemeCard />
+            </>
+          ) : holdings.length === 0 ? (
+            <EmptyState
+              compact
+              icon="albums-outline"
+              title="No schemes yet"
+              body="Join a savings scheme to start building your gold position."
+              actionLabel="Browse schemes"
+              onAction={() => (navigation as any).navigate('Scheme')}
+            />
+          ) : (
+            holdings.map((m) => {
+              const state = schemeState(m);
+              const paidCount = parseInt(
+                m.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
+                10,
+              );
+              const totalCount = parseInt(
+                m.schemeSummary?.instalment ?? '0',
+                10,
+              );
+              return (
+                <SchemeCardV2
+                  key={String(m.regNo)}
+                  variant="holding"
+                  title={m.schemeSummary?.schemeName ?? 'Scheme'}
+                  eyebrow={`REG ${m.regNo} · ${m.groupCode ?? ''}`.trim()}
+                  metal="G"
+                  metalLabel="GOLD"
+                  status={{
+                    label: state === 'active' ? 'Active' : 'Pending',
+                    tone: state === 'active' ? 'success' : 'warning',
+                  }}
+                  stats={[
+                    { label: 'Saved', value: money(num(m.totalAmount)) },
+                    {
+                      label: 'Weight',
+                      value: grams(num(m.schemeSummary?.totalWeight), 3),
+                    },
+                    { label: 'Instalment', value: money(num(m.amount)) },
+                  ]}
+                  paid={paidCount}
+                  total={totalCount}
+                  progressNote={
+                    m.nextDueDate ? `Due ${shortDate(m.nextDueDate)}` : undefined
+                  }
+                  actionLabel="Pay instalment"
+                  onAction={() =>
+                    navigation.navigate('PayInstallment', { ppData: m })
+                  }
+                />
+              );
+            })
+          )}
         </View>
+      </View>
 
-        <PoweredByFooter />
-      </ScrollView>
+      {/* ── 5. Catalogue rail ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <SectionHeading
+          eyebrow="Open for enrolment"
+          title="Schemes"
+          count={catalogue.length}
+          actionLabel="All"
+          onAction={() => (navigation as any).navigate('Scheme')}
+        />
+      </View>
 
-      {/* <InAppMessageModal />  */}
-    </View>
+      {schemesLoading ? (
+        <View style={{ marginTop: SIZES.margin.lg }}>
+          <SkeletonSchemeCard width={RAIL_CARD_W} />
+        </View>
+      ) : catalogue.length === 0 ? (
+        <EmptyState
+          compact
+          icon="file-tray-outline"
+          title="No schemes available"
+          body="New savings schemes will appear here as soon as they open."
+        />
+      ) : (
+        <FlatList
+          horizontal
+          data={catalogue}
+          keyExtractor={(item) => String(item.SchemeId)}
+          renderItem={renderCatalogueCard}
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={RAIL_CARD_W + 12}
+          decelerationRate="fast"
+          disableIntervalMomentum
+          initialNumToRender={3}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews
+          ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+          // Break the gutter so cards bleed to the screen edge
+          style={{ marginHorizontal: -G, marginTop: SIZES.margin.lg }}
+          contentContainerStyle={{ paddingHorizontal: G }}
+        />
+      )}
+
+      {/* ── 6. Campaign banner (existing business component) ── */}
+      <View
+        style={{
+          marginTop: SIZES.layout.section,
+          marginHorizontal: -G,
+        }}
+      >
+        <HomeBanner />
+      </View>
+
+      {/* ── 7. Referral ── */}
+      <FeatureCard
+        weight="wide"
+        eyebrow="Refer & earn"
+        title="Give 1g gold, get 1g gold"
+        body="Share your code and you both receive a gold credit on their first instalment."
+        icon="gift-outline"
+        actionLabel="Share"
+        style={{ marginTop: SIZES.layout.section }}
+        onPress={() =>
+          toast.success('Refer & Earn', {
+            message: 'Share code GOLD2026 and get 1g free!',
+          })
+        }
+      />
+    </ScreenCanvas>
   );
 }
-
-// ── Quick actions styles ──────────────────────────────────────────
-const qs = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-    marginTop: 16,
-  },
-  divider: { width: 1, height: 40 },
-});
-
-// ── My schemes empty state ────────────────────────────────────────
-const ms = StyleSheet.create({
-  emptyBox: {
-    marginHorizontal: 20,
-    borderRadius: 18,
-    padding: 28,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    gap: 8,
-  },
-  emptyIconRing: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle:   { fontSize: 15 },
-  emptySub:     { fontSize: 12, textAlign: 'center' },
-  emptyBtn:     { marginTop: 6, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 20 },
-  emptyBtnTxt:  { fontSize: 13 },
-});
-
-// ── Referral banner styles ────────────────────────────────────────
-const ref = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 12,
-    overflow: 'hidden',
-  },
-  goldStripe: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    opacity: 0.9,
-  },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: { fontSize: 14, marginBottom: 2 },
-  sub:   { fontSize: 11 },
-});

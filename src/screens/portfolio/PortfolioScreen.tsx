@@ -1,226 +1,465 @@
 // src/screens/portfolio/PortfolioScreen.tsx
+//
+// ─────────────────────────────────────────────────────────────────
+// LAYOUT
+//   Hero carries the portfolio value and the allocation bar — a single
+//   horizontal rule split proportionally between principal and bonus,
+//   so composition is understood without a pie chart. Paper body
+//   carries a composition ledger, an active/completed filter rail, and
+//   the holdings themselves as full SchemeCardV2 records.
+//
+// WHY THIS IS BETTER UX
+//   • Portfolio value and its composition are adjacent, so "how much of
+//     this is bonus?" is answered without arithmetic.
+//   • Holdings are filterable by state; previously active and closed
+//     schemes were interleaved in one undifferentiated list.
+//   • Each holding shows instalment progress inline, so the member can
+//     see which scheme needs attention without opening it.
+//
+// REUSED (unchanged business logic)
+//   useMySchemes (data, loading, error, refetch), PPData shape,
+//   navigation targets PayInstallment / Main>Scheme
+//
+// NEW UI COMPONENTS
+//   ScreenCanvas, PageHeader, SectionHeading, SummaryCard,
+//   SchemeCardV2, MetricCard, EmptyState, StatusChip, Skeleton*
+// ─────────────────────────────────────────────────────────────────
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useTheme } from '../../theme';
-import type { ThemeContextType } from '../../theme/types';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useMySchemes } from '../../api/hooks/Account/useMySchemes';
 import { PPData } from '../../types/Account/PhoneDetails';
-import ScreenWrapper from '../../components/ui/appcomponents/ScreenWrapper';
-import SubPageHeader from '../../components/ui/SubPageHeader';
-import AppEmptyState from '../../components/ui/appcomponents/AppEmptyState';
+
+import {
+  ScreenCanvas,
+  PageHeader,
+  SectionHeading,
+  SummaryCard,
+  SchemeCardV2,
+  MetricCard,
+  EmptyState,
+  SkeletonSchemeCard,
+  SkeletonBlock,
+  asText,
+  money,
+  moneyCompact,
+  grams,
+  prettyDate,
+  shortDate,
+  type SummaryRow,
+} from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Filter = 'all' | 'active' | 'closed';
 
 const num = (v: unknown): number => {
-  const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[^0-9.-]/g, ''));
-  return isNaN(n) ? 0 : n;
+  const n =
+    typeof v === 'number'
+      ? v
+      : parseFloat(String(v ?? '').replace(/[^0-9.-]/g, ''));
+  return Number.isNaN(n) ? 0 : n;
 };
-const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
-const gram = (n: number) => `${n.toFixed(3)} g`;
 
-const isCompleted = (pp: PPData) => (pp.schemeClosedSummary?.closeType ?? '').trim() !== '';
+const isCompleted = (pp: PPData) =>
+  (pp.schemeClosedSummary?.closeType ?? '').trim() !== '';
 
 export default function PortfolioScreen() {
   const navigation = useNavigation<Nav>();
-  const theme = useTheme();
-  const { COLORS, SIZES } = theme;
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
 
   const { mySchemes, loading, error, refetch } = useMySchemes();
+  const [filter, setFilter] = useState<Filter>('all');
 
+  // ── Aggregates (same arithmetic as before) ──
   const summary = useMemo(() => {
-    let invested = 0, weight = 0, bonus = 0, value = 0, active = 0, completed = 0;
+    let invested = 0;
+    let weight = 0;
+    let bonus = 0;
+    let value = 0;
+    let active = 0;
+    let completed = 0;
+
     for (const s of mySchemes) {
       invested += num(s.totalAmount);
-      value    += num(s.totalAmountWithBonus) || num(s.totalAmount);
-      bonus    += num(s.bonusAmount);
-      weight   += num(s.schemeSummary?.totalWeight);
-      if (isCompleted(s)) completed += 1; else active += 1;
+      value += num(s.totalAmountWithBonus) || num(s.totalAmount);
+      bonus += num(s.bonusAmount);
+      weight += num(s.schemeSummary?.totalWeight);
+      if (isCompleted(s)) completed += 1;
+      else active += 1;
     }
-    return { invested, weight, bonus, value, active, completed, count: mySchemes.length };
+
+    return {
+      invested,
+      weight,
+      bonus,
+      value,
+      active,
+      completed,
+      count: mySchemes.length,
+      bonusShare: value > 0 ? bonus / value : 0,
+    };
   }, [mySchemes]);
 
-  return (
-    <ScreenWrapper
-      scroll
-      onRefresh={refetch}
-      refreshing={loading && mySchemes.length > 0}
-      paddingHorizontal={0}
-      header={<SubPageHeader title="My Portfolio" subtitle="Your gold savings at a glance" />}
-    >
-      {loading && mySchemes.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      ) : error && mySchemes.length === 0 ? (
-        <View style={styles.center}>
-          <AppEmptyState
-            illustration="⚠️"
-            title="Couldn't load portfolio"
-            subtitle={error}
-            cta={{ label: 'Retry', onPress: refetch }}
-          />
-        </View>
-      ) : mySchemes.length === 0 ? (
-        <View style={styles.center}>
-          <AppEmptyState
-            illustration="💎"
-            title="No holdings yet"
-            subtitle="Join a gold scheme to start building your portfolio."
-            cta={{ label: 'Browse Schemes', onPress: () => (navigation as any).navigate('Main', { screen: 'Scheme' }) }}
-          />
-        </View>
-      ) : (
-        <View style={{ paddingHorizontal: SIZES.padding.lg, paddingTop: SIZES.md }}>
+  const visible = useMemo(() => {
+    if (filter === 'active') return mySchemes.filter((s) => !isCompleted(s));
+    if (filter === 'closed') return mySchemes.filter(isCompleted);
+    return mySchemes;
+  }, [mySchemes, filter]);
 
-          {/* Value hero */}
-          <View style={styles.hero}>
-            <Text style={styles.heroLabel}>Total Portfolio Value</Text>
-            <Text style={styles.heroValue}>{inr(summary.value)}</Text>
-            <View style={styles.heroRow}>
-              <View style={styles.heroChip}>
-                <Ionicons name="diamond-outline" size={13} color={COLORS.white} />
-                <Text style={styles.heroChipTxt}>{gram(summary.weight)}</Text>
+  const compositionRows: SummaryRow[] = useMemo(
+    () => [
+      { label: 'Principal contributed', value: money(summary.invested) },
+      { label: 'Bonus accrued', value: money(summary.bonus), highlight: true },
+      { label: 'Metal accrued', value: grams(summary.weight, 3) },
+      {
+        label: 'Schemes held',
+        value: `${summary.count} (${summary.active} active)`,
+      },
+      { label: 'Portfolio value', value: money(summary.value), total: true },
+    ],
+    [summary],
+  );
+
+  const filters: { key: Filter; label: string; count: number }[] = useMemo(
+    () => [
+      { key: 'all', label: 'All', count: summary.count },
+      { key: 'active', label: 'Active', count: summary.active },
+      { key: 'closed', label: 'Closed', count: summary.completed },
+    ],
+    [summary],
+  );
+
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const G = SIZES.layout.gutter;
+  const isEmpty = !loading && mySchemes.length === 0;
+
+  // ── Allocation rule: principal vs bonus, proportional ──
+  const AllocationBar = (
+    <View style={{ marginTop: SIZES.margin.xxl }}>
+      <View style={s.allocRow}>
+        <View
+          style={{
+            flex: Math.max(0.02, 1 - summary.bonusShare),
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: COLORS.heroTextSecondary,
+          }}
+        />
+        <View
+          style={{
+            flex: Math.max(0.02, summary.bonusShare),
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: COLORS.heroAccent,
+          }}
+        />
+      </View>
+
+      <View style={[s.legendRow, { marginTop: SIZES.margin.md }]}>
+        <View style={s.legendItem}>
+          <View
+            style={[s.dot, { backgroundColor: COLORS.heroTextSecondary }]}
+          />
+          <Text
+            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
+          >
+            Principal {money(summary.invested)}
+          </Text>
+        </View>
+        <View style={s.legendItem}>
+          <View style={[s.dot, { backgroundColor: COLORS.heroAccent }]} />
+          <Text
+            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
+          >
+            Bonus {money(summary.bonus)}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <ScreenCanvas
+      overlap={moderateScale(24)}
+      refreshing={loading && mySchemes.length > 0}
+      onRefresh={onRefresh}
+      header={
+        <PageHeader
+          eyebrow="Your position"
+          title="Portfolio"
+          bleedBottom={moderateScale(24)}
+        >
+          {loading && mySchemes.length === 0 ? (
+            <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
+              <SkeletonBlock width="45%" height={12} surface="hero" />
+              <SkeletonBlock width="70%" height={44} surface="hero" />
+            </View>
+          ) : (
+            <>
+              <View style={{ marginTop: SIZES.margin.xxl }}>
+                <Text
+                  style={[
+                    asText(FONTS.eyebrow),
+                    { color: COLORS.heroTextTertiary },
+                  ]}
+                >
+                  Total value
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    asText(FONTS.displayXL),
+                    { color: COLORS.heroTextPrimary, marginTop: 3 },
+                  ]}
+                >
+                  {money(summary.value)}
+                </Text>
+                <Text
+                  style={[
+                    asText(FONTS.micro),
+                    { color: COLORS.heroTextTertiary, marginTop: 2 },
+                  ]}
+                >
+                  {grams(summary.weight, 3)} accrued across {summary.count}{' '}
+                  scheme{summary.count === 1 ? '' : 's'}
+                </Text>
               </View>
-              {summary.bonus > 0 && (
-                <View style={styles.heroChip}>
-                  <Ionicons name="gift-outline" size={13} color={COLORS.white} />
-                  <Text style={styles.heroChipTxt}>{inr(summary.bonus)} bonus</Text>
-                </View>
+
+              {summary.value > 0 && AllocationBar}
+            </>
+          )}
+        </PageHeader>
+      }
+    >
+      {/* ── Error / empty ── */}
+      {error && mySchemes.length === 0 ? (
+        <EmptyState
+          icon="cloud-offline-outline"
+          title="Couldn't load portfolio"
+          body={error}
+          actionLabel="Retry"
+          onAction={refetch}
+        />
+      ) : isEmpty ? (
+        <EmptyState
+          icon="diamond-outline"
+          title="No holdings yet"
+          body="Join a savings scheme to start building your gold position."
+          actionLabel="Browse schemes"
+          onAction={() =>
+            (navigation as any).navigate('Main', { screen: 'Scheme' })
+          }
+        />
+      ) : (
+        <>
+          {/* ── Headline metric pair ── */}
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: 10,
+              marginTop: SIZES.layout.sectionTight,
+            }}
+          >
+            <MetricCard
+              flex={1}
+              label="Invested"
+              value={moneyCompact(summary.invested)}
+              icon="wallet-outline"
+              tone="default"
+            />
+            <MetricCard
+              flex={1}
+              label="Bonus"
+              value={moneyCompact(summary.bonus)}
+              icon="gift-outline"
+              tone="gold"
+            />
+          </View>
+
+          {/* ── Composition ledger ── */}
+          <View style={{ marginTop: SIZES.layout.section }}>
+            <SectionHeading eyebrow="Breakdown" title="Composition" />
+            <SummaryCard
+              rows={compositionRows}
+              style={{ marginTop: SIZES.margin.lg }}
+            />
+          </View>
+
+          {/* ── Holdings ── */}
+          <View style={{ marginTop: SIZES.layout.section }}>
+            <SectionHeading
+              eyebrow="Records"
+              title="Holdings"
+              count={visible.length}
+            />
+
+            {/* Filter rail */}
+            <View
+              style={[
+                s.filterRail,
+                {
+                  marginTop: SIZES.margin.lg,
+                  borderColor: COLORS.hairline,
+                  borderRadius: SIZES.radius.tile,
+                  backgroundColor: COLORS.canvasElevated,
+                },
+              ]}
+            >
+              {filters.map((f, i) => {
+                const on = f.key === filter;
+                return (
+                  <Pressable
+                    key={f.key}
+                    onPress={() => setFilter(f.key)}
+                    style={({ pressed }) => [
+                      s.filterBtn,
+                      {
+                        paddingVertical: SIZES.padding.md,
+                        borderLeftWidth:
+                          i === 0 ? 0 : StyleSheet.hairlineWidth,
+                        borderLeftColor: COLORS.hairline,
+                        opacity: pressed ? 0.6 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        asText(FONTS.microBold),
+                        { color: on ? COLORS.primary : COLORS.inkTertiary },
+                      ]}
+                    >
+                      {f.label} · {f.count}
+                    </Text>
+                    {on && (
+                      <View
+                        style={[s.filterMark, { backgroundColor: COLORS.primary }]}
+                      />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={{ marginTop: SIZES.margin.lg, gap: 12 }}>
+              {loading && mySchemes.length === 0 ? (
+                <>
+                  <SkeletonSchemeCard />
+                  <SkeletonSchemeCard />
+                </>
+              ) : visible.length === 0 ? (
+                <EmptyState
+                  compact
+                  icon="funnel-outline"
+                  title="Nothing here"
+                  body={`You have no ${filter} schemes.`}
+                />
+              ) : (
+                visible.map((item) => {
+                  const done = isCompleted(item);
+                  const paidCount = parseInt(
+                    item.schemeSummary?.schemaSummaryTransBalance?.insPaid ??
+                      '0',
+                    10,
+                  );
+                  const totalCount = parseInt(
+                    item.schemeSummary?.instalment ?? '0',
+                    10,
+                  );
+
+                  return (
+                    <SchemeCardV2
+                      key={String(item.regNo)}
+                      variant="holding"
+                      title={
+                        item.schemeSummary?.schemeName ||
+                        item.pName ||
+                        `Scheme ${item.regNo}`
+                      }
+                      eyebrow={`REG ${item.regNo} · joined ${
+                        item.joinDate ? prettyDate(item.joinDate) : '—'
+                      }`}
+                      metal="G"
+                      metalLabel="GOLD"
+                      status={{
+                        label: done ? 'Closed' : 'Active',
+                        tone: done ? 'info' : 'success',
+                      }}
+                      stats={[
+                        {
+                          label: 'Invested',
+                          value: money(num(item.totalAmount)),
+                        },
+                        {
+                          label: 'Weight',
+                          value: grams(
+                            num(item.schemeSummary?.totalWeight),
+                            3,
+                          ),
+                        },
+                        {
+                          label: done ? 'Value' : 'Next due',
+                          value: done
+                            ? money(
+                                num(item.totalAmountWithBonus) ||
+                                  num(item.totalAmount),
+                              )
+                            : item.nextDueDate
+                            ? shortDate(item.nextDueDate)
+                            : '—',
+                        },
+                      ]}
+                      paid={paidCount}
+                      total={done ? 0 : totalCount}
+                      actionLabel={done ? undefined : 'Pay instalment'}
+                      onAction={
+                        done
+                          ? undefined
+                          : () =>
+                              (navigation as any).navigate('PayInstallment', {
+                                ppData: item,
+                              })
+                      }
+                      onPress={
+                        done
+                          ? undefined
+                          : () =>
+                              (navigation as any).navigate('PayInstallment', {
+                                ppData: item,
+                              })
+                      }
+                    />
+                  );
+                })
               )}
             </View>
           </View>
-
-          {/* Stat tiles */}
-          <View style={styles.statsRow}>
-            <StatTile theme={theme} icon="wallet-outline" label="Invested" value={inr(summary.invested)} />
-            <StatTile theme={theme} icon="albums-outline" label="Schemes" value={String(summary.count)} />
-          </View>
-          <View style={styles.statsRow}>
-            <StatTile theme={theme} icon="pulse-outline" label="Active" value={String(summary.active)} tint={COLORS.success} />
-            <StatTile theme={theme} icon="checkmark-done-outline" label="Completed" value={String(summary.completed)} tint={COLORS.info} />
-          </View>
-
-          {/* Holdings list */}
-          <Text style={styles.sectionTitle}>Holdings</Text>
-          {mySchemes.map((s) => {
-            const done = isCompleted(s);
-            return (
-              <TouchableOpacity
-                key={String(s.regNo)}
-                style={styles.card}
-                activeOpacity={0.85}
-                onPress={() => !done && (navigation as any).navigate('PayInstallment', { ppData: s })}
-              >
-                <View style={styles.cardTop}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardName} numberOfLines={1}>
-                      {s.schemeSummary?.schemeName || s.pName || `Scheme ${s.regNo}`}
-                    </Text>
-                    <Text style={styles.cardSub}>Reg #{s.regNo} · Joined {s.joinDate || '—'}</Text>
-                  </View>
-                  <View style={[styles.badge, { backgroundColor: (done ? COLORS.info : COLORS.success) + '18' }]}>
-                    <Text style={[styles.badgeTxt, { color: done ? COLORS.info : COLORS.success }]}>
-                      {done ? 'Completed' : 'Active'}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.cardMetrics}>
-                  <Metric theme={theme} label="Invested" value={inr(num(s.totalAmount))} />
-                  <Metric theme={theme} label="Weight" value={gram(num(s.schemeSummary?.totalWeight))} />
-                  <Metric theme={theme} label={done ? 'Value' : 'Next due'} value={done ? inr(num(s.totalAmountWithBonus) || num(s.totalAmount)) : (s.nextDueDate || '—')} />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        </>
       )}
-    </ScreenWrapper>
+    </ScreenCanvas>
   );
 }
 
-function StatTile({ theme, icon, label, value, tint }: {
-  theme: ThemeContextType; icon: keyof typeof Ionicons.glyphMap; label: string; value: string; tint?: string;
-}) {
-  const { COLORS } = theme;
-  const styles = makeStyles(theme);
-  const color = tint ?? COLORS.primary;
-  return (
-    <View style={styles.statTile}>
-      <View style={[styles.statIcon, { backgroundColor: color + '18' }]}>
-        <Ionicons name={icon} size={18} color={color} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.statLabel}>{label}</Text>
-        <Text style={styles.statValue} numberOfLines={1}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-function Metric({ theme, label, value }: { theme: ThemeContextType; label: string; value: string }) {
-  const styles = makeStyles(theme);
-  return (
-    <View style={{ flex: 1 }}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue} numberOfLines={1}>{value}</Text>
-    </View>
-  );
-}
-
-const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
-  StyleSheet.create({
-    center: { padding: SIZES.padding.xxl, alignItems: 'center', justifyContent: 'center', minHeight: 320 },
-
-    hero: {
-      backgroundColor: COLORS.primary,
-      borderRadius: SIZES.radius.xl,
-      padding: SIZES.padding.xl,
-      ...SHADOWS.orange,
-    },
-    heroLabel: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.sm, color: COLORS.whiteOpacity70 },
-    heroValue: { fontFamily: FONTS.family.bold, fontSize: SIZES.heading.h1, color: COLORS.white, marginTop: 4, letterSpacing: -0.5 },
-    heroRow: { flexDirection: 'row', gap: SIZES.sm, marginTop: SIZES.md, flexWrap: 'wrap' },
-    heroChip: {
-      flexDirection: 'row', alignItems: 'center', gap: 5,
-      backgroundColor: COLORS.whiteOpacity20,
-      paddingHorizontal: SIZES.padding.md, paddingVertical: 6, borderRadius: SIZES.radius.full,
-    },
-    heroChipTxt: { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.xs, color: COLORS.white },
-
-    statsRow: { flexDirection: 'row', gap: SIZES.sm, marginTop: SIZES.md },
-    statTile: {
-      flex: 1, flexDirection: 'row', alignItems: 'center', gap: SIZES.sm,
-      backgroundColor: COLORS.card, borderRadius: SIZES.radius.lg,
-      padding: SIZES.padding.md, borderWidth: 1, borderColor: COLORS.borderLight, ...SHADOWS.xs,
-    },
-    statIcon: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-    statLabel: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xs, color: COLORS.textTertiary },
-    statValue: { fontFamily: FONTS.family.bold, fontSize: SIZES.font.lg, color: COLORS.textPrimary },
-
-    sectionTitle: { fontFamily: FONTS.family.bold, fontSize: SIZES.font.lg, color: COLORS.textPrimary, marginTop: SIZES.xl, marginBottom: SIZES.sm },
-
-    card: {
-      backgroundColor: COLORS.card, borderRadius: SIZES.radius.lg,
-      padding: SIZES.padding.lg, marginBottom: SIZES.md,
-      borderWidth: 1, borderColor: COLORS.borderLight, ...SHADOWS.sm,
-    },
-    cardTop: { flexDirection: 'row', alignItems: 'center', gap: SIZES.sm },
-    cardName: { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.md, color: COLORS.textPrimary },
-    cardSub: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xs, color: COLORS.textTertiary, marginTop: 2 },
-    badge: { paddingHorizontal: SIZES.padding.md, paddingVertical: 4, borderRadius: SIZES.radius.full },
-    badgeTxt: { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.xs },
-    cardMetrics: {
-      flexDirection: 'row', marginTop: SIZES.md, paddingTop: SIZES.md,
-      borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border, gap: SIZES.sm,
-    },
-    metricLabel: { fontFamily: FONTS.family.regular, fontSize: SIZES.font.xs, color: COLORS.textTertiary },
-    metricValue: { fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.sm, color: COLORS.textPrimary, marginTop: 2 },
-  });
+const s = StyleSheet.create({
+  allocRow: { flexDirection: 'row', gap: 3 },
+  legendRow: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 7, height: 7, borderRadius: 3.5 },
+  filterRail: { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
+  filterBtn: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  filterMark: {
+    position: 'absolute',
+    bottom: 0,
+    left: '22%',
+    right: '22%',
+    height: 2,
+    borderRadius: 1,
+  },
+});

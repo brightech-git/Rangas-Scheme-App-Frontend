@@ -1,29 +1,67 @@
 // src/screens/scheme/SchemeTermsScreen.tsx
+//
+// ─────────────────────────────────────────────────────────────────
+// LAYOUT
+//   Hero states which scheme is being agreed to, with its key facts as
+//   a hairline strip. The body reads like a legal document: scheme
+//   terms as a SummaryCard of fact rows first (what actually differs
+//   between schemes), then the general clauses as a numbered rail with
+//   a reading-progress indicator.
+//
+//   Consent moved OUT of the footer stack into its own PaymentTile
+//   above the pinned bar, so the checkbox is a deliberate target
+//   rather than fine print wedged against the CTA.
+//
+// WHY THIS IS BETTER UX
+//   • Scheme-specific facts are tabulated instead of prose bullets, so
+//     "how many instalments, fixed or flexible, is enrolment open" is
+//     answerable in one glance.
+//   • A scroll-progress rule shows how much of the agreement remains,
+//     which the previous unbounded list did not.
+//   • The join control is pinned and always visible with its disabled
+//     reason stated inline, instead of appearing only at the bottom.
+//
+// REUSED (unchanged business logic)
+//   Route param `scheme` (ApiScheme), METAL_LABEL, navigation target
+//   SchemeJoin. The COMMON_TERMS copy is preserved verbatim.
+//
+// NEW UI COMPONENTS
+//   ScreenCanvas, PageHeader, SummaryCard, PaymentTile,
+//   BottomActionBar, SectionHeading, StatusChip
+// ─────────────────────────────────────────────────────────────────
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Platform,
-  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { METAL_LABEL, METAL_COLOR } from '../../types/Scheme/Scheme';
-import SubPageHeader from '../../components/ui/SubPageHeader';
+import { METAL_LABEL } from '../../types/Scheme/Scheme';
+
+import {
+  ScreenCanvas,
+  PageHeader,
+  SummaryCard,
+  PaymentTile,
+  BottomActionBar,
+  SectionHeading,
+  StatusChip,
+  asText,
+  clamp01,
+  type SummaryRow,
+} from '../../components/ui/premium';
 
 type RouteProps = RouteProp<RootStackParamList, 'SchemeTerms'>;
-type NavProps   = NativeStackNavigationProp<RootStackParamList, 'SchemeTerms'>;
+type NavProps = NativeStackNavigationProp<RootStackParamList, 'SchemeTerms'>;
 
-// ── Common T&C ───────────────────────────────────────────────────
+// ── Common T&C (unchanged copy) ──────────────────────────────────
 const COMMON_TERMS = [
   'All investments are subject to market risks. Please read all scheme-related documents carefully before investing.',
   'Rangas DigiGold is regulated under applicable laws and guidelines for gold savings schemes.',
@@ -40,221 +78,286 @@ const COMMON_TERMS = [
 ];
 
 export default function SchemeTermsScreen() {
-  const { COLORS, FONTS, SIZES, SHADOWS, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
   const navigation = useNavigation<NavProps>();
-  const route      = useRoute<RouteProps>();
+  const route = useRoute<RouteProps>();
   const { scheme } = route.params;
 
   const [accepted, setAccepted] = useState(false);
-  const checkScale = useRef(new Animated.Value(1)).current;
+  const [progress, setProgress] = useState(0);
 
-  const toggleAccept = () => {
-    Animated.sequence([
-      Animated.spring(checkScale, { toValue: 0.85, useNativeDriver: true, speed: 40 }),
-      Animated.spring(checkScale, { toValue: 1,    useNativeDriver: true, speed: 30 }),
-    ]).start();
-    setAccepted(prev => !prev);
-  };
-
-  const handleJoin = () => {
-    if (!accepted) return;
-    navigation.navigate('SchemeJoin', { scheme });
-  };
-
-  const mColor = METAL_COLOR[scheme.MetalType] ?? COLORS.primary;
   const mLabel = METAL_LABEL[scheme.MetalType] ?? scheme.MetalType;
   const isFixed = scheme.FixedIns === 'Y';
+  const canJoin = scheme.ADDNEWMEMBER === 'Y';
+
+  // ── Preserved business logic ──
+  const handleJoin = useCallback(() => {
+    if (!accepted) return;
+    navigation.navigate('SchemeJoin', { scheme });
+  }, [accepted, navigation, scheme]);
+
+  const onScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      const scrollable = contentSize.height - layoutMeasurement.height;
+      setProgress(scrollable > 0 ? clamp01(contentOffset.y / scrollable) : 1);
+    },
+    [],
+  );
+
+  // ── Scheme-specific facts, tabulated ──
+  const schemeFacts: SummaryRow[] = useMemo(
+    () => [
+      { label: 'Scheme code', value: scheme.SchemeSName },
+      { label: 'Metal', value: mLabel, highlight: true },
+      { label: 'Instalments', value: String(scheme.Instalment) },
+      {
+        label: 'Instalment amount',
+        value: isFixed ? 'Fixed each month' : 'Flexible each month',
+      },
+      {
+        label: 'Ledger',
+        value:
+          scheme.WeightLedger === 'Y'
+            ? 'Weight + amount tracked'
+            : 'Amount only',
+      },
+      {
+        label: 'Scheme type',
+        value:
+          scheme.SCHEMETYPE === 'A' ? 'Amount-based' : String(scheme.SCHEMETYPE),
+      },
+      {
+        label: 'New enrolment',
+        value: canJoin ? 'Open' : 'Closed',
+      },
+    ],
+    [scheme, mLabel, isFixed, canJoin],
+  );
+
+  // ── Prose clauses that are genuinely scheme-specific ──
+  const schemeClauses = useMemo(
+    () => [
+      `This scheme covers ${scheme.Instalment} instalments for ${mLabel} savings.`,
+      isFixed
+        ? 'Instalment type: Fixed – the same amount is paid each month.'
+        : 'Instalment type: Flexible – the amount may vary each month.',
+      `Only ${mLabel.toLowerCase()} purchases are eligible under this scheme.`,
+      'Early exit before completing all instalments will result in forfeiture of bonus and may attract a processing fee.',
+    ],
+    [scheme.Instalment, mLabel, isFixed],
+  );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
-      {/* ── Header ── */}
-      <SubPageHeader title="Terms & Conditions" subtitle={scheme.schemeName} />
-
-      {/* ── Scrollable Body ── */}
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-        {/* Scheme Summary Banner */}
-        <View style={[styles.schemeBanner, { backgroundColor: mColor + '12', borderColor: mColor + '30' }]}>
-          <View style={[styles.schemeIconWrap, { backgroundColor: mColor + '20' }]}>
-            <Ionicons name="diamond-outline" size={moderateScale(28)} color={mColor} />
-          </View>
-          <View style={styles.schemeBannerInfo}>
-            <Text style={[styles.schemeBannerTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-              {scheme.schemeName}
-            </Text>
-            <Text style={[styles.schemeBannerSub, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-              Code: {scheme.SchemeSName}
-            </Text>
-            <View style={styles.schemeBannerRow}>
-              <View style={[styles.chip, { backgroundColor: mColor + '18' }]}>
-                <Ionicons name="layers-outline" size={12} color={mColor} />
-                <Text style={[styles.chipText, { color: mColor, fontFamily: FONTS.family.semiBold }]}>
-                  {scheme.Instalment} Instalments
-                </Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: COLORS.success + '15' }]}>
-                <Ionicons name="cash-outline" size={12} color={COLORS.success} />
-                <Text style={[styles.chipText, { color: COLORS.success, fontFamily: FONTS.family.semiBold }]}>
-                  {isFixed ? 'Fixed Amount' : 'Flexible Amount'}
-                </Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: mColor + '18' }]}>
-                <Text style={[styles.chipText, { color: mColor, fontFamily: FONTS.family.semiBold }]}>
-                  {mLabel}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Scheme-Specific Terms */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: mColor + '18' }]}>
-              <Ionicons name="document-text-outline" size={16} color={mColor} />
-            </View>
-            <Text style={[styles.sectionTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
-              Scheme Specific Terms
-            </Text>
-          </View>
-          {[
-            `This scheme covers ${scheme.Instalment} instalments for ${mLabel} savings.`,
-            `Instalment type: ${isFixed ? 'Fixed – the same amount is paid each month.' : 'Flexible – amount may vary each month.'}`,
-            `Metal type: ${mLabel}. Only ${mLabel.toLowerCase()} purchases are eligible under this scheme.`,
-            `Scheme type: ${scheme.SCHEMETYPE === 'A' ? 'Amount-based – investment is tracked by value.' : scheme.SCHEMETYPE}.`,
-            scheme.WeightLedger === 'Y'
-              ? 'Weight ledger is maintained – metal weight is tracked alongside the amount.'
-              : 'Amount-only ledger – only the investment value is tracked.',
-            `New member enrolment: ${scheme.ADDNEWMEMBER === 'Y' ? 'Open – new members can join this scheme.' : 'Closed – this scheme is not accepting new members.'}`,
-            'Early exit before completing all instalments will result in forfeiture of bonus and may attract a processing fee.',
-          ].map((term, idx) => (
-            <View key={idx} style={styles.termRow}>
-              <View style={[styles.bullet, { backgroundColor: mColor }]} />
-              <Text style={[styles.termText, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                {term}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: COLORS.borderLight }]} />
-
-        {/* General Terms */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: COLORS.warning + '20' }]}>
-              <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.warning} />
-            </View>
-            <Text style={[styles.sectionTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
-              General Terms & Conditions
-            </Text>
-          </View>
-          {COMMON_TERMS.map((term, idx) => (
-            <View key={idx} style={styles.termRow}>
-              <View style={[styles.bulletNumber, { backgroundColor: COLORS.borderLight }]}>
-                <Text style={[styles.bulletNumberText, { color: COLORS.textTertiary, fontFamily: FONTS.family.semiBold }]}>
-                  {idx + 1}
-                </Text>
-              </View>
-              <Text style={[styles.termText, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                {term}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: COLORS.borderLight }]} />
-
-        {/* Accept Checkbox */}
-
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
-
-      {/* ── Fixed Footer ── */}
-      <View style={[styles.footer, { backgroundColor: COLORS.background, borderTopColor: COLORS.borderLight, paddingBottom: Platform.OS === 'ios' ? 4 : 16 }]}>
-                <TouchableOpacity
-          style={[
-            styles.acceptRow,
-            {
-              backgroundColor: accepted ? COLORS.primary + '08' : COLORS.card,
-              borderColor: accepted ? COLORS.primary + '40' : COLORS.borderLight,
-            }
-          ]}
-          onPress={toggleAccept}
-          activeOpacity={0.8}
+    <ScreenCanvas
+      overlap={moderateScale(24)}
+      paddingBottom={moderateScale(40)}
+      scrollProps={{ onScroll, scrollEventThrottle: 32 }}
+      header={
+        <PageHeader
+          eyebrow="Before you join"
+          title="Terms & conditions"
+          caption={scheme.schemeName}
+          bleedBottom={moderateScale(24)}
         >
-          <Animated.View style={[
-            styles.checkbox,
-            {
-              backgroundColor: accepted ? COLORS.primary : 'transparent',
-              borderColor: accepted ? COLORS.primary : COLORS.borderMedium,
-              transform: [{ scale: checkScale }],
-            }
-          ]}>
-            {accepted && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
-          </Animated.View>
-          <Text style={[
-            styles.acceptText,
-            { color: accepted ? COLORS.textPrimary : COLORS.textSecondary, fontFamily: FONTS.family.medium }
-          ]}>
-            I have read and agree to all the Terms & Conditions and General Guidelines of{' '}
-            <Text style={{ fontFamily: FONTS.family.bold, color: mColor }}>{scheme.schemeName}</Text>.
+          {/* Fact strip */}
+          <View
+            style={[
+              s.factStrip,
+              {
+                marginTop: SIZES.margin.xxl,
+                paddingTop: SIZES.padding.lg,
+                borderTopColor: COLORS.heroHairline,
+              },
+            ]}
+          >
+            {[
+              { label: 'Instalments', value: String(scheme.Instalment) },
+              { label: 'Amount', value: isFixed ? 'Fixed' : 'Flexible' },
+              { label: 'Metal', value: mLabel },
+            ].map((f, i) => (
+              <React.Fragment key={f.label}>
+                {i > 0 && (
+                  <View
+                    style={[s.vRule, { backgroundColor: COLORS.heroHairline }]}
+                  />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      asText(FONTS.micro),
+                      { color: COLORS.heroTextMuted, fontSize: 10 },
+                    ]}
+                  >
+                    {f.label}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      asText(FONTS.numeralSm),
+                      { color: COLORS.heroTextPrimary, marginTop: 3 },
+                    ]}
+                  >
+                    {f.value}
+                  </Text>
+                </View>
+              </React.Fragment>
+            ))}
+          </View>
+
+          {/* Reading progress */}
+          <View
+            style={[
+              s.progressTrack,
+              {
+                marginTop: SIZES.margin.xl,
+                backgroundColor: COLORS.heroHairline,
+              },
+            ]}
+          >
+            <View
+              style={{
+                width: `${progress * 100}%`,
+                height: '100%',
+                borderRadius: 1.5,
+                backgroundColor: COLORS.heroAccent,
+              }}
+            />
+          </View>
+          <Text
+            style={[
+              asText(FONTS.micro),
+              { color: COLORS.heroTextMuted, marginTop: 6, fontSize: 10 },
+            ]}
+          >
+            {Math.round(progress * 100)}% read
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.joinBtn, { backgroundColor: accepted ? mColor : COLORS.borderLight, ...(accepted ? SHADOWS.md : {}) }]}
-          onPress={handleJoin}
-          disabled={!accepted}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="checkmark-circle-outline" size={moderateScale(20)} color={accepted ? COLORS.white : COLORS.textTertiary} />
-          <Text style={[styles.joinBtnText, { color: accepted ? COLORS.white : COLORS.textTertiary, fontFamily: FONTS.family.bold }]}>
-            Join Scheme
-          </Text>
-        </TouchableOpacity>
-        {!accepted && (
-          <Text style={[styles.footerHint, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
-            Please accept the terms to continue
-          </Text>
-        )}
+        </PageHeader>
+      }
+      footer={
+        <BottomActionBar
+          actionLabel={canJoin ? 'Join scheme' : 'Enrolment closed'}
+          onAction={handleJoin}
+          disabled={!accepted || !canJoin}
+          helper={
+            <PaymentTile
+              marker="check"
+              selected={accepted}
+              title="I accept the terms & conditions"
+              subtitle={`I have read and agree to all terms and general guidelines of ${scheme.schemeName}.`}
+              onPress={() => setAccepted((p) => !p)}
+              disabled={!canJoin}
+            />
+          }
+        />
+      }
+    >
+      {/* ── Scheme specifics ── */}
+      <View style={{ marginTop: SIZES.layout.sectionTight }}>
+        <SectionHeading
+          eyebrow="This scheme"
+          title="Specifics"
+          caption="What differs from other schemes"
+        />
+        <SummaryCard rows={schemeFacts} style={{ marginTop: SIZES.margin.lg }} />
       </View>
-    </SafeAreaView>
+
+      {!canJoin && (
+        <StatusChip
+          tone="warning"
+          icon="lock-closed-outline"
+          label="This scheme is not accepting new members"
+          style={{ marginTop: SIZES.margin.lg }}
+        />
+      )}
+
+      {/* ── Scheme clauses ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <SectionHeading eyebrow="Scheme rules" title="Conditions" />
+        <View style={{ marginTop: SIZES.margin.lg, gap: 12 }}>
+          {schemeClauses.map((c, i) => (
+            <View key={i} style={s.clauseRow}>
+              <View style={[s.bullet, { backgroundColor: COLORS.metalGold }]} />
+              <Text
+                style={[
+                  asText(FONTS.micro),
+                  { color: COLORS.inkSecondary, flex: 1, lineHeight: 19 },
+                ]}
+              >
+                {c}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* ── General terms ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <SectionHeading
+          eyebrow="Applies to all schemes"
+          title="General terms"
+          count={COMMON_TERMS.length}
+        />
+
+        <View
+          style={[
+            s.legalBlock,
+            {
+              marginTop: SIZES.margin.lg,
+              borderRadius: SIZES.radius.panel,
+              borderColor: COLORS.hairline,
+              backgroundColor: COLORS.canvasElevated,
+            },
+          ]}
+        >
+          {COMMON_TERMS.map((term, idx) => (
+            <View
+              key={idx}
+              style={[
+                s.legalRow,
+                {
+                  paddingHorizontal: SIZES.padding.xl,
+                  paddingVertical: SIZES.padding.lg,
+                  borderTopWidth: idx === 0 ? 0 : StyleSheet.hairlineWidth,
+                  borderTopColor: COLORS.hairline,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  asText(FONTS.micro),
+                  {
+                    color: COLORS.inkMuted,
+                    width: 22,
+                    fontSize: 10,
+                    lineHeight: 19,
+                  },
+                ]}
+              >
+                {String(idx + 1).padStart(2, '0')}
+              </Text>
+              <Text
+                style={[
+                  asText(FONTS.micro),
+                  { color: COLORS.inkSecondary, flex: 1, lineHeight: 19 },
+                ]}
+              >
+                {term}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </ScreenCanvas>
   );
 }
 
-const styles = StyleSheet.create({
-  container:        { flex: 1 },
-  header:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
-  backBtn:          { width: 40, alignItems: 'center' },
-  headerCenter:     { flex: 1, alignItems: 'center' },
-  headerTitle:      { fontSize: 18, letterSpacing: -0.3 },
-  headerSub:        { fontSize: 12, marginTop: 2, opacity: 0.7 },
-  scroll:           { flex: 1 },
-  scrollContent:    { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 },
-  schemeBanner:     { flexDirection: 'row', alignItems: 'flex-start', borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 24, gap: 14 },
-  schemeIconWrap:   { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  schemeBannerInfo: { flex: 1 },
-  schemeBannerTitle:{ fontSize: 16, marginBottom: 2 },
-  schemeBannerSub:  { fontSize: 12, marginBottom: 8, opacity: 0.7 },
-  schemeBannerRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, gap: 4 },
-  chipText:         { fontSize: 11 },
-  section:          { marginBottom: 20 },
-  sectionHeader:    { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
-  sectionIcon:      { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle:     { fontSize: 16 },
-  termRow:          { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 10 },
-  bullet:           { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
-  bulletNumber:     { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 },
-  bulletNumberText: { fontSize: 10 },
-  termText:         { flex: 1, fontSize: 13, lineHeight: 20 },
-  divider:          { height: 1, marginVertical: 20 },
-  acceptRow:        { flexDirection: 'row', alignItems: 'flex-start', padding: 16, borderRadius: 14, borderWidth: 1.5, gap: 12 },
-  checkbox:         { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 },
-  acceptText:       { flex: 1, fontSize: 13, lineHeight: 20 },
-  footer:           { paddingHorizontal: 16, paddingTop: 14, borderTopWidth: 1 },
-  joinBtn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, gap: 8 },
-  joinBtnText:      { fontSize: 16 },
-  footerHint:       { textAlign: 'center', fontSize: 12, marginTop: 8, marginBottom: 4 },
+const s = StyleSheet.create({
+  factStrip: { flexDirection: 'row', borderTopWidth: 1 },
+  vRule: { width: 1, alignSelf: 'stretch', marginHorizontal: 12 },
+  progressTrack: { height: 3, borderRadius: 1.5, overflow: 'hidden' },
+  clauseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  bullet: { width: 5, height: 5, borderRadius: 2.5, marginTop: 7 },
+  legalBlock: { borderWidth: 1, overflow: 'hidden' },
+  legalRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
 });
