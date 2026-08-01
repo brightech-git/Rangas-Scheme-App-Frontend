@@ -16,6 +16,7 @@ import { useOnboardingBanners } from '../../api/hooks/Onboard/useOnboardingBanne
 import { Banner } from '../../types/onboarding';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { FONTS, SIZES, COLORS } from '../../theme/theme';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -51,6 +52,7 @@ const dot = StyleSheet.create({
 });
 
 const OnboardingScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const flatListRef  = useRef<FlatList>(null);
   const { banners, loading, getImageUrl } = useOnboardingBanners();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -98,40 +100,11 @@ const OnboardingScreen = ({ navigation }: any) => {
         <View style={styles.brandDot} />
         <Text style={styles.brandText}>Rangas DigiGold</Text>
       </View>
-
-      {/* Bottom content */}
-      <Animated.View style={[styles.bottomContent, { opacity: fadeAnim }]}>
-        <Dots count={slides.length} current={currentIndex} />
-
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
-
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.88}>
-            <Text style={styles.primaryBtnText}>
-              {isLast ? 'Get Started' : 'Next  →'}
-            </Text>
-          </TouchableOpacity>
-
-          {isLast ? (
-            <TouchableOpacity onPress={handleSignIn} activeOpacity={0.8}>
-              <Text style={styles.secondaryText}>
-                Already have an account?{'  '}
-                <Text style={styles.signInLink}>Sign In</Text>
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={handleSkip} activeOpacity={0.8}>
-              <Text style={styles.secondaryText}>Skip</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Animated.View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <FlatList
         ref={flatListRef}
@@ -150,6 +123,32 @@ const OnboardingScreen = ({ navigation }: any) => {
         }}
       />
 
+      {/* Bottom content — outside FlatList so it's never clipped */}
+      <Animated.View style={[styles.bottomContent, { opacity: fadeAnim, paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
+        <Dots count={slides.length} current={currentIndex} />
+        <Text style={styles.title}>{slides[currentIndex]?.title ?? ''}</Text>
+        <Text style={styles.description}>{slides[currentIndex]?.description ?? ''}</Text>
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.88}>
+            <Text style={styles.primaryBtnText}>
+              {isLast ? 'Get Started' : 'Next  →'}
+            </Text>
+          </TouchableOpacity>
+          {isLast ? (
+            <TouchableOpacity onPress={handleSignIn} activeOpacity={0.8}>
+              <Text style={styles.secondaryText}>
+                Already have an account?{'  '}
+                <Text style={styles.signInLink}>Sign In</Text>
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleSkip} activeOpacity={0.8}>
+              <Text style={styles.secondaryText}>Skip</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Animated.View>
+
       {/* Tap left half to go back */}
       {currentIndex > 0 && (
         <TouchableOpacity
@@ -166,7 +165,7 @@ const OnboardingScreen = ({ navigation }: any) => {
           onPress={() => goTo(currentIndex + 1)}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -178,7 +177,6 @@ const styles = StyleSheet.create({
 
   slide: { width, height },
 
-  // Brand badge: red pill, gold dot + text
   brandBadge: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 58 : 42,
@@ -210,8 +208,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
     paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
-    // Red-to-transparent gradient via View + background
     backgroundColor: 'transparent',
   },
 
@@ -232,7 +228,6 @@ const styles = StyleSheet.create({
 
   buttonGroup: { gap: 14 },
   primaryBtn: {
-    // Gold button — distinct from old primary color
     backgroundColor: COLORS.secondary,
     height:          56,
     borderRadius:    14,
@@ -247,7 +242,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontFamily:    FONTS.family.bold,
     fontSize:      SIZES.font.lg,
-    color:         COLORS.backgroundDark,      // dark text on gold button
+    color:         COLORS.backgroundDark,
     letterSpacing: 0.3,
   },
   secondaryText: {
@@ -261,6 +256,6 @@ const styles = StyleSheet.create({
     color:      COLORS.secondary,
   },
 
-  tapLeft:  { position: 'absolute', top: 0, bottom: 220, left: 0,  width: width * 0.25 },
-  tapRight: { position: 'absolute', top: 0, bottom: 220, right: 0, width: width * 0.25 },
+  tapLeft:  { position: 'absolute', top: 0, bottom: 260, left: 0,  width: width * 0.25 },
+  tapRight: { position: 'absolute', top: 0, bottom: 260, right: 0, width: width * 0.25 },
 });

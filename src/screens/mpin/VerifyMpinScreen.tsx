@@ -364,6 +364,9 @@ export default function VerifyMpinScreen() {
           </Text>
         </View>
 
+        {/* ── Dots + Keypad + Footer centered ── */}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+
         {/* ── Dots ── */}
         <View style={s.dotsZone}>
           <Animated.View
@@ -466,7 +469,7 @@ export default function VerifyMpinScreen() {
             s.footer,
             {
               paddingHorizontal: SIZES.layout.gutter,
-              paddingBottom: SIZES.padding.lg,
+              paddingTop: SIZES.padding.lg,
             },
           ]}
         >
@@ -501,6 +504,8 @@ export default function VerifyMpinScreen() {
             </Text>
           </Pressable>
         </View>
+
+        </View>{/* end center wrapper */}
       </SafeAreaView>
     </View>
   );
@@ -522,7 +527,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  dotsZone: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 },
+  dotsZone: { alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 24 },
   dotsRow: { flexDirection: 'row', gap: 20 },
   dot: { borderWidth: 1.5 },
   keypad: { gap: 6 },

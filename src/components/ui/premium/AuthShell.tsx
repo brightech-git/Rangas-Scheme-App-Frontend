@@ -39,6 +39,8 @@ type Props = {
   /** Step indicator, e.g. { current: 2, total: 3 } */
   step?: { current: number; total: number };
   scroll?: boolean;
+  /** 'bottom' (default) keeps content thumb-reachable; 'top' for sparse screens like OTP */
+  align?: 'top' | 'bottom';
   style?: ViewStyle;
 };
 
@@ -51,13 +53,14 @@ function AuthShell({
   footer,
   step,
   scroll = true,
+  align = 'bottom',
   style,
 }: Props) {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
   const G = SIZES.layout.gutter;
 
   const head = (
-    <View style={{ paddingHorizontal: G, paddingTop: SIZES.padding.md }}>
+    <View style={{ paddingHorizontal: G, paddingTop: 4 }}>
       {!!onBack && (
         <Pressable
           onPress={onBack}
@@ -121,7 +124,7 @@ function AuthShell({
           <Text
             style={[
               asText(FONTS.micro),
-              { color: COLORS.heroTextTertiary, marginTop: 6, lineHeight: 19 },
+              { color: COLORS.heroTextPrimary, marginTop: 6, lineHeight: 19 },
             ]}
           >
             {caption}
@@ -135,7 +138,7 @@ function AuthShell({
     <View
       style={{
         paddingHorizontal: G,
-        paddingTop: SIZES.layout.section,
+        paddingTop: SIZES.layout.section * 2,
         paddingBottom: SIZES.layout.section,
       }}
     >
@@ -162,14 +165,14 @@ function AuthShell({
       </View>
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1 ,}}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           {scroll ? (
             <ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: align === 'top' ? 'flex-start' : 'flex-end' }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
@@ -177,7 +180,7 @@ function AuthShell({
               {body}
             </ScrollView>
           ) : (
-            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <View style={{ flex: 1, justifyContent: align === 'top' ? 'flex-start' : 'flex-end' }}>
               {head}
               {body}
             </View>

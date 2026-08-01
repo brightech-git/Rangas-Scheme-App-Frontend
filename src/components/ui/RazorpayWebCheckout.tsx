@@ -183,15 +183,7 @@ const RazorpayWebCheckout = forwardRef<RazorpayWebCheckoutRef>((_, ref) => {
       statusBarTranslucent
     >
       <SafeAreaView style={[s.safe, { backgroundColor: COLORS.background }]} edges={['top']}>
-        {/* Header */}
-        <View style={[s.header, { borderBottomColor: COLORS.borderLight }]}>
-          <Text style={[s.title, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-            Secure Payment
-          </Text>
-          <TouchableOpacity onPress={handleUserCancel} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={24} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        </View>
+       
 
         {/* Loading overlay */}
         {loading && (

@@ -408,7 +408,7 @@ export default function SchemeJoinScreen() {
     };
     const activeGroup = isFixed ? selectedGroup : (groups[0] ?? null);
     const groupCode = activeGroup?.GROUPCODE ?? '';
-    const regNo = activeGroup ? String(activeGroup.CURRENTREGNO ?? '') : '';
+    const regNo = activeGroup ? String(activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? '') : '';
 
     return {
       newMember: {
@@ -471,7 +471,7 @@ export default function SchemeJoinScreen() {
     };
     const activeGroup = isFixed ? selectedGroup : (groups[0] ?? null);
     const groupCode = activeGroup?.GROUPCODE ?? '';
-    const regNo = activeGroup ? String(activeGroup.CURRENTREGNO ?? '1') : '1';
+    const regNo = activeGroup ? String(activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? '1') : '1';
 
     return {
       newMember: {
@@ -596,7 +596,7 @@ export default function SchemeJoinScreen() {
 
     const activeGroup = isFixed ? selectedGroup : (groups[0] ?? null);
     const groupCode = activeGroup?.GROUPCODE ?? '';
-    const regno = activeGroup ? String(activeGroup.CURRENTREGNO ?? '') : '';
+    const regno = activeGroup ? String(activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? '') : '';
     const receipt = `join_${scheme.SchemeId}_${mobile}_${Date.now()}`;
 
     pay(
@@ -861,7 +861,7 @@ export default function SchemeJoinScreen() {
                       key={`${g.GROUPCODE}-${i}`}
                       icon="cash-outline"
                       title={`${money(g.AMOUNT)} / month`}
-                      subtitle={`Group ${g.GROUPCODE} · Reg no. ${g.CURRENTREGNO}`}
+                      subtitle={`Group ${g.GROUPCODE} · Reg no. ${g.REGNO ?? g.CURRENTREGNO}`}
                       selected={selectedGroup?.GROUPCODE === g.GROUPCODE}
                       tag={i === 0 ? 'POPULAR' : undefined}
                       onPress={() => {

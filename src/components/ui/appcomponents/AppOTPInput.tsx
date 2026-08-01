@@ -329,8 +329,8 @@ const AppOTPInput = forwardRef<AppOTPInputRef, AppOTPInputProps>(
         marginTop: 16,
         gap: 4,
       },
-      resendLabel: { ...FONTS.bodySmall, color: COLORS.textSecondary },
-      resendBtn: { ...FONTS.bodySmall, color: COLORS.primary },
+      resendLabel: { ...FONTS.bodyMedium, color: COLORS.white },
+      resendBtn: { ...FONTS.bodyMedium, color: COLORS.secondary, textDecorationLine: "underline" },
       resendDisabled: { ...FONTS.bodySmall, color: COLORS.textTertiary },
     });
 

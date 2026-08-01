@@ -658,15 +658,15 @@ export const FONTS = {
   /** Smallest legible metadata — timestamps, footnotes */
   micro: {
     fontFamily: "Poppins-Regular",
-    fontSize: fontScale(11),
-    lineHeight: fontScale(11) * 1.35,
+    fontSize: fontScale(12),
+    lineHeight: fontScale(12) * 1.35,
     letterSpacing: 0.1,
     color: COLORS.textTertiary,
   },
   microBold: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: fontScale(11),
-    lineHeight: fontScale(11) * 1.35,
+    fontSize: fontScale(12),
+    lineHeight: fontScale(12) * 1.35,
     letterSpacing: 0.2,
     color: COLORS.textPrimary,
   },

@@ -228,21 +228,9 @@ export default function LoginScreen() {
       eyebrow="Rangas DigiGold"
       title="Welcome back"
       caption="Sign in to continue building your gold savings."
-      footer={
-        <Pressable
-          onPress={() => navigation.navigate('Register')}
-          style={({ pressed }) => [s.footerRow, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <Text
-            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
-          >
-            New to Rangas?
-          </Text>
-          <Text style={[asText(FONTS.microBold), { color: COLORS.heroAccent }]}>
-            Create an account
-          </Text>
-        </Pressable>
-      }
+      align="top"
+      style={{ paddingTop: moderateScale(24) }}
+      
     >
       <View style={{ gap: 22 }}>
         <FormField
@@ -331,6 +319,19 @@ export default function LoginScreen() {
         loading={googleLoading}
         style={{ marginTop: SIZES.margin.xl }}
       />
+      <Pressable
+          onPress={() => navigation.navigate('Register')}
+          style={({ pressed }) => [s.footerRow, { opacity: pressed ? 0.6 : 1 ,marginTop: SIZES.margin.xl}]}
+        >
+          <Text
+            style={[asText(FONTS.micro), { color: COLORS.white }]}
+          >
+            New to Rangas?
+          </Text>
+          <Text style={[asText(FONTS.microBold), { color: COLORS.heroAccent }]}>
+            Create an account
+          </Text>
+        </Pressable>
     </AuthShell>
   );
 }

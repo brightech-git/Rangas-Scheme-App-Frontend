@@ -1,20 +1,18 @@
 // src/screens/register/RegisterOTPVerifyScreen.tsx
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Platform, SafeAreaView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOtpVerify, removeListener } from 'react-native-otp-verify';
 import { useTheme } from '../../theme';
-import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { verifyOtp } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import AppButton from '../../components/ui/appcomponents/AppButton';
-import AppHeader from '../../components/ui/appcomponents/AppHeader';
 import AppOTPInput, { AppOTPInputRef } from '../../components/ui/appcomponents/AppOTPInput';
 import { useToast } from '../../components/ui/Toast';
+import { AuthShell, PremiumButton, asText } from '../../components/ui/premium';
 
 type Nav   = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'RegisterOTPVerify'>;
@@ -25,18 +23,16 @@ export default function RegisterOTPVerifyScreen() {
   const dispatch   = useAppDispatch();
   const { loading } = useAppSelector((s) => s.auth);
   const toast = useToast();
-  const theme = useTheme();
-  const { SIZES } = theme;
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { COLORS, FONTS, SIZES } = useTheme();
 
   const { contactNumber } = route.params;
   const otpRef          = useRef<AppOTPInputRef>(null);
-  const [otpError, setOtpError]   = useState(false);
-  const [otpErrMsg, setOtpErrMsg] = useState('');
-  const [autoDetecting, setAutoDetecting] = useState(Platform.OS === 'android');
   const verifyCalledRef = useRef(false);
 
-  // ── Auto OTP read (Android only) ──────────────────────────────
+  const [otpError, setOtpError]           = useState(false);
+  const [otpErrMsg, setOtpErrMsg]         = useState('');
+  const [autoDetecting, setAutoDetecting] = useState(Platform.OS === 'android');
+
   const { otp: smsOtp } = useOtpVerify({ numberOfDigits: 6 });
 
   useEffect(() => {
@@ -83,100 +79,50 @@ export default function RegisterOTPVerifyScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <AppHeader title="Verify OTP" showBack  />
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          {/* <Text style={styles.title}>Verify OTP</Text> */}
-          <Text style={styles.subtitle}>
-            Enter the 6-digit code sent to{'\n'}
-            <Text style={styles.phone}>+91 {contactNumber}</Text>
+    <AuthShell
+      eyebrow="Rangas DigiGold"
+      title="Verify OTP"
+      caption={`Enter the 6-digit code sent to +91 ${contactNumber}`}
+      onBack={() => navigation.goBack()}
+      step={{ current: 2, total: 3 }}
+      align="top"
+    >
+      <View style={{ gap: 24 }}>
+        {autoDetecting && (
+          <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary, textAlign: 'center' }]}>
+            📲 Waiting for SMS auto-detection...
           </Text>
-        </View>
+        )}
 
-        {/* OTP Boxes */}
-        <View style={styles.card}>
-          {autoDetecting && (
-            <View style={styles.autoDetectRow}>
-              <Text style={styles.autoDetectText}>📲 Waiting for SMS auto-detection...</Text>
-            </View>
-          )}
+        <AppOTPInput
+          ref={otpRef}
+          length={6}
+          autoFocus
+          error={otpError}
+          errorMessage={otpErrMsg}
+          onComplete={(code) => {
+            if (verifyCalledRef.current) return;
+            verifyCalledRef.current = true;
+            submitOtp(code);
+          }}
+          onResend={handleResend}
+          resendCountdown={30}
+        />
 
-          <AppOTPInput
-            ref={otpRef}
-            length={6}
-            autoFocus
-            error={otpError}
-            errorMessage={otpErrMsg}
-            onComplete={(code) => {
-              if (verifyCalledRef.current) return;
-              verifyCalledRef.current = true;
-              submitOtp(code);
-            }}
-            onResend={handleResend}
-            resendCountdown={30}
-          />
-
-          <View style={{ marginTop: SIZES.lg }}>
-            <AppButton
-              label="Verify OTP"
-              onPress={() => {
-                const code = otpRef.current?.getValue() ?? '';
-                if (code.length < 6 || verifyCalledRef.current) return;
-                verifyCalledRef.current = true;
-                submitOtp(code);
-              }}
-              loading={loading}
-              size="lg"
-            />
-          </View>
-        </View>
+        <PremiumButton
+          label="Verify OTP"
+          size="lg"
+          onPress={() => {
+            const code = otpRef.current?.getValue() ?? '';
+            if (code.length < 6 || verifyCalledRef.current) return;
+            verifyCalledRef.current = true;
+            submitOtp(code);
+          }}
+          loading={loading}
+          iconRight="arrow-forward"
+          style={{ marginTop: SIZES.margin.md }}
+        />
       </View>
-    </SafeAreaView>
+    </AuthShell>
   );
 }
-
-const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
-  StyleSheet.create({
-    safe: {
-      flex: 1,
-      backgroundColor: COLORS.background,
-    },
-    content: {
-      flex: 1,
-      paddingHorizontal: SIZES.padding.xl,
-      paddingTop: SIZES.xl,
-      gap: SIZES.xl,
-    },
-    header: { gap: 8 },
-    subtitle: {
-      fontFamily: FONTS.family.regular,
-      fontSize: SIZES.font.md,
-      color: COLORS.textSecondary,
-      lineHeight: 22,
-    },
-    phone: {
-      fontFamily: FONTS.family.semiBold,
-      color: COLORS.textPrimary,
-    },
-    card: {
-      backgroundColor: COLORS.card,
-      borderRadius: SIZES.radius.xl,
-      padding: SIZES.padding.xl,
-      ...SHADOWS.md,
-    },
-    autoDetectRow: {
-      backgroundColor: COLORS.primaryPale,
-      borderRadius: SIZES.radius.sm,
-      paddingHorizontal: SIZES.padding.md,
-      paddingVertical: SIZES.padding.sm,
-      marginBottom: SIZES.md,
-      alignItems: 'center',
-    },
-    autoDetectText: {
-      fontFamily: FONTS.family.regular,
-      fontSize: SIZES.font.xs,
-      color: COLORS.primaryDark,
-    },
-  });
