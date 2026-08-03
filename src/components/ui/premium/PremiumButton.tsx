@@ -95,7 +95,9 @@ function PremiumButton({
 
   const skins: Record<PremiumButtonVariant, Skin> = {
     solid: {
-      bg: COLORS.primary,
+      // primaryFill, not primary — cinnamon at full strength only gives
+      // 3.61:1 against a white label, which fails WCAG AA.
+      bg: COLORS.primaryFill,
       fg: COLORS.white,
       border: 'transparent',
       shadow: SHADOWS.lift as ViewStyle,

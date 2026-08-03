@@ -98,8 +98,8 @@ function DashboardHeader({
                 )}
                 <Text
                   style={[
-                    asText(FONTS.eyebrow),
-                    { color: COLORS.heroTextTertiary, letterSpacing: 2.6 },
+                    asText(FONTS.microBold),
+                    { color: COLORS.white, letterSpacing: 2.5 ,fontSize: moderateScale(14),},
                   ]}
                 >
                   {brand}
@@ -107,7 +107,7 @@ function DashboardHeader({
               </View>
 
               <View style={s.actions}>
-                <Pressable
+                {/* <Pressable
                   onPress={onBellPress}
                   hitSlop={8}
                   style={({ pressed }) => [
@@ -149,7 +149,7 @@ function DashboardHeader({
                       </Text>
                     </View>
                   )}
-                </Pressable>
+                </Pressable> */}
 
                 <Pressable
                   onPress={onAvatarPress}
@@ -199,8 +199,8 @@ function DashboardHeader({
             <View style={{ marginTop: SIZES.margin.xl }}>
               <Text
                 style={[
-                  asText(FONTS.micro),
-                  { color: COLORS.heroTextTertiary },
+                  asText(FONTS.microBold),
+                  { color: COLORS.whiteOpacity50 },
                 ]}
               >
                 {greeting()}
@@ -208,7 +208,7 @@ function DashboardHeader({
               <Text
                 numberOfLines={1}
                 style={[
-                  asText(FONTS.displayMd),
+                  asText(FONTS.displaySm),
                   { color: COLORS.heroTextPrimary, marginTop: 2 },
                 ]}
               >
@@ -248,7 +248,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brandChip: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandMark: { width: 22, height: 22, borderRadius: 6 },
+  brandMark: { width: 62, height: 62, borderRadius: 31 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bell: {
     alignItems: 'center',

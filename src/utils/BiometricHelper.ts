@@ -11,7 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 const MPIN_KEY = 'secure_mpin';
 const ENABLED_KEY = 'secure_biometric_enabled';
 
-export type BiometricLabel = 'Face ID' | 'Fingerprint' | 'Biometrics';
+export type BiometricLabel = 'Fingerprint' | 'Biometrics';
 
 /** Device has biometric hardware AND the user has enrolled at least one biometric. */
 const isSupported = async (): Promise<boolean> => {
@@ -20,8 +20,12 @@ const isSupported = async (): Promise<boolean> => {
       LocalAuthentication.hasHardwareAsync(),
       LocalAuthentication.isEnrolledAsync(),
     ]);
+    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    const level = await LocalAuthentication.getEnrolledLevelAsync();
+    console.log('[Biometric] hasHardware:', hasHardware, 'enrolled:', enrolled, 'types:', types, 'level:', level);
     return hasHardware && enrolled;
-  } catch {
+  } catch (e) {
+    console.log('[Biometric] isSupported error:', e);
     return false;
   }
 };
@@ -30,10 +34,11 @@ const isSupported = async (): Promise<boolean> => {
 const getLabel = async (): Promise<BiometricLabel> => {
   try {
     const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) return 'Face ID';
+    console.log('[Biometric] supported types:', types);
     if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) return 'Fingerprint';
     return 'Biometrics';
-  } catch {
+  } catch (e) {
+    console.log('[Biometric] getLabel error:', e);
     return 'Biometrics';
   }
 };
@@ -44,10 +49,13 @@ const authenticate = async (promptMessage: string): Promise<boolean> => {
     const res = await LocalAuthentication.authenticateAsync({
       promptMessage,
       cancelLabel: 'Use MPIN',
-      disableDeviceFallback: true, // don't fall back to device passcode; MPIN is our fallback
+      disableDeviceFallback: true,
+      requireConfirmation: false,
     });
+    console.log('[Biometric] authenticate result:', res);
     return res.success === true;
-  } catch {
+  } catch (e) {
+    console.log('[Biometric] authenticate error:', e);
     return false;
   }
 };

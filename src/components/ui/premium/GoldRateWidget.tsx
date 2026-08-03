@@ -89,11 +89,11 @@ function GoldRateWidget({
         {/* Left: identity + numeral */}
         <View style={{ flex: 1 }}>
           <View style={s.metalRow}>
-            <Text style={[asText(FONTS.eyebrow), { color: dim }]}>
+            <Text style={[asText(FONTS.microBold), { color: COLORS.whiteOpacity50, fontSize: 10 }]}>
               {String(metal).toUpperCase()}
             </Text>
             {!!purity && (
-              <Text style={[asText(FONTS.micro), { color: dim, fontSize: 10 }]}>
+              <Text style={[asText(FONTS.microBold), { color: COLORS.whiteOpacity50, fontSize: 10 }]}>
                 · {purity}
               </Text>
             )}
@@ -101,30 +101,16 @@ function GoldRateWidget({
 
           <Text
             numberOfLines={1}
-            style={[asText(FONTS.displayMd), { color: fg, marginTop: 4 }]}
+            style={[asText(FONTS.displaySm), { color: fg, marginTop: 4 }]}
           >
             {rate}
           </Text>
 
-          <View style={s.footRow}>
-            <Ionicons
-              name={up ? 'trending-up' : 'trending-down'}
-              size={13}
-              color={trendColor}
-            />
-            <Text style={[asText(FONTS.microBold), { color: trendColor }]}>
-              {up ? '+' : ''}
-              {changePct.toFixed(2)}%
-            </Text>
-            <Text style={[asText(FONTS.micro), { color: dim, fontSize: 10 }]}>
-              · {unit}
-            </Text>
-          </View>
-
+          
           {!!updatedAt && (
             <Text
               numberOfLines={1}
-              style={[asText(FONTS.micro), { color: dim, fontSize: 10, marginTop: 2 }]}
+              style={[asText(FONTS.microBold), { color: COLORS.whiteOpacity50, fontSize: 10, marginTop: 2 }]}
             >
               Updated {updatedAt}
             </Text>
@@ -132,7 +118,7 @@ function GoldRateWidget({
         </View>
 
         {/* Right: trend */}
-        {history.length > 1 && (
+        {/* {history.length > 1 && (
           <View style={{ justifyContent: 'center' }}>
             <Sparkline
               data={history}
@@ -141,7 +127,7 @@ function GoldRateWidget({
               color={metalColor}
             />
           </View>
-        )}
+        )} */}
       </View>
     </Wrapper>
   );

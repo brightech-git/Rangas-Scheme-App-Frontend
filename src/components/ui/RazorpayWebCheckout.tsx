@@ -182,13 +182,11 @@ const RazorpayWebCheckout = forwardRef<RazorpayWebCheckoutRef>((_, ref) => {
       onRequestClose={handleUserCancel}
       statusBarTranslucent
     >
-      <SafeAreaView style={[s.safe, { backgroundColor: COLORS.background }]} edges={['top']}>
-       
-
+      <SafeAreaView style={[s.safe, { backgroundColor: COLORS.background }]} edges={['top','bottom']}>
         {/* Loading overlay */}
         {loading && (
           <View style={[s.loadingOverlay, { backgroundColor: COLORS.background }]}>
-            <ActivityIndicator size="large" color="#C9A84C" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={[s.loadingTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
               Loading payment gateway…
             </Text>

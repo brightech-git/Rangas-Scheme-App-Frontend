@@ -215,7 +215,7 @@ function SchemeCardV2({
             },
           ]}
         >
-          <Text style={[asText(FONTS.microBold), { color: COLORS.primary }]}>
+          <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
             {actionLabel}
           </Text>
           <Ionicons

@@ -112,7 +112,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadRates = useCallback(() => {
-    ratesService.getRates().then(setRates).catch(() => {});
+    ratesService.getRates().then(setRates).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -190,31 +190,14 @@ export default function HomeScreen() {
         icon: 'albums-outline',
         onPress: () => (navigation as any).navigate('Scheme'),
       },
-      {
-        key: 'buy',
-        label: 'Buy\ngold',
-        icon: 'diamond-outline',
-        featured: true,
-        onPress: () => navigation.navigate('BuyGold'),
-      },
-      {
-        key: 'wallet',
-        label: 'My\nwallet',
-        icon: 'wallet-outline',
-        onPress: () => (navigation as any).navigate('Wallet'),
-      },
+
       {
         key: 'history',
         label: 'Payment\nhistory',
         icon: 'receipt-outline',
         onPress: () => navigation.navigate('Transactions'),
       },
-      {
-        key: 'portfolio',
-        label: 'Portfolio\nbreakdown',
-        icon: 'pie-chart-outline',
-        onPress: () => navigation.navigate('Portfolio'),
-      },
+
       {
         key: 'rates',
         label: 'Rate\nhistory',
@@ -305,6 +288,7 @@ export default function HomeScreen() {
               purity={gold?.purity}
               unit={gold?.unit}
               changePct={gold?.changePct ?? 0}
+              updatedAt={gold?.updatedAt}
               history={gold?.history?.map((h) => h.rate) ?? []}
               sparkWidth={moderateScale(52)}
               onPress={() => navigation.navigate('Rates', { metal: 'Gold' })}
@@ -317,6 +301,7 @@ export default function HomeScreen() {
               purity={silver?.purity}
               unit={silver?.unit}
               changePct={silver?.changePct ?? 0}
+              updatedAt={silver?.updatedAt}
               history={silver?.history?.map((h) => h.rate) ?? []}
               sparkWidth={moderateScale(52)}
               onPress={() => navigation.navigate('Rates', { metal: 'Silver' })}
@@ -325,145 +310,10 @@ export default function HomeScreen() {
         </DashboardHeader>
       }
     >
-      {/* ── 1. Portfolio slab, straddling the seam ── */}
-      {mySchemesLoading ? (
-        <SkeletonHero />
-      ) : (
-        <HeroCard
-          eyebrow="Total saved"
-          value={money(portfolio.saved)}
-          note={
-            portfolio.bonus > 0
-              ? `Incl. ${money(portfolio.bonus)} bonus · ${money(
-                  portfolio.withBonus,
-                )} at maturity`
-              : 'Across all your active schemes'
-          }
-          noteTone={portfolio.bonus > 0 ? 'gold' : 'default'}
-          stats={heroStats}
-          actionIcon="pie-chart-outline"
-          onActionPress={() => navigation.navigate('Portfolio')}
-          onPress={() => navigation.navigate('Portfolio')}
-        />
-      )}
 
-      {/* ── 2. Action lattice ── */}
-      <View style={{ marginTop: SIZES.layout.section }}>
-        <DashboardGrid actions={actions} columns={3} />
-      </View>
-
-      {/* ── 3. Asymmetric metric pair ── */}
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: SIZES.layout.block }}>
-        {mySchemesLoading ? (
-          <>
-            <SkeletonMetric flex={1.4} />
-            <SkeletonMetric flex={1} />
-          </>
-        ) : (
-          <>
-            <MetricCard
-              flex={1.4}
-              emphasis
-              label="Maturity value"
-              value={moneyCompact(portfolio.withBonus)}
-              caption="Principal plus accrued bonus"
-              tone="primary"
-              icon="trending-up-outline"
-              onPress={() => navigation.navigate('Portfolio')}
-            />
-            <MetricCard
-              flex={1}
-              label="Bonus earned"
-              value={moneyCompact(portfolio.bonus)}
-              tone="gold"
-              icon="gift-outline"
-            />
-          </>
-        )}
-      </View>
-
-      {/* ── 4. Holdings ── */}
-      <View style={{ marginTop: SIZES.layout.section }}>
-        <SectionHeading
-          eyebrow="Your position"
-          title="Holdings"
-          caption={
-            mySchemesLoading
-              ? 'Loading…'
-              : portfolio.activeCount > 0
-              ? `${portfolio.activeCount} scheme${
-                  portfolio.activeCount === 1 ? '' : 's'
-                } in progress`
-              : 'Nothing enrolled yet'
-          }
-          actionLabel={holdings.length > 0 ? 'All' : undefined}
-          onAction={
-            holdings.length > 0
-              ? () => (navigation as any).navigate('Scheme')
-              : undefined
-          }
-        />
-
-        <View style={{ marginTop: SIZES.margin.lg, gap: 12 }}>
-          {mySchemesLoading ? (
-            <>
-              <SkeletonSchemeCard />
-              <SkeletonSchemeCard />
-            </>
-          ) : holdings.length === 0 ? (
-            <EmptyState
-              compact
-              icon="albums-outline"
-              title="No schemes yet"
-              body="Join a savings scheme to start building your gold position."
-              actionLabel="Browse schemes"
-              onAction={() => (navigation as any).navigate('Scheme')}
-            />
-          ) : (
-            holdings.map((m) => {
-              const state = schemeState(m);
-              const paidCount = parseInt(
-                m.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
-                10,
-              );
-              const totalCount = parseInt(
-                m.schemeSummary?.instalment ?? '0',
-                10,
-              );
-              return (
-                <SchemeCardV2
-                  key={String(m.regNo)}
-                  variant="holding"
-                  title={m.schemeSummary?.schemeName ?? 'Scheme'}
-                  eyebrow={`REG ${m.regNo} · ${m.groupCode ?? ''}`.trim()}
-                  metal="G"
-                  metalLabel="GOLD"
-                  status={{
-                    label: state === 'active' ? 'Active' : 'Pending',
-                    tone: state === 'active' ? 'success' : 'warning',
-                  }}
-                  stats={[
-                    { label: 'Saved', value: money(num(m.totalAmount)) },
-                    {
-                      label: 'Weight',
-                      value: grams(num(m.schemeSummary?.totalWeight), 3),
-                    },
-                    { label: 'Instalment', value: money(num(m.amount)) },
-                  ]}
-                  paid={paidCount}
-                  total={totalCount}
-                  progressNote={
-                    m.nextDueDate ? `Due ${shortDate(m.nextDueDate)}` : undefined
-                  }
-                  actionLabel="Pay instalment"
-                  onAction={() =>
-                    navigation.navigate('PayInstallment', { ppData: m })
-                  }
-                />
-              );
-            })
-          )}
-        </View>
+      {/* ── 6. Campaign banner ── */}
+      <View style={{ marginHorizontal: -G }}>
+        <HomeBanner />
       </View>
 
       {/* ── 5. Catalogue rail ── */}
@@ -508,16 +358,115 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingHorizontal: G }}
         />
       )}
-
-      {/* ── 6. Campaign banner (existing business component) ── */}
-      <View
-        style={{
-          marginTop: SIZES.layout.section,
-          marginHorizontal: -G,
-        }}
-      >
-        <HomeBanner />
+      {/* ── 2. Action lattice ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <DashboardGrid actions={actions} columns={3} />
       </View>
+
+      {/* ── 4. Holdings ── */}
+      <View style={{ marginTop: SIZES.layout.section }}>
+        <SectionHeading
+          // eyebrow="Our Schemes"
+          title="Our Schemes"
+          caption={
+            mySchemesLoading
+              ? 'Loading…'
+              : portfolio.activeCount > 0
+                ? `${portfolio.activeCount} scheme${portfolio.activeCount === 1 ? '' : 's'
+                } in progress`
+                : 'Nothing enrolled yet'
+          }
+          actionLabel={holdings.length > 0 ? 'All' : undefined}
+          onAction={
+            holdings.length > 0
+              ? () => (navigation as any).navigate('Scheme')
+              : undefined
+          }
+        />
+
+        <View style={{ marginTop: SIZES.margin.lg }}>
+          {mySchemesLoading ? (
+            <FlatList
+              horizontal
+              data={[1, 2]}
+              keyExtractor={(i) => String(i)}
+              renderItem={() => <SkeletonSchemeCard width={RAIL_CARD_W} />}
+              showsHorizontalScrollIndicator={false}
+              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+              style={{ marginHorizontal: -G }}
+              contentContainerStyle={{ paddingHorizontal: G }}
+            />
+          ) : holdings.length === 0 ? (
+            <EmptyState
+              compact
+              icon="albums-outline"
+              title="No schemes yet"
+              body="Join a savings scheme to start building your gold position."
+              actionLabel="Browse schemes"
+              onAction={() => (navigation as any).navigate('Scheme')}
+            />
+          ) : (
+            <FlatList
+              horizontal
+              data={holdings}
+              keyExtractor={(m) => String(m.regNo)}
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={RAIL_CARD_W + 12}
+              decelerationRate="fast"
+              disableIntervalMomentum
+              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+              style={{ marginHorizontal: -G }}
+              contentContainerStyle={{ paddingHorizontal: G }}
+              renderItem={({ item: m }) => {
+                const state = schemeState(m);
+                const paidCount = parseInt(
+                  m.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
+                  10,
+                );
+                const totalCount = parseInt(
+                  m.schemeSummary?.instalment ?? '0',
+                  10,
+                );
+                return (
+                  <SchemeCardV2
+                    width={RAIL_CARD_W}
+                    variant="holding"
+                    title={m.schemeSummary?.schemeName ?? 'Scheme'}
+                    eyebrow={`REG ${m.regNo} · ${m.groupCode ?? ''}`.trim()}
+                    metal="G"
+                    metalLabel="GOLD"
+                    status={{
+                      label: state === 'active' ? 'Active' : 'Pending',
+                      tone: state === 'active' ? 'success' : 'warning',
+                    }}
+                    stats={[
+                      { label: 'Saved', value: money(num(m.totalAmount)) },
+                      {
+                        label: 'Weight',
+                        value: grams(num(m.schemeSummary?.totalWeight), 3),
+                      },
+                      { label: 'Instalment', value: money(num(m.amount)) },
+                    ]}
+                    paid={paidCount}
+                    total={totalCount}
+                    progressNote={
+                      m.nextDueDate ? `Due ${shortDate(m.nextDueDate)}` : undefined
+                    }
+                    actionLabel="Pay instalment"
+                    onAction={() =>
+                      navigation.navigate('PayInstallment', { ppData: m })
+                    }
+                  />
+                );
+              }}
+            />
+          )}
+        </View>
+      </View>
+
+
+
+
 
       {/* ── 7. Referral ── */}
       <FeatureCard

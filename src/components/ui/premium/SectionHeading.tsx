@@ -39,7 +39,7 @@ function SectionHeading({
   const onHero = surface === 'hero';
 
   const titleColor = onHero ? COLORS.heroTextPrimary : COLORS.inkPrimary;
-  const eyebrowColor = onHero ? COLORS.heroAccent : COLORS.primary;
+  const eyebrowColor = onHero ? COLORS.heroAccent : COLORS.primaryInk;
   const captionColor = onHero ? COLORS.heroTextTertiary : COLORS.inkTertiary;
   const countBorder = onHero ? COLORS.heroHairline : COLORS.hairline;
 
@@ -99,7 +99,7 @@ function SectionHeading({
           <Text
             style={[
               asText(FONTS.microBold),
-              { color: onHero ? COLORS.heroAccent : COLORS.primary },
+              { color: onHero ? COLORS.heroAccent : COLORS.primaryInk },
             ]}
           >
             {actionLabel}

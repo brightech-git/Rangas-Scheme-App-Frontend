@@ -201,7 +201,8 @@ export default function VerifyMpinScreen() {
     async (value: string) => {
       const res = await dispatch(verifyMpin(value));
       if (verifyMpin.fulfilled.match(res)) {
-        // Biometric unlock is opt-in only (toggled from Profile) — never auto-enabled here.
+        // Save MPIN to secure store so biometric unlock works next time
+        await BiometricHelper.saveMpin(value);
         await onVerifiedSuccess();
       } else {
         const msg =
@@ -285,6 +286,7 @@ export default function VerifyMpinScreen() {
       const supported = await BiometricHelper.isSupported();
       if (!active) return;
       setBioSupported(supported);
+      console.log('[VerifyMpin] bioSupported:', supported);
       if (!supported) return;
       setBioLabel(await BiometricHelper.getLabel());
       const [enabled, hasMpin] = await Promise.all([
@@ -293,9 +295,13 @@ export default function VerifyMpinScreen() {
       ]);
       if (!active) return;
       setBioEnabled(enabled);
+      console.log('[VerifyMpin] enabled:', enabled, 'hasMpin:', hasMpin);
       if (enabled && hasMpin && !bioPromptedRef.current) {
         bioPromptedRef.current = true;
-        handleBiometric();
+        setTimeout(() => handleBiometric(), 600);
+      } else if (supported && hasMpin && !bioPromptedRef.current) {
+        bioPromptedRef.current = true;
+        setTimeout(() => handleBiometric(), 600);
       }
     })();
     return () => {
@@ -303,7 +309,7 @@ export default function VerifyMpinScreen() {
     };
   }, [handleBiometric]);
 
-  const showBio = bioSupported && bioEnabled;
+  const showBio = bioSupported;
   const avatar = moderateScale(64);
 
   return (
@@ -356,8 +362,8 @@ export default function VerifyMpinScreen() {
           </Text>
           <Text
             style={[
-              asText(FONTS.micro),
-              { color: COLORS.heroTextTertiary, marginTop: 2 },
+              asText(FONTS.microBold),
+              { color: COLORS.whiteOpacity50, marginTop: 2 },
             ]}
           >
             Enter your MPIN to unlock
@@ -407,8 +413,8 @@ export default function VerifyMpinScreen() {
               <Text
                 numberOfLines={1}
                 style={[
-                  asText(FONTS.micro),
-                  { color: COLORS.primaryLighter, fontSize: 11 },
+                  asText(FONTS.microBold),
+                  { color: COLORS.white, fontSize: 12, textAlign: 'center' },
                 ]}
               >
                 {pinErrMsg}
@@ -439,11 +445,7 @@ export default function VerifyMpinScreen() {
           <View style={s.keyRow}>
             {showBio ? (
               <Key
-                icon={
-                  bioLabel === 'Face ID'
-                    ? 'scan-outline'
-                    : 'finger-print-outline'
-                }
+                icon="finger-print-outline"
                 onPress={handleBiometric}
                 disabled={bioBusy || loading}
               />

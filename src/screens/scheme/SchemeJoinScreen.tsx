@@ -1281,7 +1281,7 @@ export default function SchemeJoinScreen() {
                   hitSlop={10}
                 >
                   <Text
-                    style={[asText(FONTS.microBold), { color: COLORS.primary }]}
+                    style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}
                   >
                     Done
                   </Text>
@@ -1334,7 +1334,7 @@ export default function SchemeJoinScreen() {
                 paddingBottom: SIZES.padding.md,
               }}
             >
-              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primary }]}>
+              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primaryInk }]}>
                 Pincode {pincode}
               </Text>
               <Text

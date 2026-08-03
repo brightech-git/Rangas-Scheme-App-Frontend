@@ -47,6 +47,9 @@ type Props = {
   badge?: string;
   badgeTone?: 'default' | 'success' | 'error';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoFocus?: boolean;
+  returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send';
+  onSubmitEditing?: () => void;
   /** 'hero' renders for the dark noir zone (auth screens) */
   surface?: 'light' | 'hero';
   secureTextEntry?: boolean;
@@ -75,6 +78,9 @@ const FormField = forwardRef<View, Props>(function FormField(
     badge,
     badgeTone = 'default',
     autoCapitalize = 'sentences',
+    autoFocus = false,
+    returnKeyType,
+    onSubmitEditing,
     surface = 'light',
     secureTextEntry,
     isPassword = false,
@@ -163,6 +169,9 @@ const FormField = forwardRef<View, Props>(function FormField(
           maxLength={maxLength}
           editable={editable}
           autoCapitalize={autoCapitalize}
+          autoFocus={autoFocus}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           secureTextEntry={isSecure}
           selectionColor={c.accent}
           onFocus={() => setFocused(true)}

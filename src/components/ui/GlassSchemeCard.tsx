@@ -51,9 +51,9 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
   const [showHistory, setShowHistory] = useState(false);
 
   // Header gradient colours — deep red palette
-  const hg: string[] = (COLORS as any)?.gradient?.orangeDeep ?? ['#7a0303', '#aa0404'];
-  const deep = (COLORS as any)?.orangeDeep ?? '#550000';
-  const gradColors: [string, string, string] = [hg[1] ?? '#aa0404', hg[0] ?? '#7a0303', deep];
+  const hg: string[] = (COLORS as any)?.gradient?.orangeDeep ?? ['#A95F28', '#C17436'];
+  const deep = (COLORS as any)?.orangeDeep ?? '#6B4520';
+  const gradColors: [string, string, string] = [hg[1] ?? '#C17436', hg[0] ?? '#A95F28', deep];
 
   const paid    = parseInt(item.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0');
   const total   = parseInt(item.schemeSummary?.instalment ?? '1');

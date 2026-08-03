@@ -325,7 +325,7 @@ export default function TransactionsScreen() {
                 },
               ]}
             >
-              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primary }]}>
+              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primaryInk }]}>
                 {m.label}
               </Text>
               <Text
