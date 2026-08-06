@@ -138,10 +138,10 @@ const CTAButton: React.FC<{
       case "primary":
         return {
           container: {
-            backgroundColor: COLORS.primary,
+            backgroundColor: COLORS.primaryFill,
             ...SHADOWS.orange,
           },
-          text: { color: COLORS.white },
+          text: { color: COLORS.textOnPrimary },
         };
       case "secondary":
         return {

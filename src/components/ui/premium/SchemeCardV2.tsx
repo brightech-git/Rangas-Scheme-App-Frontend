@@ -42,6 +42,9 @@ type Props = {
   /** Footer call to action */
   actionLabel?: string;
   onAction?: () => void;
+  /** Optional second footer action */
+  secondActionLabel?: string;
+  onSecondAction?: () => void;
   onPress?: () => void;
   /** Fixed width, for horizontal carousels */
   width?: number;
@@ -61,11 +64,13 @@ function SchemeCardV2({
   progressNote,
   actionLabel,
   onAction,
+  secondActionLabel,
+  onSecondAction,
   onPress,
   width,
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, SHADOWS} = useTheme();
 
   const metalColors: Record<string, string> = {
     G: COLORS.metalGold,
@@ -97,6 +102,7 @@ function SchemeCardV2({
           borderColor: COLORS.hairline,
           opacity: pressed && onPress ? 0.9 : 1,
         },
+        SHADOWS.hairline as ViewStyle,
         style,
       ]}
     >
@@ -203,27 +209,45 @@ function SchemeCardV2({
 
       {/* ── Footer action rail ── */}
       {!!actionLabel && !!onAction && (
-        <Pressable
-          onPress={onAction}
-          style={({ pressed }) => [
-            s.footer,
-            {
-              borderTopColor: COLORS.hairline,
-              paddingVertical: SIZES.padding.lg,
-              paddingHorizontal: SIZES.padding.xl,
-              backgroundColor: pressed ? COLORS.canvasSunken : 'transparent',
-            },
-          ]}
-        >
-          <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
-            {actionLabel}
-          </Text>
-          <Ionicons
-            name="arrow-forward"
-            size={SIZES.icon.sm}
-            color={COLORS.primary}
-          />
-        </Pressable>
+        <View style={[s.footer, { borderTopColor: COLORS.hairline }]}>
+          <Pressable
+            onPress={onAction}
+            style={({ pressed }) => [
+              s.footerBtn,
+              {
+                paddingVertical: SIZES.padding.lg,
+                paddingHorizontal: SIZES.padding.xl,
+                backgroundColor: pressed ? COLORS.canvasSunken : 'transparent',
+                borderRightWidth: secondActionLabel && onSecondAction ? StyleSheet.hairlineWidth : 0,
+                borderRightColor: COLORS.hairline,
+              },
+            ]}
+          >
+            <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
+              {actionLabel}
+            </Text>
+            <Ionicons name="arrow-forward" size={SIZES.icon.sm} color={COLORS.primary} />
+          </Pressable>
+
+          {!!secondActionLabel && !!onSecondAction && (
+            <Pressable
+              onPress={onSecondAction}
+              style={({ pressed }) => [
+                s.footerBtn,
+                {
+                  paddingVertical: SIZES.padding.lg,
+                  paddingHorizontal: SIZES.padding.xl,
+                  backgroundColor: pressed ? COLORS.canvasSunken : 'transparent',
+                },
+              ]}
+            >
+              <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
+                {secondActionLabel}
+              </Text>
+              <Ionicons name="arrow-forward" size={SIZES.icon.sm} color={COLORS.primary} />
+            </Pressable>
+          )}
+        </View>
       )}
     </Pressable>
   );
@@ -245,8 +269,13 @@ const s = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  footerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });
 

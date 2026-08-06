@@ -18,7 +18,7 @@ type Props = {
   caption?: string;
   actionLabel?: string;
   onAction?: () => void;
-  /** Render for the dark hero zone */
+  /** Render for the warm hero zone */
   surface?: 'light' | 'hero';
   /** Counter shown as a hairline pill next to the title */
   count?: number;

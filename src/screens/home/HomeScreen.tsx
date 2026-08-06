@@ -2,7 +2,7 @@
 //
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
-//   1. Dark hero: greeting as the headline, with the LIVE RATES strip
+//   1. Warm hero: greeting as the headline, with the LIVE RATES strip
 //      living inside the dark zone (market data = "outside world").
 //   2. A portfolio slab pulled up over the hero seam — the single
 //      biggest number on the screen, straddling dark and paper.
@@ -271,7 +271,7 @@ export default function HomeScreen() {
           onAvatarPress={() => (navigation as any).navigate('Profile')}
           onBellPress={() => navigation.navigate('Notifications')}
         >
-          {/* Live market strip — lives in the DARK zone, deliberately
+          {/* Live market strip — lives in the WARM SAND zone, deliberately
               separated from the member's own position below. */}
           <View
             style={{
@@ -427,6 +427,7 @@ export default function HomeScreen() {
                   m.schemeSummary?.instalment ?? '0',
                   10,
                 );
+                const isFullyPaid = totalCount > 0 && paidCount >= totalCount;
                 return (
                   <SchemeCardV2
                     width={RAIL_CARD_W}
@@ -450,12 +451,14 @@ export default function HomeScreen() {
                     paid={paidCount}
                     total={totalCount}
                     progressNote={
-                      m.nextDueDate ? `Due ${shortDate(m.nextDueDate)}` : undefined
+                      isFullyPaid
+                        ? 'All instalments paid'
+                        : m.nextDueDate ? `Due ${shortDate(m.nextDueDate)}` : undefined
                     }
-                    actionLabel="Pay instalment"
-                    onAction={() =>
-                      navigation.navigate('PayInstallment', { ppData: m })
-                    }
+                    actionLabel="View instalments"
+                    onAction={() => navigation.navigate('ViewInstallment', { ppData: m })}
+                    secondActionLabel={isFullyPaid ? undefined : 'Pay instalment'}
+                    onSecondAction={isFullyPaid ? undefined : () => navigation.navigate('PayInstallment', { ppData: m })}
                   />
                 );
               }}

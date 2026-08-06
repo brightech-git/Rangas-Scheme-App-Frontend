@@ -182,10 +182,10 @@ export default function CustomAlert({
 
   // ── Type config ──────────────────────────────
   const typeConfig = {
-    success: { icon: 'checkmark-circle' as const, iconColor: COLORS.success,   iconBg: 'rgba(123,174,58,0.12)',  ringColor: 'rgba(123,174,58,0.25)',  accentBar: COLORS.success },
-    error:   { icon: 'close-circle'     as const, iconColor: COLORS.error,     iconBg: 'rgba(220,38,38,0.1)',    ringColor: 'rgba(220,38,38,0.2)',    accentBar: COLORS.error },
+    success: { icon: 'checkmark-circle' as const, iconColor: COLORS.success,   iconBg: COLORS.successBg,  ringColor: COLORS.successBg,  accentBar: COLORS.success },
+    error:   { icon: 'close-circle'     as const, iconColor: COLORS.error,     iconBg: COLORS.errorBg,    ringColor: COLORS.errorBg,    accentBar: COLORS.error },
     warning: { icon: 'warning'          as const, iconColor: COLORS.warning,   iconBg: COLORS.orangeOpacity10,  ringColor: COLORS.orangeOpacity30,   accentBar: COLORS.warning },
-    info:    { icon: 'information-circle' as const, iconColor: COLORS.info,    iconBg: 'rgba(59,130,246,0.1)',   ringColor: 'rgba(59,130,246,0.2)',   accentBar: COLORS.info },
+    info:    { icon: 'information-circle' as const, iconColor: COLORS.info,    iconBg: COLORS.infoBg,     ringColor: COLORS.infoBg,   accentBar: COLORS.info },
     gold:    { icon: 'star'             as const, iconColor: COLORS.secondary, iconBg: COLORS.goldOpacity10,    ringColor: COLORS.goldOpacity30,     accentBar: COLORS.secondary },
     confirm: { icon: 'help-circle'      as const, iconColor: COLORS.primary,   iconBg: COLORS.orangeOpacity10,  ringColor: COLORS.orangeOpacity20,   accentBar: COLORS.primary },
   };

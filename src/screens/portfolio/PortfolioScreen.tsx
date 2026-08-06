@@ -373,6 +373,7 @@ export default function PortfolioScreen() {
                     item.schemeSummary?.instalment ?? '0',
                     10,
                   );
+                  const isFullyPaid = done || (totalCount > 0 && paidCount >= totalCount);
 
                   return (
                     <SchemeCardV2
@@ -389,8 +390,8 @@ export default function PortfolioScreen() {
                       metal="G"
                       metalLabel="GOLD"
                       status={{
-                        label: done ? 'Closed' : 'Active',
-                        tone: done ? 'info' : 'success',
+                        label: isFullyPaid ? 'Closed' : 'Active',
+                        tone: isFullyPaid ? 'info' : 'success',
                       }}
                       stats={[
                         {
@@ -405,8 +406,8 @@ export default function PortfolioScreen() {
                           ),
                         },
                         {
-                          label: done ? 'Value' : 'Next due',
-                          value: done
+                          label: isFullyPaid ? 'Value' : 'Next due',
+                          value: isFullyPaid
                             ? money(
                                 num(item.totalAmountWithBonus) ||
                                   num(item.totalAmount),
@@ -417,23 +418,17 @@ export default function PortfolioScreen() {
                         },
                       ]}
                       paid={paidCount}
-                      total={done ? 0 : totalCount}
-                      actionLabel={done ? undefined : 'Pay instalment'}
-                      onAction={
-                        done
-                          ? undefined
-                          : () =>
-                              (navigation as any).navigate('PayInstallment', {
-                                ppData: item,
-                              })
+                      total={isFullyPaid ? 0 : totalCount}
+                      actionLabel="View instalments"
+                      onAction={() =>
+                        (navigation as any).navigate('ViewInstallment', { ppData: item })
                       }
-                      onPress={
-                        done
+                      secondActionLabel={isFullyPaid ? undefined : 'Pay instalment'}
+                      onSecondAction={
+                        isFullyPaid
                           ? undefined
                           : () =>
-                              (navigation as any).navigate('PayInstallment', {
-                                ppData: item,
-                              })
+                              (navigation as any).navigate('PayInstallment', { ppData: item })
                       }
                     />
                   );

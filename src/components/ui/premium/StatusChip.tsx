@@ -1,7 +1,7 @@
 // src/components/ui/premium/StatusChip.tsx
 //
 // Small status pill. Two surfaces: `light` (on the paper body) and
-// `hero` (on the dark hero zone). UI only.
+// `hero` (on the warm hero zone). UI only.
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
@@ -50,10 +50,12 @@ function StatusChip({
 
   const heroPalette: Record<ChipTone, { fg: string; bg: string }> = {
     neutral: { fg: COLORS.heroTextSecondary, bg: COLORS.heroGlass },
-    success: { fg: COLORS.successLight, bg: 'rgba(39, 174, 96, 0.16)' },
-    warning: { fg: COLORS.secondaryLight, bg: 'rgba(255, 204, 0, 0.16)' },
-    danger: { fg: COLORS.primaryLighter, bg: 'rgba(221, 32, 32, 0.20)' },
-    info: { fg: COLORS.infoLight, bg: 'rgba(46, 134, 222, 0.18)' },
+    // Fills are glass over the hero, so the tone is carried by `fg`.
+    // This keeps every chip on-palette without hardcoding tints.
+    success: { fg: COLORS.heroSuccess, bg: COLORS.heroGlass },
+    warning: { fg: COLORS.heroWarning, bg: COLORS.heroAccentSoft },
+    danger: { fg: COLORS.heroDanger, bg: COLORS.heroGlassBold },
+    info: { fg: COLORS.heroInfo, bg: COLORS.heroGlass },
     gold: { fg: COLORS.heroAccent, bg: COLORS.heroAccentSoft },
   };
 

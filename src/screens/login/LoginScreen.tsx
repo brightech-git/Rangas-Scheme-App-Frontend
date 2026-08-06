@@ -2,7 +2,7 @@
 //
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
-//   Full-noir, bottom-weighted. The brand mark and headline sit high;
+//   Full warm-sand, bottom-weighted. The brand mark and headline sit high;
 //   the two fields, the primary action and the Google alternative are
 //   stacked in the lower half within thumb reach. No red banner, no
 //   floating white card, no diagonal stripe decoration.
@@ -12,7 +12,7 @@
 //     covers empty space rather than the field being typed into.
 //   • "Forgot password" is a full-width row rather than a small
 //     right-aligned link, which is a far easier target.
-//   • The dark treatment marks auth as outside the app proper, so the
+//   • The distinct sand treatment marks auth as outside the app proper, so the
 //     transition into the light product reads as "signed in".
 //
 // BUSINESS LOGIC — UNCHANGED
@@ -116,8 +116,7 @@ export default function LoginScreen() {
       toast.success('Welcome back!', {
         message: `Hello, ${user.username ?? 'User'}`,
       });
-      const mpinSet = await AsyncStorageHelper.isMpinSet();
-      navigation.replace(mpinSet ? 'MpinLogin' : 'CreateMpin');
+      navigation.replace(user.mpinSet === 'Y' ? 'MpinLogin' : 'CreateMpin');
     } else {
       const msg = (res.payload as string) ?? 'Login failed. Please try again.';
       setErrors({ mobile: msg });
@@ -324,7 +323,7 @@ export default function LoginScreen() {
           style={({ pressed }) => [s.footerRow, { opacity: pressed ? 0.6 : 1 ,marginTop: SIZES.margin.xl}]}
         >
           <Text
-            style={[asText(FONTS.micro), { color: COLORS.white }]}
+            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
           >
             New to Rangas?
           </Text>

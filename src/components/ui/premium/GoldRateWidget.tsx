@@ -41,7 +41,7 @@ function GoldRateWidget({
   sparkWidth = 92,
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, SHADOWS} = useTheme();
   const onHero = surface === 'hero';
 
   const isGold = String(metal).toLowerCase().startsWith('g');
@@ -55,10 +55,10 @@ function GoldRateWidget({
   const up = changePct >= 0;
   const trendColor = up
     ? onHero
-      ? COLORS.successLight
+      ? COLORS.heroSuccess
       : COLORS.success
     : onHero
-    ? COLORS.primaryLighter
+    ? COLORS.heroDanger
     : COLORS.error;
 
   const Wrapper: React.ElementType = onPress ? Pressable : View;
@@ -74,6 +74,7 @@ function GoldRateWidget({
           borderColor: border,
           padding: SIZES.padding.xl,
         },
+        !onHero && (SHADOWS.hairline as ViewStyle),
         style,
       ]}
     >
@@ -89,11 +90,11 @@ function GoldRateWidget({
         {/* Left: identity + numeral */}
         <View style={{ flex: 1 }}>
           <View style={s.metalRow}>
-            <Text style={[asText(FONTS.microBold), { color: COLORS.whiteOpacity50, fontSize: 10 }]}>
+            <Text style={[asText(FONTS.microBold), { color: dim, fontSize: 10 }]}>
               {String(metal).toUpperCase()}
             </Text>
             {!!purity && (
-              <Text style={[asText(FONTS.microBold), { color: COLORS.whiteOpacity50, fontSize: 10 }]}>
+              <Text style={[asText(FONTS.microBold), { color: dim, fontSize: 10 }]}>
                 · {purity}
               </Text>
             )}
@@ -110,7 +111,7 @@ function GoldRateWidget({
           {!!updatedAt && (
             <Text
               numberOfLines={1}
-              style={[asText(FONTS.microBold), { color: COLORS.whiteOpacity50, fontSize: 10, marginTop: 2 }]}
+              style={[asText(FONTS.microBold), { color: dim, fontSize: 10, marginTop: 2 }]}
             >
               Updated {updatedAt}
             </Text>

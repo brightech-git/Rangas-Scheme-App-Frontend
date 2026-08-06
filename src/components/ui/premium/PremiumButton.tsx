@@ -21,13 +21,13 @@ import { useTheme } from '../../../theme';
 import { asText } from './tokens';
 
 export type PremiumButtonVariant =
-  /** Solid oxblood — the single primary action on a screen */
+  /** Solid cinnamon — the single primary action on a screen */
   | 'solid'
   /** Gold foil gradient — reserved for money-moving actions */
   | 'gold'
   /** Ink-on-paper hairline outline */
   | 'outline'
-  /** Frosted glass — for use on the dark hero zone */
+  /** Frosted glass — for use on the warm hero zone */
   | 'glass'
   /** Text-only */
   | 'quiet'
@@ -98,13 +98,15 @@ function PremiumButton({
       // primaryFill, not primary — cinnamon at full strength only gives
       // 3.61:1 against a white label, which fails WCAG AA.
       bg: COLORS.primaryFill,
-      fg: COLORS.white,
+      fg: COLORS.textOnPrimary,
       border: 'transparent',
       shadow: SHADOWS.lift as ViewStyle,
     },
     gold: {
       bg: COLORS.metalGold,
-      fg: COLORS.heroCanvas,
+      // Ink, not heroCanvas — the gold foil is light, so the label must
+      // be the dark brown ramp in BOTH themes to stay legible.
+      fg: COLORS.textOnGold,
       border: 'transparent',
       shadow: SHADOWS.goldGlow as ViewStyle,
       gradient: COLORS.gradient.goldFoil,
@@ -129,7 +131,7 @@ function PremiumButton({
     },
     danger: {
       bg: COLORS.error,
-      fg: COLORS.white,
+      fg: COLORS.textOnStatus,
       border: 'transparent',
       shadow: SHADOWS.lift as ViewStyle,
     },

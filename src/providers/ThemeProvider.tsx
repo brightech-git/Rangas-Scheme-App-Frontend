@@ -18,8 +18,11 @@ const resolveIsDark = (pref: ThemePreference): boolean => {
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Start from the current system scheme so first paint matches the OS,
   // then hydrate the persisted preference (if any) once storage resolves.
-  const [preference, setPreference] = useState<ThemePreference>('system');
-  const [isDark, setIsDark] = useState<boolean>(resolveIsDark('system'));
+  // Start on the brand's light palette rather than the device scheme, so
+  // the very first paint is Warm Ivory even on a phone set to dark mode.
+  // The persisted preference (if the user chose one) hydrates just below.
+  const [preference, setPreference] = useState<ThemePreference>('light');
+  const [isDark, setIsDark] = useState<boolean>(resolveIsDark('light'));
 
   // Hydrate persisted preference on mount
   useEffect(() => {

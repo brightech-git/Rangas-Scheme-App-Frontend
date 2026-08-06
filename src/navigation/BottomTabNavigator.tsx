@@ -2,7 +2,7 @@
 //
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
-//   A floating noir capsule rather than a full-width white shelf.
+//   A floating warm-sand capsule rather than a full-width white shelf.
 //   It detaches from the screen edge, so paper content scrolls
 //   visibly beneath it and the app reads as layered.
 //
@@ -181,7 +181,7 @@ const TabButton = memo(function TabButton({
               style={[
                 s.badge,
                 {
-                  backgroundColor: COLORS.primaryLighter,
+                  backgroundColor: COLORS.accent,
                   borderColor: COLORS.heroElevated,
                 },
               ]}
@@ -189,7 +189,7 @@ const TabButton = memo(function TabButton({
               <Text
                 style={{
                   fontSize: 8,
-                  color: COLORS.white,
+                  color: COLORS.textOnAccent,
                   fontFamily: FONTS.family.bold,
                 }}
               >

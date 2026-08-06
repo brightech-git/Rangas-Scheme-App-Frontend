@@ -1,9 +1,9 @@
 // src/components/ui/premium/AuthShell.tsx
 //
-// Full-noir scaffold for pre-authentication screens (login, register,
-// OTP, MPIN). Unlike the in-app screens — which pair a dark hero with a
-// paper body — auth is dark edge to edge. That gives the app a clear
-// "threshold": you cross from a dark vestibule into a light product.
+// Warm-sand scaffold for pre-authentication screens (login, register,
+// OTP, MPIN). Unlike the in-app screens — which pair a warm hero with a
+// paper body — auth is warm sand edge to edge. That gives the app a clear
+// "threshold": you cross from a warm vestibule into the ivory product.
 //
 // Content is bottom-weighted so form fields sit within thumb reach and
 // stay clear of the keyboard.
@@ -56,7 +56,7 @@ function AuthShell({
   align = 'bottom',
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
   const G = SIZES.layout.gutter;
 
   const head = (

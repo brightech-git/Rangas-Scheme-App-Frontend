@@ -2,7 +2,7 @@
 //
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
-//   A true lock screen: full noir, no card, no elevation. Identity sits
+//   A true lock screen: full warm sand, no card, no elevation. Identity sits
 //   at the top as an avatar monogram plus name, the four dots sit in
 //   the optical centre, and a borderless keypad occupies the lower
 //   third with the biometric affordance in the keypad's bottom-left
@@ -23,7 +23,7 @@
 //   handleBiometric's full BiometricHelper sequence, and the mount
 //   effect that auto-prompts once are preserved exactly. Only the PIN
 //   entry surface changed — AppPinInput is replaced by an inline
-//   noir keypad that calls the same handleComplete on the 4th digit.
+//   warm keypad that calls the same handleComplete on the 4th digit.
 // ─────────────────────────────────────────────────────────────────
 
 import React, {
@@ -78,12 +78,12 @@ const Key = memo(function Key({
   onPress: () => void;
   disabled?: boolean;
 }) {
-  const { COLORS, FONTS, moderateScale } = useTheme();
+  const { COLORS, FONTS, moderateScale, isDark } = useTheme();
   const press = useRef(new Animated.Value(0)).current;
 
   const bg = press.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.10)'],
+    outputRange: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.14)'],
   });
 
   if (!label && !icon) return <View style={s.key} />;
@@ -149,7 +149,7 @@ export default function VerifyMpinScreen() {
   const { loading } = useAppSelector((s) => s.mpin);
   const user = useAppSelector((s) => s.auth.user);
   const toast = useToast();
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
 
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState(false);
@@ -322,9 +322,6 @@ export default function VerifyMpinScreen() {
         end={{ x: 0.8, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <View style={[s.bloom, { backgroundColor: COLORS.heroGoldVeil }]} />
-      </View>
 
       <SafeAreaView style={{ flex: 1 }}>
         {/* ── Identity ── */}
@@ -363,7 +360,7 @@ export default function VerifyMpinScreen() {
           <Text
             style={[
               asText(FONTS.microBold),
-              { color: COLORS.whiteOpacity50, marginTop: 2 },
+              { color: COLORS.heroTextTertiary, marginTop: 2 },
             ]}
           >
             Enter your MPIN to unlock
@@ -414,7 +411,7 @@ export default function VerifyMpinScreen() {
                 numberOfLines={1}
                 style={[
                   asText(FONTS.microBold),
-                  { color: COLORS.white, fontSize: 12, textAlign: 'center' },
+                  { color: COLORS.primaryDark, fontSize: 12, textAlign: 'center' },
                 ]}
               >
                 {pinErrMsg}

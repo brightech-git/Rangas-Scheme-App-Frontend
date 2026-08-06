@@ -110,7 +110,7 @@ function Shimmer({ width, height, borderRadius = 6 }: { width: number | `${numbe
     ).start();
   }, []);
   return (
-    <Animated.View style={{ width, height, borderRadius, backgroundColor: '#E5E7EB', opacity: anim }} />
+    <Animated.View style={{ width, height, borderRadius, backgroundColor: '#E7D4C4', opacity: anim }} />
   );
 }
 
@@ -339,7 +339,7 @@ export default function AppGoldPriceCard({
         <Ionicons
           name="add-circle-outline"
           size={moderateScale(16)}
-          color={COLORS.white}
+          color={COLORS.textOnPrimary}
         />
         <Text
           style={[
@@ -347,7 +347,7 @@ export default function AppGoldPriceCard({
             {
               fontFamily: FONTS.family.semiBold,
               fontSize: SIZES.font.sm,
-              color: COLORS.white,
+              color: COLORS.textOnPrimary,
             },
           ]}
         >

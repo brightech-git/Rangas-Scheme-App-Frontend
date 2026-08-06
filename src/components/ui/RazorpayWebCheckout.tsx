@@ -61,7 +61,7 @@ function buildHtml(options: Record<string, any>): string {
     }
     .loader {
       text-align: center;
-      color: #6B7280;
+      color: #74563C;
       font-size: 14px;
     }
     .dot { display: inline-block; animation: bounce 1.2s infinite; }

@@ -73,13 +73,18 @@ type TypeCfg = { icon: string; bg: string; accent: string; textColor: string };
 
 function useTypeConfig(): Record<ToastType, TypeCfg> {
   const { COLORS } = useTheme();
+  // Toasts float above whatever is on screen, so they stay DARK in both
+  // light and dark mode — that is what keeps them readable over a Warm
+  // Ivory page and over an espresso one. The semantic *_Bg tokens cannot
+  // be used here because they invert with the theme; these are the warm
+  // dark equivalents drawn from the same brown ramp as dark.js.
   return {
-    success: { icon: 'checkmark-circle',     bg: '#0F2A14', accent: COLORS.success,   textColor: '#B8ECA0' },
-    error:   { icon: 'close-circle',         bg: '#2A0F0F', accent: COLORS.error,     textColor: '#F9B8B8' },
-    warning: { icon: 'warning',              bg: '#2A1E0A', accent: COLORS.warning,   textColor: '#FFD39A' },
-    info:    { icon: 'information-circle',   bg: '#0D1F35', accent: COLORS.info,      textColor: '#B8D4F9' },
-    gold:    { icon: 'star',                 bg: '#1A1209', accent: COLORS.secondary, textColor: COLORS.secondaryLighter },
-    loading: { icon: 'sync-circle',          bg: '#0F1117', accent: COLORS.primary,   textColor: COLORS.primaryLighter },
+    success: { icon: 'checkmark-circle',     bg: '#152B1E', accent: COLORS.successLight,   textColor: '#9FD9AE' },
+    error:   { icon: 'close-circle',         bg: '#331419', accent: COLORS.errorLight,     textColor: '#EFB3B7' },
+    warning: { icon: 'warning',              bg: '#2E2617', accent: COLORS.warningLight,   textColor: '#E8CFA4' },
+    info:    { icon: 'information-circle',   bg: '#14232F', accent: COLORS.infoLight,      textColor: '#AFC9E0' },
+    gold:    { icon: 'star',                 bg: '#2B2418', accent: COLORS.secondary, textColor: COLORS.secondaryLighter },
+    loading: { icon: 'sync-circle',          bg: '#181009', accent: COLORS.primaryLight,   textColor: COLORS.primaryLighter },
   };
 }
 

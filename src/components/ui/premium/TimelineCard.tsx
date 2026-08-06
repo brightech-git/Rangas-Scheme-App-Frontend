@@ -52,11 +52,11 @@ function TimelineCard({
   const toneColor = (t: TimelineTone = 'default'): string => {
     switch (t) {
       case 'success':
-        return onHero ? COLORS.successLight : COLORS.success;
+        return onHero ? COLORS.heroSuccess : COLORS.success;
       case 'pending':
         return COLORS.metalGold;
       case 'failed':
-        return onHero ? COLORS.primaryLighter : COLORS.error;
+        return onHero ? COLORS.heroDanger : COLORS.error;
       case 'gold':
         return COLORS.metalGold;
       default:

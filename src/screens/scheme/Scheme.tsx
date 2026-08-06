@@ -278,6 +278,7 @@ export default function SchemeScreen() {
               );
               const total = parseInt(item.schemeSummary?.instalment ?? '0', 10);
               const done = status === 'completed';
+              const isFullyPaid = done || (total > 0 && paid >= total);
 
               return (
                 <SchemeCardV2
@@ -314,7 +315,7 @@ export default function SchemeScreen() {
                     },
                   ]}
                   paid={paid}
-                  total={done ? 0 : total}
+                  total={isFullyPaid ? 0 : total}
                   progressNote={
                     item.nextDueDate
                       ? `Next ${shortDate(item.nextDueDate)}`
@@ -322,22 +323,15 @@ export default function SchemeScreen() {
                       ? `Matures ${prettyDate(item.maturityDate)}`
                       : undefined
                   }
-                  actionLabel={done ? undefined : 'Pay instalment'}
-                  onAction={
-                    done
-                      ? undefined
-                      : () =>
-                          navigation.navigate('PayInstallment', {
-                            ppData: item,
-                          })
+                  actionLabel="View instalments"
+                  onAction={() =>
+                    navigation.navigate('ViewInstallment', { ppData: item })
                   }
-                  onPress={
-                    done
+                  secondActionLabel={isFullyPaid ? undefined : 'Pay instalment'}
+                  onSecondAction={
+                    isFullyPaid
                       ? undefined
-                      : () =>
-                          navigation.navigate('PayInstallment', {
-                            ppData: item,
-                          })
+                      : () => navigation.navigate('PayInstallment', { ppData: item })
                   }
                 />
               );

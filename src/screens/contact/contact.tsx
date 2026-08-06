@@ -38,6 +38,11 @@ const mapsHref = (c: Company) =>
 type LinkItem = { key: string; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; url: string };
 const socialLinksOf = (c?: Company): LinkItem[] => {
   if (!c) return [];
+  // NOTE: these are official third-party brand colours, deliberately NOT
+  // themed. WhatsApp green / Instagram magenta etc. are how users identify
+  // the destination — recolouring them to the Cinnamon palette would hurt
+  // recognition and misrepresent those brands. Everything else on this
+  // screen is theme-driven.
   const defs: { key: keyof Company; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
     { key: 'WHATSAPPLINK',       label: 'WhatsApp',   icon: 'logo-whatsapp',         color: '#25D366' },
     { key: 'FACEBOOKLINK',       label: 'Facebook',   icon: 'logo-facebook',         color: '#1877F2' },
@@ -198,9 +203,9 @@ export default function ContactScreen() {
 
                     {/* Directions */}
                     {addr ? (
-                      <TouchableOpacity style={[s.branchBtn, { backgroundColor: COLORS.primary }]} onPress={() => Linking.openURL(mapsHref(c))} activeOpacity={0.85}>
-                        <Ionicons name="navigate-outline" size={14} color={COLORS.white} />
-                        <Text style={[s.branchBtnTxt, { color: COLORS.white, fontFamily: FONTS.family.semiBold }]}>Get Directions</Text>
+                      <TouchableOpacity style={[s.branchBtn, { backgroundColor: COLORS.primaryFill }]} onPress={() => Linking.openURL(mapsHref(c))} activeOpacity={0.85}>
+                        <Ionicons name="navigate-outline" size={14} color={COLORS.textOnPrimary} />
+                        <Text style={[s.branchBtnTxt, { color: COLORS.textOnPrimary, fontFamily: FONTS.family.semiBold }]}>Get Directions</Text>
                       </TouchableOpacity>
                     ) : null}
                   </View>

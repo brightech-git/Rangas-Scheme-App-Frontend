@@ -323,7 +323,7 @@ export default function NotificationScreen() {
           </Text>
           <TouchableOpacity
             onPress={refresh}
-            style={[styles.retryBtn, { backgroundColor: COLORS.primary }]}
+            style={[styles.retryBtn, { backgroundColor: COLORS.primaryFill }]}
           >
             <Text style={{
               fontFamily: FONTS.family.semiBold,

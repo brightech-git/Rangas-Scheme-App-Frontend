@@ -43,7 +43,7 @@ function MetricCard({
   emphasis = false,
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, SHADOWS} = useTheme();
 
   const accents: Record<MetricTone, string> = {
     default: COLORS.inkPrimary,
@@ -69,6 +69,7 @@ function MetricCard({
           padding: emphasis ? SIZES.padding.xl : SIZES.padding.lg,
           minHeight: emphasis ? moderateScale(120) : moderateScale(96),
         },
+        SHADOWS.hairline as ViewStyle,
         style,
       ]}
     >

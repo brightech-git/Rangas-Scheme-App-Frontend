@@ -50,7 +50,7 @@ function AnalyticsCard({
   surface = 'light',
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, SHADOWS} = useTheme();
   const onHero = surface === 'hero';
 
   const bg = onHero ? COLORS.heroElevated : COLORS.canvasElevated;
@@ -72,6 +72,7 @@ function AnalyticsCard({
           borderColor: border,
           paddingTop: SIZES.padding.xl,
         },
+        !onHero && (SHADOWS.hairline as ViewStyle),
         style,
       ]}
     >

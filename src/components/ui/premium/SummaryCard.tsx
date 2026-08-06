@@ -40,7 +40,7 @@ function SummaryCard({
   surface = 'light',
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES } = useTheme();
+  const { COLORS, FONTS, SIZES, SHADOWS} = useTheme();
   const onHero = surface === 'hero';
 
   const bg = onHero ? COLORS.heroElevated : COLORS.canvasElevated;
@@ -59,6 +59,7 @@ function SummaryCard({
           backgroundColor: bg,
           borderColor: border,
         },
+        !onHero && (SHADOWS.hairline as ViewStyle),
         style,
       ]}
     >

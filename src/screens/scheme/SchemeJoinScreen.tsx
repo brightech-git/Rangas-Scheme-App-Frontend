@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
 //   The enrolment form, restructured from one long scroll into three
-//   labelled stages with a step rail in the dark hero: Plan → Details
+//   labelled stages with a step rail in the warm hero: Plan → Details
 //   → Nominee. The rail shows which stages are complete and how many
 //   errors each holds, so a 13-field KYC form stops feeling unbounded.
 //
@@ -127,7 +127,8 @@ const GENDER_ICONS: Record<string, string> = {
   Other: 'people-outline',
 };
 
-const DRAFT_KEY = 'SCHEME_JOIN_DRAFT';
+const DRAFT_KEY = (schemeId: number) => `SCHEME_JOIN_DRAFT_${schemeId}`;
+const PERSONAL_KEY = 'SCHEME_JOIN_PERSONAL';
 
 export default function SchemeJoinScreen() {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
@@ -236,9 +237,9 @@ export default function SchemeJoinScreen() {
     }
   }, [user]);
 
-  // ── AsyncStorage: load draft on mount (unchanged) ──────────────
+  // ── AsyncStorage: load draft on mount (step 2 & 3 only) ──────────────
   useEffect(() => {
-    AsyncStorage.getItem(DRAFT_KEY).then((raw) => {
+    AsyncStorage.getItem(PERSONAL_KEY).then((raw) => {
       if (!raw) return;
       try {
         const d = JSON.parse(raw);
@@ -253,14 +254,14 @@ export default function SchemeJoinScreen() {
         if (d.city) setCity(d.city);
         if (d.district) setDistrict(d.district);
         if (d.stateVal) setStateVal(d.stateVal);
-        if (d.nominee) setNominee(d.nominee);
-        if (d.nomRel) setNomRel(d.nomRel);
-        if (d.nomMobile) setNomMobile(d.nomMobile);
         if (d.gender) setGender(d.gender);
         if (d.dobDay) setDobDay(d.dobDay);
         if (d.dobMonth) setDobMonth(d.dobMonth);
         if (d.dobYear) setDobYear(d.dobYear);
         if (d.dobSet) setDobSet(d.dobSet);
+        if (d.nominee) setNominee(d.nominee);
+        if (d.nomRel) setNomRel(d.nomRel);
+        if (d.nomMobile) setNomMobile(d.nomMobile);
       } catch {
         /* ignore corrupt data */
       }
@@ -271,6 +272,7 @@ export default function SchemeJoinScreen() {
   // (logic carried forward verbatim from the concurrent edit)
   const [pincodeOptions, setPincodeOptions] = useState<PostOffice[]>([]);
   const [showPincodeModal, setShowPincodeModal] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
 
   const fetchPincode = async (pin: string) => {
     if (pin.length !== 6) {
@@ -314,20 +316,20 @@ export default function SchemeJoinScreen() {
     }
   };
 
-  // ── AsyncStorage: save draft whenever any field changes ────────
+  // ── AsyncStorage: save draft (step 2 & 3 only) ────────
   useEffect(() => {
     const draft = {
       name, mobile, email, aadhaar, pan,
       doorStreet, pincode, area, city, district, stateVal,
-      nominee, nomRel, nomMobile, gender,
-      dobDay, dobMonth, dobYear, dobSet,
+      gender, dobDay, dobMonth, dobYear, dobSet,
+      nominee, nomRel, nomMobile,
     };
-    AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    AsyncStorage.setItem(PERSONAL_KEY, JSON.stringify(draft));
   }, [
     name, mobile, email, aadhaar, pan,
     doorStreet, pincode, area, city, district, stateVal,
-    nominee, nomRel, nomMobile, gender,
-    dobDay, dobMonth, dobYear, dobSet,
+    gender, dobDay, dobMonth, dobYear, dobSet,
+    nominee, nomRel, nomMobile,
   ]);
 
   const dobLabel = dobSet
@@ -388,7 +390,10 @@ export default function SchemeJoinScreen() {
   const isProcessing = ['creating_order', 'checkout_open', 'verifying'].includes(
     status,
   );
-  const showFailed = status === 'failed';
+  const showFailed     = status === 'failed';
+  const showVerifying  = status === 'verifying';
+  const showSuccess    = status === 'success';
+  const showCancelled  = status === 'cancelled';
 
   // ── Build userDetails payload for /verify_payment (unchanged) ──
   const buildUserDetails = (): UserDetails => {
@@ -481,7 +486,7 @@ export default function SchemeJoinScreen() {
         sName: 'NA',
         doorNo: doorStreet.trim() || '',
         address1: doorStreet.trim() || '',
-        address2: area.trim() || '',
+        address2: district.trim() || '',
         area: area.trim() || '',
         city: city.trim() || '',
         state: stateVal.trim() || 'Tamil Nadu',
@@ -629,19 +634,10 @@ export default function SchemeJoinScreen() {
     );
   };
 
-  // On payment success: clear draft, redirect straight to Home, and show an
-  // auto-dismissing popup there (no button needed).
+  // On payment success: clear draft.
   useEffect(() => {
     if (status !== 'success') return;
-    AsyncStorage.removeItem(DRAFT_KEY);
-    toast.success('Successfully Joined! 🎉', {
-      message: `You enrolled in ${scheme.schemeName}.`,
-      position: 'top',
-      duration: 4000,
-      closable: false,
-    });
-    reset();
-    navigation.navigate('Main');
+    AsyncStorage.removeItem(DRAFT_KEY(scheme.SchemeId));
   }, [status]);
 
   // ── Presentation-only: stage completion for the rail ──
@@ -771,7 +767,7 @@ export default function SchemeJoinScreen() {
                       <Ionicons
                         name="checkmark"
                         size={10}
-                        color={COLORS.heroCanvas}
+                        color={COLORS.heroOnAccent}
                       />
                     )}
                     {!st.done && st.errors > 0 && (
@@ -844,9 +840,7 @@ export default function SchemeJoinScreen() {
             >
               {isFixed ? (
                 groupsLoading ? (
-                  <Text
-                    style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}
-                  >
+                  <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>
                     Loading available amounts…
                   </Text>
                 ) : groups.length === 0 ? (
@@ -856,20 +850,34 @@ export default function SchemeJoinScreen() {
                     label="No instalment groups available"
                   />
                 ) : (
-                  groups.map((g, i) => (
-                    <PaymentTile
-                      key={`${g.GROUPCODE}-${i}`}
-                      icon="cash-outline"
-                      title={`${money(g.AMOUNT)} / month`}
-                      subtitle={`Group ${g.GROUPCODE} · Reg no. ${g.REGNO ?? g.CURRENTREGNO}`}
-                      selected={selectedGroup?.GROUPCODE === g.GROUPCODE}
-                      tag={i === 0 ? 'POPULAR' : undefined}
-                      onPress={() => {
-                        setSelectedGroup(g);
-                        clearErr('group');
-                      }}
-                    />
-                  ))
+                  <Pressable
+                    onPress={() => setShowAmountModal(true)}
+                    style={({ pressed }) => ([
+                      {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: SIZES.padding.lg,
+                        paddingHorizontal: SIZES.padding.lg,
+                        borderRadius: SIZES.radius.tile,
+                        borderWidth: 1,
+                        borderColor: fieldErrors.group ? COLORS.error : selectedGroup ? COLORS.primary : COLORS.hairline,
+                        backgroundColor: COLORS.canvasElevated,
+                        opacity: pressed ? 0.7 : 1,
+                      },
+                    ])}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Ionicons name="cash-outline" size={SIZES.icon.md} color={selectedGroup ? COLORS.primary : COLORS.inkTertiary} />
+                      <View>
+                        <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}>Monthly instalment</Text>
+                        <Text style={[asText(FONTS.microBold), { color: selectedGroup ? COLORS.inkPrimary : COLORS.inkMuted, marginTop: 2 }]}>
+                          {selectedGroup ? `${money(selectedGroup.AMOUNT)} / month` : 'Tap to select amount'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-down" size={SIZES.icon.sm} color={COLORS.inkMuted} />
+                  </Pressable>
                 )
               ) : (
                 <FormField
@@ -1226,6 +1234,67 @@ export default function SchemeJoinScreen() {
         </View>
       </ScreenCanvas>
 
+      {/* ── Verifying / Success / Cancelled full-page overlay ── */}
+      <Modal visible={showVerifying || showSuccess || showCancelled} transparent animationType="fade">
+        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60, justifyContent: 'center', alignItems: 'center', padding: G * 2 }]}>
+          <View style={[
+            s.resultCard,
+            { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl },
+          ]}>
+            {showVerifying && (
+              <>
+                <View style={[s.resultIcon, { backgroundColor: COLORS.background ?? COLORS.canvasElevated }]}>
+                  <Ionicons name="hourglass-outline" size={SIZES.icon.xl} color={COLORS.primary} />
+                </View>
+                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
+                  Confirming your enrolment
+                </Text>
+                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+                  Please wait while we verify your payment and set up your scheme. This takes a few seconds.
+                </Text>
+              </>
+            )}
+
+            {showSuccess && (
+              <>
+                <View style={[s.resultIcon, { backgroundColor: COLORS.successBg ?? '#E6F9F0' }]}>
+                  <Ionicons name="checkmark-circle" size={SIZES.icon.xl} color={COLORS.success ?? '#1A9E5C'} />
+                </View>
+                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
+                  You're enrolled! 🎉
+                </Text>
+                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+                  {`Welcome to ${scheme.schemeName}. Your first instalment has been received.`}
+                </Text>
+                <PremiumButton
+                  label="Go to home"
+                  style={{ marginTop: SIZES.margin.xxl }}
+                  onPress={() => { reset(); navigation.navigate('Main'); }}
+                />
+              </>
+            )}
+
+            {showCancelled && (
+              <>
+                <View style={[s.resultIcon, { backgroundColor: COLORS.warningBg ?? '#FFF8E1' }]}>
+                  <Ionicons name="close-circle-outline" size={SIZES.icon.xl} color={COLORS.warning ?? '#F59E0B'} />
+                </View>
+                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
+                  Payment cancelled
+                </Text>
+                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+                  No amount was debited. You can try again whenever you're ready.
+                </Text>
+                <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
+                  <PremiumButton label="Try again" onPress={() => { reset(); void handleSubmit(); }} />
+                  <PremiumButton label="Back to form" variant="outline" onPress={reset} />
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* ── Native Date of Birth picker (unchanged) ── */}
       {showDob && Platform.OS === 'android' && (
         <DateTimePicker
@@ -1299,6 +1368,58 @@ export default function SchemeJoinScreen() {
           </Pressable>
         </Modal>
       )}
+
+      {/* ── Amount selector modal ── */}
+      <Modal
+        visible={showAmountModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAmountModal(false)}
+      >
+        <Pressable
+          style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}
+          onPress={() => setShowAmountModal(false)}
+        >
+          <Pressable
+            style={[
+              s.sheet,
+              {
+                backgroundColor: COLORS.canvasElevated,
+                borderTopLeftRadius: SIZES.radius.sheet,
+                borderTopRightRadius: SIZES.radius.sheet,
+                maxHeight: '65%',
+                paddingBottom: SIZES.padding.xxl,
+              },
+            ]}
+          >
+            <View style={[s.grabber, { backgroundColor: COLORS.hairlineBold, marginTop: 10 }]} />
+            <View style={{ paddingHorizontal: G, paddingTop: SIZES.padding.xl, paddingBottom: SIZES.padding.md }}>
+              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primaryInk }]}>Plan</Text>
+              <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: 2 }]}>Select monthly amount</Text>
+            </View>
+            <FlatList
+              data={groups}
+              keyExtractor={(g, i) => `${g.GROUPCODE}-${i}`}
+              style={{ paddingHorizontal: G }}
+              contentContainerStyle={{ paddingBottom: SIZES.padding.xl, gap: 10 }}
+              renderItem={({ item: g, index: i }) => (
+                <PaymentTile
+                  icon="cash-outline"
+                  title={`${money(g.AMOUNT)} / month`}
+                  subtitle={`Group ${g.GROUPCODE} · Reg no. ${g.REGNO ?? g.CURRENTREGNO}`}
+                  selected={selectedGroup?.GROUPCODE === g.GROUPCODE}
+                  tag={i === 0 ? 'POPULAR' : undefined}
+                  onPress={() => {
+                    setSelectedGroup(g);
+                    clearErr('group');
+                    setShowAmountModal(false);
+                  }}
+                />
+              )}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* ── Pincode area selector ── */}
       <Modal
@@ -1403,68 +1524,22 @@ export default function SchemeJoinScreen() {
 
       <RazorpayWebCheckout ref={rzpWebRef} />
 
-      {/* ── Failure sheet ── */}
+      {/* ── Failure modal (centered) ── */}
       <Modal visible={showFailed} transparent animationType="fade">
-        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}>
-          <View
-            style={[
-              s.sheet,
-              {
-                backgroundColor: COLORS.canvasElevated,
-                borderTopLeftRadius: SIZES.radius.sheet,
-                borderTopRightRadius: SIZES.radius.sheet,
-                paddingHorizontal: G,
-                paddingTop: SIZES.padding.xxl,
-                paddingBottom: SIZES.padding.xxxl,
-              },
-            ]}
-          >
-            <View style={[s.grabber, { backgroundColor: COLORS.hairlineBold }]} />
-
-            <View
-              style={[
-                s.failMark,
-                {
-                  borderRadius: SIZES.radius.tile,
-                  backgroundColor: COLORS.errorBg,
-                  marginTop: SIZES.margin.xl,
-                },
-              ]}
-            >
-              <Ionicons name="close" size={SIZES.icon.xl} color={COLORS.error} />
+        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60, justifyContent: 'center', alignItems: 'center', padding: G * 2 }]}>
+          <View style={[s.resultCard, { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl }]}>
+            <View style={[s.resultIcon, { backgroundColor: COLORS.errorBg }]}>
+              <Ionicons name="close-circle" size={SIZES.icon.xl} color={COLORS.error} />
             </View>
-
-            <Text
-              style={[
-                asText(FONTS.displaySm),
-                { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl },
-              ]}
-            >
+            <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
               Payment failed
             </Text>
-            <Text
-              style={[
-                asText(FONTS.micro),
-                { color: COLORS.inkTertiary, marginTop: 6, lineHeight: 19 },
-              ]}
-            >
-              {error ||
-                'Something went wrong. No amount has been debited. Your form has been saved — please try again.'}
+            <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+              {error || 'Something went wrong. No amount has been debited. Your form has been saved — please try again.'}
             </Text>
-
-            <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
-              <PremiumButton
-                label="Try again"
-                onPress={() => {
-                  reset();
-                  void handleSubmit();
-                }}
-              />
-              <PremiumButton
-                label="Cancel"
-                variant="outline"
-                onPress={() => reset()}
-              />
+            <View style={{ marginTop: SIZES.margin.xxl, gap: 10, width: '100%' }}>
+              <PremiumButton label="Try again" onPress={() => { reset(); void handleSubmit(); }} />
+              <PremiumButton label="Cancel" variant="outline" onPress={() => reset()} />
             </View>
           </View>
         </View>
@@ -1506,6 +1581,17 @@ const s = StyleSheet.create({
   failMark: {
     width: 56,
     height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultCard: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  resultIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -2,8 +2,8 @@
 //
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
-//   The rate itself is promoted INTO the dark hero: the headline
-//   figure, the day's delta and the metal switch all live in the noir
+//   The rate itself is promoted INTO the warm hero: the headline
+//   figure, the day's delta and the metal switch all live in the sand
 //   zone, so the screen opens on the number the member came for. The
 //   paper body below carries the analysis — trend chart, a hairline
 //   ledger of daily closes, and the disclaimer.

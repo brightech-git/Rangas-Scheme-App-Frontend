@@ -43,11 +43,13 @@ export type RootStackParamList = {
   SchemeTerms:             { scheme: SchemeItem };
   SchemeJoin:              { scheme: SchemeItem };
   PayInstallment:          { ppData: PPData };
+  ViewInstallment:         { ppData: PPData };
   Rates:                   { metal?: 'Gold' | 'Silver' };
   BuyGold:                 undefined;
   Portfolio:               undefined;
   Transactions:            undefined;
   Wallet:                  undefined;
+  DeleteAccount:           undefined;
 };
 
 type InitialRoute = 'Onboarding' | 'Register' | 'Login' | 'CreateMpin' | 'MpinLogin' | 'Main';
@@ -133,12 +135,14 @@ export default function RootNavigator() {
         <Stack.Screen name="SchemeTerms"      component={Screens.SchemeTermsScreen}      options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="SchemeJoin"       component={Screens.SchemeJoinScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="PayInstallment"   component={Screens.PayInstallmentScreen}   options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="ViewInstallment"  component={Screens.ViewInstallmentScreen}  options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Rates"            component={Screens.RatesScreen}            options={{ animation: 'slide_from_bottom', headerShown: false }} />
         <Stack.Screen name="LoginLog"            component={Screens.LoginLog} />
         <Stack.Screen name="BuyGold"         component={Screens.BuyGoldScreen}         options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Portfolio"       component={Screens.PortfolioScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Transactions"    component={Screens.TransactionsScreen}    options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Wallet"          component={WalletScreen}                  options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="DeleteAccount"   component={Screens.DeleteAccountScreen}   options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

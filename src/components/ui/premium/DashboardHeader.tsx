@@ -1,6 +1,6 @@
 // src/components/ui/premium/DashboardHeader.tsx
 //
-// The dark hero header. Bleeds under the status bar and is designed to
+// The warm hero header. Bleeds under the status bar and is designed to
 // have body content overlap it via a negative top margin.
 //
 // Layout is deliberately inverted vs. the old MainHeader: identity is
@@ -56,7 +56,7 @@ function DashboardHeader({
   bleedBottom = 0,
   children,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
 
   const G = SIZES.layout.gutter;
   const avatarSize = moderateScale(44);
@@ -99,7 +99,7 @@ function DashboardHeader({
                 <Text
                   style={[
                     asText(FONTS.microBold),
-                    { color: COLORS.white, letterSpacing: 2.5 ,fontSize: moderateScale(14),},
+                    { color: COLORS.heroTextSecondary, letterSpacing: 2.5, fontSize: moderateScale(14) },
                   ]}
                 >
                   {brand}
@@ -140,7 +140,7 @@ function DashboardHeader({
                         style={[
                           s.badgeTxt,
                           {
-                            color: COLORS.heroCanvas,
+                            color: COLORS.heroOnAccent,
                             fontFamily: FONTS.family.bold,
                           },
                         ]}
@@ -200,7 +200,7 @@ function DashboardHeader({
               <Text
                 style={[
                   asText(FONTS.microBold),
-                  { color: COLORS.whiteOpacity50 },
+                  { color: COLORS.heroTextTertiary },
                 ]}
               >
                 {greeting()}

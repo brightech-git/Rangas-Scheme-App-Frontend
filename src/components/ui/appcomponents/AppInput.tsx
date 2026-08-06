@@ -185,9 +185,9 @@ const AppInput = forwardRef<AppInputRef, Props>(({
         </Text>
       ) : indicator === 'optional' ? (
         <View style={styles.indicatorRow}>
-          <View style={[styles.indicatorBadge, { backgroundColor: '#F2F4F7' }]}>
+          <View style={[styles.indicatorBadge, { backgroundColor: '#F3ECE6' }]}>
             <Text style={[styles.indicatorText, {
-              color:      '#6B7280',
+              color:      '#74563C',
               fontFamily: FONTS.family.medium,
               fontSize:   SIZES.font.xs,
             }]}>

@@ -59,7 +59,7 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
 
       {/* Deep red → rich red gradient */}
       <LinearGradient
-        colors={[COLORS.primaryDark, COLORS.primary, COLORS.primaryLight]}
+        colors={[COLORS.orangeDeep, COLORS.primaryDark, COLORS.primaryFill]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
@@ -103,7 +103,7 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
                 <Image source={LOGO} resizeMode="cover" style={styles.logo} />
               </View>
               <View>
-                <Text style={[styles.brandName, { fontFamily: FONTS.family.trajanBold, color: COLORS.white }]}>
+                <Text style={[styles.brandName, { fontFamily: FONTS.family.trajanBold, color: COLORS.textOnPrimary }]}>
                   Rangas
                 </Text>
                 <View style={styles.tagRow}>
@@ -161,14 +161,14 @@ export default function MainHeader({ onMenuPress, onProfilePress }: Props) {
               },
             ]}
           >
-            <Text style={[styles.greetText, { fontFamily: FONTS.family.semiBold, color: COLORS.white }]}>
+            <Text style={[styles.greetText, { fontFamily: FONTS.family.semiBold, color: COLORS.textOnPrimary }]}>
               {getGreeting()},{' '}
               <Text style={{ fontFamily: FONTS.family.bold, color: COLORS.secondary }}>
                 {firstName}
               </Text>{' '}
               👋
             </Text>
-            <Text style={[styles.greetSub, { fontFamily: FONTS.family.regular, color: COLORS.whiteOpacity70 }]}>
+            <Text style={[styles.greetSub, { fontFamily: FONTS.family.regular, color: COLORS.textOnPrimaryMuted }]}>
               Your gold journey continues
             </Text>
           </Animated.View>

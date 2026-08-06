@@ -1,6 +1,6 @@
 // src/components/ui/premium/ScreenCanvas.tsx
 //
-// Scaffold for the V2 "dark hero / light body" pattern.
+// Scaffold for the V2 "warm hero / ivory body" pattern.
 //
 // Renders a fixed header slot (usually <PageHeader> or
 // <DashboardHeader>), then a paper body that is pulled UP over the
@@ -59,7 +59,7 @@ function ScreenCanvas({
   style,
   scrollProps,
 }: Props) {
-  const { COLORS, SIZES } = useTheme();
+  const { COLORS, SIZES, isDark } = useTheme();
 
   const bg = background ?? COLORS.canvas;
   const G = gutter ?? SIZES.layout.gutter;

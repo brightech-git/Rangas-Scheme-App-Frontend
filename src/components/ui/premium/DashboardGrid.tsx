@@ -38,7 +38,7 @@ function DashboardGrid({
   surface = 'light',
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, SHADOWS} = useTheme();
   const onHero = surface === 'hero';
 
   const bg = onHero ? COLORS.heroElevated : COLORS.canvasElevated;
@@ -61,6 +61,7 @@ function DashboardGrid({
           backgroundColor: bg,
           borderColor: border,
         },
+        !onHero && (SHADOWS.hairline as ViewStyle),
         style,
       ]}
     >

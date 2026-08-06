@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
 
   // detail stat boxes
   statBox: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FAF7F5',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',

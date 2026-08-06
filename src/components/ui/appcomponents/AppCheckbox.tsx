@@ -78,7 +78,7 @@ export default function AppCheckbox({
             <Ionicons
               name={indeterminate ? 'remove' : 'checkmark'}
               size={iconSz}
-              color={COLORS.white}
+              color={COLORS.textOnPrimary}
             />
           </Animated.View>
         </Animated.View>

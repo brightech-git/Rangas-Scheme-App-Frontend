@@ -211,7 +211,7 @@ export const AppProgressBar: React.FC<AppProgressBarProps> = ({
     },
     insideLabel: {
       ...FONTS.caption,
-      color: COLORS.white,
+      color: COLORS.textOnPrimary,
       paddingHorizontal: 6,
       fontSize: 9,
     },
@@ -424,7 +424,7 @@ export const AppProgressSteps: React.FC<AppProgressStepsProps> = ({
     },
     indicatorText: {
       ...FONTS.caption,
-      color: COLORS.white,
+      color: COLORS.textOnPrimary,
       fontFamily: FONTS.family.bold,
       fontSize: 12,
     },

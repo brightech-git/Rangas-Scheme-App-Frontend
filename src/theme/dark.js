@@ -16,8 +16,8 @@ const darkTheme = {
     ...baseTheme.COLORS,
 
     // ── Core surfaces (espresso ramp) ──
-    background: "#1A100B",
-    backgroundSecondary: "#241811",
+    background: "#241811",
+    backgroundSecondary: "#302017",
     backgroundTertiary: "#302017",
     backgroundOrange: "#241811",
     backgroundGold: "#2B2418",
@@ -85,13 +85,39 @@ const darkTheme = {
     errorLight: "#EC8F96",
     errorDark: "#8F1D24",
 
+    // ── V2 hero zone, inverted for dark mode ──
+    // In light mode the hero is a warm SAND band. That would glare
+    // inside a dark UI, so here it becomes the espresso equivalent —
+    // still one step apart from the body, just in the other direction.
+    heroCanvas: "#241811",
+    heroCanvasAlt: "#302017",
+    heroElevated: "#302017",
+    heroElevatedAlt: "#3D2A1E",
+    heroHairline: "rgba(246, 233, 221, 0.10)",
+    heroHairlineBold: "rgba(246, 233, 221, 0.20)",
+    heroGlass: "rgba(246, 233, 221, 0.07)",
+    heroGlassBold: "rgba(246, 233, 221, 0.14)",
+    heroGoldVeil: "rgba(216, 195, 175, 0.12)",
+    heroTextPrimary: "#F6E9DD",
+    heroTextSecondary: "#D9C2AC",
+    heroTextTertiary: "#A38C79",
+    heroTextMuted: "#7D685A",
+    // Champagne reads beautifully on espresso, so the accent flips back
+    heroAccent: "#D8C3AF",
+    heroAccentSoft: "rgba(216, 195, 175, 0.16)",
+    // …which means anything sitting ON the accent must go dark again
+    heroOnAccent: "#241811",
+    // Hero semantics lift for espresso (they are darkened for sand)
+    heroSuccess: "#7FCB94",
+    heroWarning: "#DDB77F",
+    heroDanger: "#EC8F96",
+    heroInfo: "#84B7E5",
+
     // ── V2 body zone, inverted for dark mode ──
-    // The hero tokens are deliberately NOT overridden: the hero is
-    // dark in both modes, which is what keeps the design consistent.
-    canvas: "#150C08",
-    canvasElevated: "#221610",
-    canvasSunken: "#0D0704",
-    canvasTint: "#1C120C",
+    canvas: "#241811",
+    canvasElevated: "#302017",
+    canvasSunken: "#1C120C",
+    canvasTint: "#2A1B12",
     hairline: "rgba(246, 233, 221, 0.10)",
     hairlineBold: "rgba(246, 233, 221, 0.18)",
 
@@ -105,6 +131,18 @@ const darkTheme = {
     metalSilverSoft: "#1E2124",
     metalPlatinumSoft: "#182025",
     metalDiamondSoft: "#0E2B31",
+
+    // ── Hero gradients, espresso variants of the light sand washes ──
+    gradient: {
+      ...baseTheme.COLORS.gradient,
+      heroNoir: ["#4A3427", "#3D2A1E", "#332218"],
+      heroOxblood: ["#453026", "#33221A"],
+      heroEmber: ["#54402F", "#453026", "#372519"],
+      heroGoldWash: ["rgba(216,195,175,0.14)", "rgba(216,195,175,0)"],
+      heroFade: ["rgba(51,34,24,0)", "rgba(51,34,24,0.95)"],
+      glassSheen: ["rgba(246,233,221,0.10)", "rgba(246,233,221,0.02)"],
+      paperLift: ["#302017", "#241811"],
+    },
   },
   SHADOWS: {
     ...baseTheme.SHADOWS,

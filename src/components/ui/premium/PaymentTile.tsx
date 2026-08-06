@@ -167,7 +167,7 @@ function PaymentTile({
             <Ionicons
               name="checkmark"
               size={13}
-              color={onHero ? COLORS.heroCanvas : COLORS.white}
+              color={onHero ? COLORS.heroOnAccent : COLORS.textOnPrimary}
             />
           )}
         </View>

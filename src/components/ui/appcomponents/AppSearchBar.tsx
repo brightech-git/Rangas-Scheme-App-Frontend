@@ -263,7 +263,7 @@ const AppSearchBar = forwardRef<AppSearchBarRef, AppSearchBarProps>(
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.primaryFill,
         borderWidth: 1.5,
         borderColor: COLORS.white,
       },
@@ -353,7 +353,7 @@ const AppSearchBar = forwardRef<AppSearchBarRef, AppSearchBarProps>(
                     justifyContent: "center",
                   }}
                 >
-                  <Icon name="clear" color={COLORS.white} size={10} />
+                  <Icon name="clear" color={COLORS.textOnPrimary} size={10} />
                 </View>
               </Pressable>
             )}

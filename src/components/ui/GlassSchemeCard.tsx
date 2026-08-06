@@ -26,9 +26,9 @@ type NavProps = NativeStackNavigationProp<RootStackParamList>;
 export const GLASS_CARD_WIDTH = SCREEN_W - 32;
 
 const STATUS_CLR: Record<string, string> = {
-  active:    '#34D399',
-  pending:   '#FBBF24',
-  completed: '#F5D78E',
+  active:    '#57A169',
+  pending:   '#D8C3AF',
+  completed: '#EEE1D4',
 };
 
 function formatDate(raw: string): string {
@@ -94,7 +94,7 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
         <View style={glass.content}>
           <View style={glass.topRow}>
             <View style={glass.iconWrap}>
-              <Ionicons name="diamond-outline" size={18} color="#fff" />
+              <Ionicons name="diamond-outline" size={18} color={COLORS.textOnPrimary} />
             </View>
             <View style={[glass.badge, { backgroundColor: STATUS_CLR[status] + 'E6' }]}>
               <Text style={[glass.badgeTxt, { fontFamily: FONTS.family.bold }]}>
@@ -149,7 +149,7 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
               activeOpacity={0.85}
               onPress={() => setShowHistory(true)}
             >
-              <Ionicons name="receipt-outline" size={15} color="#fff" />
+              <Ionicons name="receipt-outline" size={15} color={COLORS.textOnPrimary} />
               <Text style={[glass.btnGhostTxt, { fontFamily: FONTS.family.semiBold }]}>
                 Installments
               </Text>
@@ -227,10 +227,10 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
             )}
 
             <TouchableOpacity
-              style={[glass.modalClose, { backgroundColor: COLORS.primary }]}
+              style={[glass.modalClose, { backgroundColor: COLORS.primaryFill }]}
               onPress={() => setShowHistory(false)}
             >
-              <Text style={[glass.modalCloseTxt, { color: COLORS.white, fontFamily: FONTS.family.bold }]}>
+              <Text style={[glass.modalCloseTxt, { color: COLORS.textOnPrimary, fontFamily: FONTS.family.bold }]}>
                 Close
               </Text>
             </TouchableOpacity>
@@ -269,13 +269,13 @@ const glass = StyleSheet.create({
   topRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   iconWrap:{ width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', alignItems: 'center', justifyContent: 'center' },
   badge:   { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10 },
-  badgeTxt:{ color: '#1A1303', fontSize: 9, letterSpacing: 0.4 },
+  badgeTxt:{ color: '#1F0D07', fontSize: 9, letterSpacing: 0.4 },
 
-  title:   { color: '#fff', fontSize: 17, letterSpacing: -0.2 },
+  title:   { color: '#FFFFFF', fontSize: 17, letterSpacing: -0.2 },
   regNo:   { color: 'rgba(255,255,255,0.78)', fontSize: 11, marginTop: 2, marginBottom: 14 },
 
   statsRow:{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  val:     { color: '#fff', fontSize: 14 },
+  val:     { color: '#FFFFFF', fontSize: 14 },
   lbl:     { color: 'rgba(255,255,255,0.72)', fontSize: 10, marginTop: 2 },
   div:     { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.28)', marginHorizontal: 8 },
 
@@ -283,12 +283,12 @@ const glass = StyleSheet.create({
   fill:    { height: '100%', backgroundColor: '#fff', borderRadius: 3 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   next:    { color: 'rgba(255,255,255,0.85)', fontSize: 11, flex: 1, marginRight: 8 },
-  pct:     { color: '#fff', fontSize: 11 },
+  pct:     { color: '#FFFFFF', fontSize: 11 },
 
   actionRow:  { flexDirection: 'row', gap: 10 },
   btn:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12 },
   btnGhost:   { backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.40)' },
-  btnGhostTxt:{ color: '#fff', fontSize: 13 },
+  btnGhostTxt:{ color: '#FFFFFF', fontSize: 13 },
   btnSolid:   { backgroundColor: '#fff' },
   btnSolidTxt:{ fontSize: 13 },
 

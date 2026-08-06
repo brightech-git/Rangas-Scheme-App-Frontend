@@ -207,7 +207,7 @@ const s = StyleSheet.create({
 
   card:      { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, padding: 14 },
   avatar:    { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  avatarTxt: { color: '#fff', fontSize: 18 },
+  avatarTxt: { color: '#FFFFFF', fontSize: 18 },
   titleRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name:      { fontSize: 15, flex: 1 },
   ago:       { fontSize: 11 },

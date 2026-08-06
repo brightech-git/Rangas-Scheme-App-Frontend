@@ -4,7 +4,7 @@
 // NEW SCREEN
 //
 // LAYOUT
-//   Full noir. A gold hairline ring draws itself around the brand
+//   Full warm sand. A gold hairline ring draws itself around the brand
 //   monogram while the app resolves its initial route, with the
 //   wordmark and a thin indeterminate rule beneath. No spinner.
 //
@@ -12,7 +12,7 @@
 //   RootNavigator previously showed a bare ActivityIndicator on a
 //   plain background while it read AsyncStorage and decided where to
 //   send the user. That reads as a stall. This gives the same wait a
-//   branded, intentional feel and matches the noir auth screens the
+//   branded, intentional feel and matches the warm auth screens the
 //   user is usually about to land on.
 //
 // NOTE
@@ -47,7 +47,7 @@ export default function SplashScreen({
   brand = 'RANGAS',
   tagline = 'DIGIGOLD',
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
 
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(14)).current;

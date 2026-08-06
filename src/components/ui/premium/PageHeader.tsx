@@ -52,7 +52,7 @@ function PageHeader({
   children,
   style,
 }: Props) {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
   const navigation = useNavigation();
 
   const handleBack = () => {
@@ -93,7 +93,7 @@ function PageHeader({
           <Text
             style={{
               fontSize: 9,
-              color: COLORS.heroCanvas,
+              color: COLORS.heroOnAccent,
               fontFamily: FONTS.family.bold,
             }}
           >

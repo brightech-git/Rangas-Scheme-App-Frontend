@@ -50,7 +50,7 @@ type Props = {
   autoFocus?: boolean;
   returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send';
   onSubmitEditing?: () => void;
-  /** 'hero' renders for the dark noir zone (auth screens) */
+  /** 'hero' renders for the warm sand hero zone (auth screens) */
   surface?: 'light' | 'hero';
   secureTextEntry?: boolean;
   /** Toggles a show/hide eye for password fields */
@@ -100,7 +100,10 @@ const FormField = forwardRef<View, Props>(function FormField(
     muted: onHero ? COLORS.heroTextMuted : COLORS.inkMuted,
     rule: onHero ? COLORS.heroHairlineBold : COLORS.hairline,
     accent: onHero ? COLORS.heroAccent : COLORS.primary,
-    error: onHero ? COLORS.primaryLighter : COLORS.error,
+    // Was primaryLighter, which only worked when the hero was dark. The
+    // hero is now warm sand, so error text uses the same maroon as the
+    // body — and dark.js already lifts COLORS.error for dark mode.
+    error: COLORS.error,
     disabled: onHero ? COLORS.heroTextMuted : COLORS.inkTertiary,
   };
 

@@ -124,7 +124,7 @@ export default function SchemeListCard({
             </View>
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Enrolment</Text>
-              <Text style={[styles.detailValue, { color: canJoin ? COLORS.success : (COLORS.error ?? '#E53935'), fontFamily: FONTS.family.semiBold }]}>
+              <Text style={[styles.detailValue, { color: canJoin ? COLORS.success : (COLORS.error ?? '#8F1D24'), fontFamily: FONTS.family.semiBold }]}>
                 {canJoin ? 'Open' : 'Closed'}
               </Text>
             </View>

@@ -107,7 +107,7 @@ export default function Sidebar({ visible, onClose }: Props) {
           paddingTop: STATUS_BAR_H + 16,
           paddingBottom: SIZES.padding.xl,
           paddingHorizontal: SIZES.padding.xl,
-          backgroundColor: COLORS.primary,
+          backgroundColor: COLORS.primaryFill,
         }}>
           {/* Gold accent bar */}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: COLORS.secondary }} />
@@ -124,7 +124,7 @@ export default function Sidebar({ visible, onClose }: Props) {
               marginBottom: SIZES.margin.md,
             }}
           >
-            <Text style={{ color: COLORS.white, fontSize: 14 }}>✕</Text>
+            <Text style={{ color: COLORS.textOnPrimary, fontSize: 14 }}>✕</Text>
           </TouchableOpacity>
 
           {/* Avatar */}
@@ -148,8 +148,8 @@ export default function Sidebar({ visible, onClose }: Props) {
             )}
           </View>
 
-          <Text style={[FONTS.h5, { color: COLORS.white }]}>{user?.username ?? 'DigiGold User'}</Text>
-          <Text style={[FONTS.caption, { color: COLORS.whiteOpacity70, marginBottom: SIZES.margin.md }]}>
+          <Text style={[FONTS.h5, { color: COLORS.textOnPrimary }]}>{user?.username ?? 'DigiGold User'}</Text>
+          <Text style={[FONTS.caption, { color: COLORS.textOnPrimaryMuted, marginBottom: SIZES.margin.md }]}>
             {user?.email ?? ''}
           </Text>
 
@@ -283,7 +283,7 @@ export default function Sidebar({ visible, onClose }: Props) {
                 paddingVertical: SIZES.padding.sm,
                 paddingHorizontal: SIZES.padding.md,
                 borderRadius: SIZES.radius.md,
-                backgroundColor: 'rgba(220,38,38,0.08)',
+                backgroundColor: 'rgba(143,29,36,0.08)',
               }}>
               <Text style={{ fontSize: 16 }}>🚪</Text>
               <Text style={[FONTS.bodyMedium, { color: COLORS.error }]}>{t('signOut')}</Text>

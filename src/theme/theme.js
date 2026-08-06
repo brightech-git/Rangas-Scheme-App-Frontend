@@ -69,6 +69,33 @@ export const COLORS = {
   overlayGold: "rgba(216, 195, 175, 0.1)",
   overlayOrange: "rgba(193, 116, 54, 0.1)",
 
+  // ============================================================
+  // ===== TEXT *ON* COLOURED SURFACES ==========================
+  // Never write `color: COLORS.white` for text again. White is a fixed
+  // value that does not follow the theme, so the moment a fill changes
+  // the label silently breaks. Use the matching token below and the
+  // text updates everywhere automatically.
+  //
+  //   fill you're drawing on          ->  text token
+  //   primary / primaryFill / Dark    ->  textOnPrimary
+  //   accent (Deep Maroon)            ->  textOnAccent
+  //   gold foil / champagne           ->  textOnGold
+  //   success / error / info fills    ->  textOnStatus
+  //   any dark surface or photo       ->  textOnDark  (+ Muted)
+  // ============================================================
+  textOnPrimary:     "#FFFFFF",
+  /** Secondary text on a brand fill. Pure-white alpha, NOT warm ivory —
+   *  cinnamon is a mid-tone, so a warm tint loses too much contrast. */
+  textOnPrimaryMuted: "rgba(255, 255, 255, 0.82)",
+  textOnAccent:      "#FFFFFF",
+  textOnGold:        "#3A2A22",
+  textOnStatus:      "#FFFFFF",
+  /** ONLY for genuinely dark surfaces (espresso, photo overlays).
+   *  Do not use on cinnamon/primary fills — those need textOnPrimary. */
+  textOnDark:        "#F6E9DD",
+  textOnDarkMuted:   "rgba(246, 233, 221, 0.72)",
+  textOnDarkFaint:   "rgba(246, 233, 221, 0.45)",
+
   // ===== TEXT COLORS =====
   textPrimary: "#3A2A22",
   textSecondary: "#5C4536",
@@ -193,29 +220,53 @@ export const COLORS = {
   shadowGold: "rgba(216, 195, 175, 0.25)",
 
   // ============================================================
-  // ===== V2 — "NOIR HERO / LIGHT BODY" DESIGN LANGUAGE =========
+  // ===== V2 — "WARM HERO / IVORY BODY" DESIGN LANGUAGE =========
   // Additive tokens for the premium redesign. Nothing above is
   // renamed or removed — existing screens keep working untouched.
   // ============================================================
 
-  // ----- Hero zone (always dark, in BOTH light & dark mode) -----
-  // Deep espresso-maroon. Reads as "vault" / "private banking".
-  heroCanvas:        "#1F0D07",
-  heroCanvasAlt:     "#2A130B",
-  heroElevated:      "#3A1B10",
-  heroElevatedAlt:   "#472314",
-  heroHairline:      "rgba(255, 255, 255, 0.08)",
-  heroHairlineBold:  "rgba(255, 255, 255, 0.16)",
-  heroGlass:         "rgba(255, 255, 255, 0.06)",
-  heroGlassBold:     "rgba(255, 255, 255, 0.11)",
-  heroGoldVeil:      "rgba(216, 195, 175, 0.10)",
-  heroRedVeil:       "rgba(143, 29, 36, 0.28)",
+  // ----- Hero zone -------------------------------------------------
+  // A RICH CINNAMON band — the Burnt Brown family pushed one step
+  // deeper. This is a saturated brand colour, not a neutral: it sits
+  // 6.4:1 away from the Warm Ivory body, so the header and the page
+  // read as genuinely different zones. (A sand-toned header measured
+  // only 1.13:1 against the body — effectively invisible.)
+  //
+  // The depth is chosen so that BOTH pure white AND Champagne Gold
+  // clear 4.5:1 on the lightest gradient stop. Lighten `heroCanvas`
+  // past #7F4416 and the champagne accent starts failing.
+  heroCanvas:        "#7F4416",
+  heroCanvasAlt:     "#753E14",
+  // Panels sitting ON the header are inset (darker), so they read as
+  // recessed rather than floating.
+  heroElevated:      "#6B3712",
+  heroElevatedAlt:   "#5C2F10",
+  // Back to white-on-colour alpha now the hero carries a brand fill.
+  heroHairline:      "rgba(255, 255, 255, 0.16)",
+  heroHairlineBold:  "rgba(255, 255, 255, 0.30)",
+  heroGlass:         "rgba(255, 255, 255, 0.10)",
+  heroGlassBold:     "rgba(255, 255, 255, 0.18)",
+  heroGoldVeil:      "rgba(216, 195, 175, 0.16)",
+  heroRedVeil:       "rgba(143, 29, 36, 0.22)",
   heroTextPrimary:   "#FFFFFF",
-  heroTextSecondary: "rgba(255, 255, 255, 0.70)",
-  heroTextTertiary:  "rgba(255, 255, 255, 0.42)",
-  heroTextMuted:     "rgba(255, 255, 255, 0.26)",
+  heroTextSecondary: "rgba(255, 255, 255, 0.86)",
+  heroTextTertiary:  "rgba(255, 255, 255, 0.70)",
+  heroTextMuted:     "rgba(255, 255, 255, 0.52)",
+  // Champagne Gold finally gets to be the accent — it reads beautifully
+  // on cinnamon and clears AA (4.50:1 at the lightest stop).
   heroAccent:        "#D8C3AF",
-  heroAccentSoft:    "rgba(216, 195, 175, 0.18)",
+  heroAccentSoft:    "rgba(216, 195, 175, 0.20)",
+  /** Label colour to sit ON heroAccent (badges, filled markers). */
+  heroOnAccent:      "#3A2A22",
+
+  // ----- Semantic colours FOR the hero zone -------------------------
+  // Lifted variants, because the hero is now a deep cinnamon fill.
+  // dark.js keeps the same lifted set, so components can just use
+  // heroSuccess/heroWarning/… without an isDark branch.
+  heroSuccess:       "#7FCB94",
+  heroWarning:       "#DDB77F",
+  heroDanger:        "#EC8F96",
+  heroInfo:          "#84B7E5",
 
   // ----- Body zone (light in light mode, dark in dark mode) -----
   // Warm ivory neutral, matches the brand background exactly.
@@ -244,16 +295,19 @@ export const COLORS = {
 
   // ===== GRADIENT COLORS =====
   gradient: {
-    // ----- V2 hero gradients -----
-    heroNoir:     ["#3A1B10", "#22100A", "#140A06"],
-    heroOxblood:  ["#4A1712", "#24100B"],
-    heroEmber:    ["#5A2412", "#2A130B", "#1F0D07"],
-    heroGoldWash: ["rgba(216,195,175,0.22)", "rgba(216,195,175,0)"],
-    heroFade:     ["rgba(31,13,7,0)", "rgba(31,13,7,0.92)"],
+    // ----- V2 hero gradients — rich cinnamon brand band -----
+    // `heroNoir` keeps its name so no component import has to change.
+    // Every stop stays at or below #7F4416 so white AND champagne both
+    // clear AA anywhere in the sweep.
+    heroNoir:     ["#7F4416", "#753E14", "#663610"],
+    heroOxblood:  ["#8A4A18", "#6B3712"],
+    heroEmber:    ["#7F4416", "#6B3712", "#5C2F10"],
+    heroGoldWash: ["rgba(216,195,175,0.28)", "rgba(216,195,175,0)"],
+    heroFade:     ["rgba(127,68,22,0)", "rgba(127,68,22,0.95)"],
     goldFoil:     ["#EAD9B8", "#C2A06B", "#F2E6C8"],
-    goldEdge:     ["rgba(216,195,175,0.55)", "rgba(216,195,175,0)"],
+    goldEdge:     ["rgba(193,116,54,0.45)", "rgba(193,116,54,0)"],
     paperLift:    ["#FFFFFF", "#F6E9DD"],
-    glassSheen:   ["rgba(255,255,255,0.14)", "rgba(255,255,255,0.02)"],
+    glassSheen:   ["rgba(255,255,255,0.16)", "rgba(255,255,255,0.02)"],
 
     // Primary cinnamon gradients
     orangePrimary: ["#C17436", "#D18F5A"],

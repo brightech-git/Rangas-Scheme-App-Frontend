@@ -59,9 +59,9 @@ function HeroCard({
       case 'gold':
         return COLORS.heroAccent;
       case 'positive':
-        return COLORS.successLight;
+        return COLORS.heroSuccess;
       case 'negative':
-        return COLORS.primaryLighter;
+        return COLORS.heroDanger;
       default:
         return COLORS.heroTextSecondary;
     }

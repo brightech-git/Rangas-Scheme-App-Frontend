@@ -136,10 +136,10 @@ export default function ComponentsUsage() {
     logoMimeType:   'image/png',
     logoWidth:      110,
     logoHeight:     36,
-    primaryColor:   '#FF971D',
-    secondaryColor: '#C9B15D',
+    primaryColor:   '#C17436',
+    secondaryColor: '#D8C3AF',
     companyName:    'Rangas DigiGold',
-    headerBgColor:  '#FF971D',
+    headerBgColor:  '#C17436',
     footerText:     'Rangas Jewels · Trusted since 1985',
   };
 
@@ -202,9 +202,9 @@ export default function ComponentsUsage() {
         branding: {
           ...baseBranding,
           logoBase64:     iconb64,
-          primaryColor:   '#C9B15D',
-          secondaryColor: '#FF971D',
-          headerBgColor:  '#C9B15D',
+          primaryColor:   '#D8C3AF',
+          secondaryColor: '#C17436',
+          headerBgColor:  '#D8C3AF',
           watermarkText:  'PORTFOLIO',
           watermarkOpacity: 0.05,
         },
@@ -1111,8 +1111,8 @@ export default function ComponentsUsage() {
               paddingTop={8}
               paddingBottom={16}
               header={
-                <View style={{ padding: 12, backgroundColor: COLORS.primary }}>
-                  <AppText variant="bodyMedium" style={{ color: COLORS.white }}>📌 Fixed Header</AppText>
+                <View style={{ padding: 12, backgroundColor: COLORS.primaryFill }}>
+                  <AppText variant="bodyMedium" style={{ color: COLORS.textOnPrimary }}>📌 Fixed Header</AppText>
                 </View>
               }
               footer={
