@@ -40,6 +40,7 @@ import { loginUser, googleLogin } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useToast } from '../../components/ui/Toast';
+import { GOOGLE_IOS_CLIENT_ID } from '@env';
 
 import {
   AuthShell,
@@ -70,8 +71,8 @@ export default function LoginScreen() {
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId:
-        '401290584973-93gehg6vq34t5p5arn5h90m22e2ckfkb.apps.googleusercontent.com',
+      webClientId: '401290584973-93gehg6vq34t5p5arn5h90m22e2ckfkb.apps.googleusercontent.com',
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
       scopes: ['profile', 'email'],
       offlineAccess: true,
     });

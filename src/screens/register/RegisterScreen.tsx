@@ -14,6 +14,7 @@ import { registerUser, googleLogin } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useToast } from '../../components/ui/Toast';
+import { GOOGLE_IOS_CLIENT_ID } from '@env';
 import { Platform } from 'react-native';
 
 import {
@@ -45,6 +46,7 @@ export default function RegisterScreen() {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: '401290584973-93gehg6vq34t5p5arn5h90m22e2ckfkb.apps.googleusercontent.com',
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
       scopes: ['profile', 'email'],
       offlineAccess: true,
     });
@@ -106,28 +108,53 @@ export default function RegisterScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setGoogleLoading(true);
+      console.log('[Google Register] Step 1: Checking Play Services...');
       await GoogleSignin.hasPlayServices();
+      console.log('[Google Register] Step 1: Play Services OK');
+
+      console.log('[Google Register] Step 2: Opening Google Sign-In...');
       const userInfo = await GoogleSignin.signIn();
-      const idToken  = userInfo.data?.idToken;
-      if (!idToken) { toast.error('Google Sign-In Failed', { message: 'No ID token received' }); return; }
+      console.log('[Google Register] Step 2: userInfo:', JSON.stringify(userInfo, null, 2));
+
+      const idToken = userInfo.data?.idToken;
+      console.log('[Google Register] Step 3: idToken:', idToken ? `${idToken.substring(0, 30)}...` : 'NULL');
+
+      if (!idToken) {
+        console.error('[Google Register] ERROR: No idToken');
+        toast.error('Google Sign-In Failed', { message: 'No ID token received' });
+        return;
+      }
+
+      console.log('[Google Register] Step 4: Sending idToken to backend...');
       const res = await dispatch(googleLogin({ idToken }));
+      console.log('[Google Register] Step 4: action type:', res.type);
+      console.log('[Google Register] Step 4: payload:', JSON.stringify(res.payload, null, 2));
+
       if (googleLogin.fulfilled.match(res)) {
         const user = res.payload;
+        console.log('[Google Register] Step 5: SUCCESS. user:', JSON.stringify(user, null, 2));
         await AsyncStorageHelper.saveUserSession(user);
         if (!user.contactNumber && user.id) {
+          console.log('[Google Register] Step 6: No contactNumber → GoogleContactUpdate');
           toast.info('One more step!', { message: 'Please add your mobile number' });
           navigation.navigate('GoogleContactUpdate', { userId: user.id });
         } else {
+          console.log('[Google Register] Step 6: contactNumber exists → checking MPIN...');
           toast.success('Welcome!', { message: `Signed in as ${user.username ?? user.email}` });
           const mpinSet = await AsyncStorageHelper.isMpinSet();
+          console.log('[Google Register] Step 6: mpinSet =', mpinSet);
           navigation.replace(mpinSet ? 'MpinLogin' : 'CreateMpin');
         }
       } else {
+        console.error('[Google Register] Step 5: Backend REJECTED:', res.payload);
         toast.error('Google Sign-In Failed', { message: res.payload as string });
       }
     } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) return;
-      if (error.code === statusCodes.IN_PROGRESS) return;
+      console.error('[Google Register] CATCH ERROR:', error);
+      console.error('[Google Register] Error code:', error.code);
+      console.error('[Google Register] Error message:', error.message);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) { console.log('[Google Register] Cancelled'); return; }
+      if (error.code === statusCodes.IN_PROGRESS) { console.log('[Google Register] In progress'); return; }
       toast.error('Google Sign-In Failed', { message: error.message ?? 'Something went wrong' });
     } finally {
       setGoogleLoading(false);
