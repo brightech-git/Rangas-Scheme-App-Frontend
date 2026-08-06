@@ -67,7 +67,6 @@
     "expo-updates": "~29.0.18",
     "formik": "^2.4.9",
     "i18next": "^25.10.10",
-    "lottie-react-native": "^7.3.8",
     "prop-types": "^15.8.1",
     "react": "19.1.0",
     "react-hook-form": "^7.75.0",
