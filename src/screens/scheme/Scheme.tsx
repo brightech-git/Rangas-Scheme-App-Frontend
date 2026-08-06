@@ -42,6 +42,7 @@ import { useSchemes } from '../../api/hooks/Schemes/useSchemes';
 import { useMySchemes } from '../../api/hooks/Account/useMySchemes';
 import { ApiScheme, METAL_LABEL } from '../../types/Scheme/Scheme';
 import { PPData } from '../../types/Account/PhoneDetails';
+import { schemeMetrics } from '../../utils/schemeMetrics';
 
 import {
   ScreenCanvas,
@@ -306,8 +307,11 @@ export default function SchemeScreen() {
                       value: money(num(item.totalAmount)),
                     },
                     {
-                      label: 'With bonus',
-                      value: money(num(item.totalAmountWithBonus)),
+                      label: 'Remaining',
+                      value:
+                        schemeMetrics(item).remaining > 0
+                          ? money(schemeMetrics(item).remaining)
+                          : '—',
                     },
                     {
                       label: 'Weight',

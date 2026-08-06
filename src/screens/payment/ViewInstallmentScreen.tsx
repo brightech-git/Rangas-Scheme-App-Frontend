@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useTheme } from '../../theme';
+import { schemeMetrics } from '../../utils/schemeMetrics';
 import {
   ScreenCanvas,
   PageHeader,
@@ -32,6 +33,7 @@ export default function ViewInstallmentScreen() {
   const bal = scheme?.schemaSummaryTransBalance;
   const paid = parseInt(bal?.insPaid ?? '0', 10);
   const total = parseInt(scheme?.instalment ?? '0', 10);
+  const mx = schemeMetrics(ppData);
 
   const schemeRows: SummaryRow[] = useMemo(() => [
     { label: 'Registration No.', value: `${ppData.regNo}` },
@@ -42,8 +44,16 @@ export default function ViewInstallmentScreen() {
     { label: 'Maturity Date', value: prettyDate(ppData.maturityDate) },
     { label: 'Instalments Paid', value: `${paid} of ${total}` },
     { label: 'Amount Received', value: money(parseFloat(bal?.amtrecd ?? '0')) },
-    { label: 'Bonus Amount', value: money(parseFloat(bal?.bonusAmount ?? '0')) },
-    { label: 'Total with Bonus', value: money(parseFloat(bal?.totalAmount ?? '0')), highlight: true },
+    { label: 'Per Instalment', value: money(mx.perInstalment) },
+    {
+      label: 'Still to Pay',
+      value: mx.remaining > 0 ? money(mx.remaining) : '—',
+      highlight: mx.remaining > 0,
+    },
+    {
+      label: 'Total Commitment',
+      value: mx.committed > 0 ? money(mx.committed) : '—',
+    },
     { label: 'Total Weight', value: `${scheme?.totalWeight ?? '0'} g` },
     { label: 'Last Weight', value: `${scheme?.lastWeight ?? '0'} g` },
   ], [ppData, scheme, bal, paid, total]);

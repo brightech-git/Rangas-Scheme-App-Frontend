@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { PPData, PaymentHistory } from '../../types/Account/PhoneDetails';
+import { schemeMetrics } from '../../utils/schemeMetrics';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 type NavProps = NativeStackNavigationProp<RootStackParamList>;
@@ -61,6 +62,7 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
   const status  = schemeStatus(item);
   const done    = status === 'completed';
   const history = item.paymentHistoryList ?? [];
+  const mx      = schemeMetrics(item);
 
   return (
     <View style={[glass.shadowWrap, width ? { width } : null]}>
@@ -120,9 +122,11 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
             <View style={glass.div} />
             <View style={{ flex: 1 }}>
               <Text style={[glass.val, { fontFamily: FONTS.family.bold }]}>
-                ₹{item.totalAmountWithBonus.toLocaleString('en-IN')}
+                {mx.remaining > 0
+                  ? `₹${Math.round(mx.remaining).toLocaleString('en-IN')}`
+                  : '—'}
               </Text>
-              <Text style={[glass.lbl, { fontFamily: FONTS.family.regular }]}>With Bonus</Text>
+              <Text style={[glass.lbl, { fontFamily: FONTS.family.regular }]}>Remaining</Text>
             </View>
             <View style={glass.div} />
             <View style={{ flex: 1 }}>

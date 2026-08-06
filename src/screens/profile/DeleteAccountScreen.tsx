@@ -34,8 +34,8 @@ const INSTRUCTIONS = [
   },
   {
     icon: 'diamond-outline',
-    title: 'Gold & bonus forfeited',
-    body: 'Any accrued gold weight, bonus amounts, or pending scheme benefits will be forfeited upon deletion.',
+    title: 'Gold & scheme benefits forfeited',
+    body: 'Any accrued gold weight or pending scheme benefits will be forfeited upon deletion.',
   },
   {
     icon: 'person-remove-outline',

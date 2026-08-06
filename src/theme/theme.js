@@ -256,6 +256,8 @@ export const COLORS = {
   // on cinnamon and clears AA (4.50:1 at the lightest stop).
   heroAccent:        "#D8C3AF",
   heroAccentSoft:    "rgba(216, 195, 175, 0.20)",
+  /** Outline for unfilled PIN dots / empty control boundaries (3.5:1). */
+  heroDotIdle:       "rgba(255, 255, 255, 0.55)",
   /** Label colour to sit ON heroAccent (badges, filled markers). */
   heroOnAccent:      "#3A2A22",
 
@@ -265,7 +267,9 @@ export const COLORS = {
   // heroSuccess/heroWarning/… without an isDark branch.
   heroSuccess:       "#7FCB94",
   heroWarning:       "#DDB77F",
-  heroDanger:        "#EC8F96",
+  // Light enough to clear 4.5:1 on the cinnamon hero (#EC8F96 was
+  // tuned for espresso and only reached 3.26 there).
+  heroDanger:        "#F7BEC2",
   heroInfo:          "#84B7E5",
 
   // ----- Body zone (light in light mode, dark in dark mode) -----

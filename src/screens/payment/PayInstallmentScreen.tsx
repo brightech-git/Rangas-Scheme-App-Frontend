@@ -61,6 +61,7 @@ import {
 import { accountService } from '../../api/services/accountService';
 import { AccountInsertData } from '../../types/Account/AccountInsert';
 import { useToast } from '../../components/ui/Toast';
+import { schemeMetrics } from '../../utils/schemeMetrics';
 
 import {
   ScreenCanvas,
@@ -110,6 +111,9 @@ export default function PayInstallmentScreen() {
 
   const [customAmount, setCustomAmount] = useState('');
   const effectiveAmount = isFixed ? defaultAmount : parseInt(customAmount) || 0;
+
+  // Bonus-free commitment figures for this enrolment.
+  const mx = schemeMetrics(ppData);
 
   const isReady = effectiveAmount > 0;
   const showFailed = status === 'failed';
@@ -285,10 +289,19 @@ export default function PayInstallmentScreen() {
       { label: 'Instalments paid', value: `${paid} of ${total}` },
       { label: 'Next due', value: prettyDate(ppData.nextDueDate) },
       { label: 'Maturity', value: prettyDate(ppData.maturityDate) },
-      { label: 'Total invested', value: money(ppData.totalAmount) },
+      { label: 'Paid to date', value: money(mx.invested) },
       {
-        label: 'Total with bonus',
-        value: money(ppData.totalAmountWithBonus),
+        label: 'Total commitment',
+        value: mx.committed > 0 ? money(mx.committed) : '—',
+      },
+      {
+        // Bonus is not part of this product. What matters before paying is
+        // how much of the commitment is left after this instalment.
+        label: 'Still to pay after this',
+        value:
+          mx.remaining > 0
+            ? money(Math.max(0, mx.remaining - effectiveAmount))
+            : '—',
         highlight: true,
       },
     ],

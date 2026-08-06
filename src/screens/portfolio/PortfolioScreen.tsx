@@ -3,14 +3,14 @@
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
 //   Hero carries the portfolio value and the allocation bar — a single
-//   horizontal rule split proportionally between principal and bonus,
+//   horizontal rule split proportionally between paid and still-owed,
 //   so composition is understood without a pie chart. Paper body
 //   carries a composition ledger, an active/completed filter rail, and
 //   the holdings themselves as full SchemeCardV2 records.
 //
 // WHY THIS IS BETTER UX
 //   • Portfolio value and its composition are adjacent, so "how much of
-//     this is bonus?" is answered without arithmetic.
+//     is left to pay?" is answered without arithmetic.
 //   • Holdings are filterable by state; previously active and closed
 //     schemes were interleaved in one undifferentiated list.
 //   • Each holding shows instalment progress inline, so the member can
@@ -34,6 +34,7 @@ import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useMySchemes } from '../../api/hooks/Account/useMySchemes';
 import { PPData } from '../../types/Account/PhoneDetails';
+import { portfolioMetrics, schemeMetrics } from '../../utils/schemeMetrics';
 
 import {
   ScreenCanvas,
@@ -75,35 +76,11 @@ export default function PortfolioScreen() {
   const { mySchemes, loading, error, refetch } = useMySchemes();
   const [filter, setFilter] = useState<Filter>('all');
 
-  // ── Aggregates (same arithmetic as before) ──
-  const summary = useMemo(() => {
-    let invested = 0;
-    let weight = 0;
-    let bonus = 0;
-    let value = 0;
-    let active = 0;
-    let completed = 0;
-
-    for (const s of mySchemes) {
-      invested += num(s.totalAmount);
-      value += num(s.totalAmountWithBonus) || num(s.totalAmount);
-      bonus += num(s.bonusAmount);
-      weight += num(s.schemeSummary?.totalWeight);
-      if (isCompleted(s)) completed += 1;
-      else active += 1;
-    }
-
-    return {
-      invested,
-      weight,
-      bonus,
-      value,
-      active,
-      completed,
-      count: mySchemes.length,
-      bonusShare: value > 0 ? bonus / value : 0,
-    };
-  }, [mySchemes]);
+  // ── Aggregates ──
+  // Bonus is optional in this deployment and deliberately excluded. The
+  // portfolio is therefore expressed as PROGRESS AGAINST COMMITMENT
+  // (paid vs still owed) rather than principal-plus-bonus.
+  const summary = useMemo(() => portfolioMetrics(mySchemes), [mySchemes]);
 
   const visible = useMemo(() => {
     if (filter === 'active') return mySchemes.filter((s) => !isCompleted(s));
@@ -113,14 +90,29 @@ export default function PortfolioScreen() {
 
   const compositionRows: SummaryRow[] = useMemo(
     () => [
-      { label: 'Principal contributed', value: money(summary.invested) },
-      { label: 'Bonus accrued', value: money(summary.bonus), highlight: true },
+      { label: 'Paid to date', value: money(summary.invested) },
+      {
+        label: 'Still to pay',
+        value: summary.remaining > 0 ? money(summary.remaining) : '—',
+        highlight: summary.remaining > 0,
+      },
+      {
+        label: 'Instalments',
+        value:
+          summary.totalInstalments > 0
+            ? `${summary.paid} of ${summary.totalInstalments}`
+            : String(summary.paid),
+      },
       { label: 'Metal accrued', value: grams(summary.weight, 3) },
       {
         label: 'Schemes held',
-        value: `${summary.count} (${summary.active} active)`,
+        value: `${summary.count} (${summary.activeCount} active)`,
       },
-      { label: 'Portfolio value', value: money(summary.value), total: true },
+      {
+        label: 'Total commitment',
+        value: summary.committed > 0 ? money(summary.committed) : money(summary.invested),
+        total: true,
+      },
     ],
     [summary],
   );
@@ -128,8 +120,8 @@ export default function PortfolioScreen() {
   const filters: { key: Filter; label: string; count: number }[] = useMemo(
     () => [
       { key: 'all', label: 'All', count: summary.count },
-      { key: 'active', label: 'Active', count: summary.active },
-      { key: 'closed', label: 'Closed', count: summary.completed },
+      { key: 'active', label: 'Active', count: summary.activeCount },
+      { key: 'closed', label: 'Closed', count: summary.closedCount },
     ],
     [summary],
   );
@@ -141,45 +133,52 @@ export default function PortfolioScreen() {
   const G = SIZES.layout.gutter;
   const isEmpty = !loading && mySchemes.length === 0;
 
-  // ── Allocation rule: principal vs bonus, proportional ──
+  // ── Progress rule: PAID vs STILL OWED against the total commitment.
+  // (Was principal-vs-bonus; bonus is not part of this product.)
+  const paidShare =
+    summary.committed > 0
+      ? Math.min(1, summary.invested / summary.committed)
+      : summary.invested > 0
+      ? 1
+      : 0;
   const AllocationBar = (
     <View style={{ marginTop: SIZES.margin.xxl }}>
       <View style={s.allocRow}>
         <View
           style={{
-            flex: Math.max(0.02, 1 - summary.bonusShare),
+            flex: Math.max(0.02, paidShare),
             height: 6,
             borderRadius: 3,
-            backgroundColor: COLORS.heroTextSecondary,
+            backgroundColor: COLORS.heroAccent,
           }}
         />
         <View
           style={{
-            flex: Math.max(0.02, summary.bonusShare),
+            flex: Math.max(0.02, 1 - paidShare),
             height: 6,
             borderRadius: 3,
-            backgroundColor: COLORS.heroAccent,
+            backgroundColor: COLORS.heroGlassBold,
           }}
         />
       </View>
 
       <View style={[s.legendRow, { marginTop: SIZES.margin.md }]}>
         <View style={s.legendItem}>
-          <View
-            style={[s.dot, { backgroundColor: COLORS.heroTextSecondary }]}
-          />
-          <Text
-            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
-          >
-            Principal {money(summary.invested)}
-          </Text>
-        </View>
-        <View style={s.legendItem}>
           <View style={[s.dot, { backgroundColor: COLORS.heroAccent }]} />
           <Text
             style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
           >
-            Bonus {money(summary.bonus)}
+            Paid {money(summary.invested)}
+          </Text>
+        </View>
+        <View style={s.legendItem}>
+          <View
+            style={[s.dot, { backgroundColor: COLORS.heroTextMuted }]}
+          />
+          <Text
+            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
+          >
+            Remaining {money(summary.remaining)}
           </Text>
         </View>
       </View>
@@ -211,7 +210,7 @@ export default function PortfolioScreen() {
                     { color: COLORS.heroTextTertiary },
                   ]}
                 >
-                  Total value
+                  Paid to date
                 </Text>
                 <Text
                   numberOfLines={1}
@@ -220,7 +219,7 @@ export default function PortfolioScreen() {
                     { color: COLORS.heroTextPrimary, marginTop: 3 },
                   ]}
                 >
-                  {money(summary.value)}
+                  {money(summary.invested)}
                 </Text>
                 <Text
                   style={[
@@ -228,12 +227,14 @@ export default function PortfolioScreen() {
                     { color: COLORS.heroTextTertiary, marginTop: 2 },
                   ]}
                 >
-                  {grams(summary.weight, 3)} accrued across {summary.count}{' '}
-                  scheme{summary.count === 1 ? '' : 's'}
+                  {summary.totalInstalments > 0
+                    ? `${summary.paid} of ${summary.totalInstalments} instalments · `
+                    : ''}
+                  {grams(summary.weight, 3)} accrued
                 </Text>
               </View>
 
-              {summary.value > 0 && AllocationBar}
+              {summary.invested > 0 && AllocationBar}
             </>
           )}
         </PageHeader>
@@ -270,16 +271,20 @@ export default function PortfolioScreen() {
           >
             <MetricCard
               flex={1}
-              label="Invested"
+              label="Paid"
               value={moneyCompact(summary.invested)}
               icon="wallet-outline"
               tone="default"
             />
             <MetricCard
               flex={1}
-              label="Bonus"
-              value={moneyCompact(summary.bonus)}
-              icon="gift-outline"
+              label={summary.remaining > 0 ? 'Still to pay' : 'Instalments'}
+              value={
+                summary.remaining > 0
+                  ? moneyCompact(summary.remaining)
+                  : `${summary.paid}/${summary.totalInstalments || summary.paid}`
+              }
+              icon="hourglass-outline"
               tone="gold"
             />
           </View>
@@ -374,6 +379,7 @@ export default function PortfolioScreen() {
                     10,
                   );
                   const isFullyPaid = done || (totalCount > 0 && paidCount >= totalCount);
+                  const mx = schemeMetrics(item);
 
                   return (
                     <SchemeCardV2
@@ -395,23 +401,20 @@ export default function PortfolioScreen() {
                       }}
                       stats={[
                         {
-                          label: 'Invested',
-                          value: money(num(item.totalAmount)),
+                          label: 'Paid',
+                          value: money(mx.invested),
                         },
                         {
                           label: 'Weight',
-                          value: grams(
-                            num(item.schemeSummary?.totalWeight),
-                            3,
-                          ),
+                          value: mx.weight > 0 ? grams(mx.weight, 3) : '—',
                         },
                         {
-                          label: isFullyPaid ? 'Value' : 'Next due',
+                          // No bonus in this product — a completed scheme
+                          // shows its instalment count, an open one its
+                          // next due date.
+                          label: isFullyPaid ? 'Instalments' : 'Next due',
                           value: isFullyPaid
-                            ? money(
-                                num(item.totalAmountWithBonus) ||
-                                  num(item.totalAmount),
-                              )
+                            ? `${mx.paid}${mx.total ? ` of ${mx.total}` : ''}`
                             : item.nextDueDate
                             ? shortDate(item.nextDueDate)
                             : '—',

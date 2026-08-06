@@ -105,6 +105,7 @@ const darkTheme = {
     // Champagne reads beautifully on espresso, so the accent flips back
     heroAccent: "#D8C3AF",
     heroAccentSoft: "rgba(216, 195, 175, 0.16)",
+    heroDotIdle: "rgba(246, 233, 221, 0.45)",
     // …which means anything sitting ON the accent must go dark again
     heroOnAccent: "#241811",
     // Hero semantics lift for espresso (they are darkened for sand)

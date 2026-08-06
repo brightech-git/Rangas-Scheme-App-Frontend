@@ -27,6 +27,7 @@ export { default as DashboardGrid } from './DashboardGrid';
 // ── Controls & atoms ───────────────────────────────────────────
 export { default as PremiumButton } from './PremiumButton';
 export { default as FormField } from './FormField';
+export { default as PinPad } from './PinPad';
 export { default as PaymentTile } from './PaymentTile';
 export { default as StatusChip } from './StatusChip';
 export { default as ProgressWidget } from './ProgressWidget';

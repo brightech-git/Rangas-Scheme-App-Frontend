@@ -46,8 +46,8 @@ import { useUnreadCount } from '../../api/hooks/Notifications/useUnreadCount';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
 import { useAppSelector } from '../../store/hooks';
+import { portfolioMetrics, schemeMetrics } from '../../utils/schemeMetrics';
 import { useTheme } from '../../theme';
-import { useToast } from '../../components/ui/Toast';
 import HomeBanner from '../../components/HomeBanner';
 import LOGO from '../../assets/company/logo.png';
 
@@ -60,7 +60,6 @@ import {
   GoldRateWidget,
   SchemeCardV2,
   SectionHeading,
-  FeatureCard,
   EmptyState,
   SkeletonHero,
   SkeletonSchemeCard,
@@ -95,7 +94,6 @@ const num = (v: unknown): number => {
 export default function HomeScreen() {
   const { COLORS, SIZES, moderateScale } = useTheme();
   const navigation = useNavigation<Nav>();
-  const toast = useToast();
 
   // ── Data (identical calls to before) ──
   const { schemes, loading: schemesLoading, refetch: refetchSchemes } =
@@ -131,36 +129,9 @@ export default function HomeScreen() {
   }, [loadRates, refetchSchemes, refetchMySchemes]);
 
   // ── Derived portfolio figures ──
-  const portfolio = useMemo(() => {
-    const active = mySchemes.filter((m) => schemeState(m) !== 'completed');
-
-    const saved = mySchemes.reduce((sum, m) => sum + num(m.totalAmount), 0);
-    const withBonus = mySchemes.reduce(
-      (sum, m) => sum + num(m.totalAmountWithBonus),
-      0,
-    );
-    const bonus = mySchemes.reduce((sum, m) => sum + num(m.bonusAmount), 0);
-    const weight = mySchemes.reduce(
-      (sum, m) => sum + num(m.schemeSummary?.totalWeight),
-      0,
-    );
-
-    const dues = active
-      .map((m) => m.nextDueDate)
-      .filter(Boolean)
-      .map((d) => new Date(d))
-      .filter((d) => !Number.isNaN(d.getTime()))
-      .sort((a, b) => a.getTime() - b.getTime());
-
-    return {
-      activeCount: active.length,
-      saved,
-      withBonus,
-      bonus,
-      weight,
-      nextDue: dues[0] ? dues[0].toISOString() : null,
-    };
-  }, [mySchemes]);
+  // Bonus is optional in this deployment and is NOT shown anywhere, so
+  // every figure below comes from instalment/principal/weight data only.
+  const portfolio = useMemo(() => portfolioMetrics(mySchemes), [mySchemes]);
 
   const heroStats: HeroStat[] = useMemo(
     () => [
@@ -175,7 +146,7 @@ export default function HomeScreen() {
       },
       {
         label: 'Next due',
-        value: portfolio.nextDue ? shortDate(portfolio.nextDue) : '—',
+        value: portfolio.nextDueDate ? shortDate(portfolio.nextDueDate) : '—',
       },
     ],
     [portfolio],
@@ -418,15 +389,10 @@ export default function HomeScreen() {
               style={{ marginHorizontal: -G }}
               contentContainerStyle={{ paddingHorizontal: G }}
               renderItem={({ item: m }) => {
-                const state = schemeState(m);
-                const paidCount = parseInt(
-                  m.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
-                  10,
-                );
-                const totalCount = parseInt(
-                  m.schemeSummary?.instalment ?? '0',
-                  10,
-                );
+                const mx = schemeMetrics(m);
+                const state = mx.state;
+                const paidCount = mx.paid;
+                const totalCount = mx.total;
                 const isFullyPaid = totalCount > 0 && paidCount >= totalCount;
                 return (
                   <SchemeCardV2
@@ -441,12 +407,21 @@ export default function HomeScreen() {
                       tone: state === 'active' ? 'success' : 'warning',
                     }}
                     stats={[
-                      { label: 'Saved', value: money(num(m.totalAmount)) },
+                      { label: 'Paid', value: money(mx.invested) },
                       {
                         label: 'Weight',
-                        value: grams(num(m.schemeSummary?.totalWeight), 3),
+                        value: mx.weight > 0 ? grams(mx.weight, 3) : '—',
                       },
-                      { label: 'Instalment', value: money(num(m.amount)) },
+                      {
+                        // Bonus is not part of this product, so the third
+                        // slot shows what is still owed on the commitment.
+                        label: isFullyPaid ? 'Instalment' : 'Remaining',
+                        value: isFullyPaid
+                          ? money(mx.perInstalment)
+                          : mx.remaining > 0
+                          ? money(mx.remaining)
+                          : money(mx.perInstalment),
+                      },
                     ]}
                     paid={paidCount}
                     total={totalCount}
@@ -471,21 +446,7 @@ export default function HomeScreen() {
 
 
 
-      {/* ── 7. Referral ── */}
-      <FeatureCard
-        weight="wide"
-        eyebrow="Refer & earn"
-        title="Give 1g gold, get 1g gold"
-        body="Share your code and you both receive a gold credit on their first instalment."
-        icon="gift-outline"
-        actionLabel="Share"
-        style={{ marginTop: SIZES.layout.section }}
-        onPress={() =>
-          toast.success('Refer & Earn', {
-            message: 'Share code GOLD2026 and get 1g free!',
-          })
-        }
-      />
+
     </ScreenCanvas>
   );
 }

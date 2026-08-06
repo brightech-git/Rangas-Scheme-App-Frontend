@@ -27,7 +27,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -88,6 +88,7 @@ export default function TransactionsScreen() {
 
   const { mySchemes, loading, error, refetch } = useMySchemes();
   const [filter, setFilter] = useState<number | 'all'>('all');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // ── Flatten payment history (same derivation as before) ──
   const allTxns: Txn[] = useMemo(() => {
@@ -173,10 +174,12 @@ export default function TransactionsScreen() {
     [],
   );
 
-  const G = SIZES.layout.gutter;
   const isEmpty = !loading && allTxns.length === 0;
 
+  const selectedLabel = filterChips.find((c) => c.key === filter)?.label ?? 'All Schemes';
+
   return (
+    <>
     <ScreenCanvas
       overlap={moderateScale(24)}
       refreshing={loading && allTxns.length > 0}
@@ -225,54 +228,30 @@ export default function TransactionsScreen() {
             </View>
           )}
 
-          {/* Filter rail */}
+          {/* Filter dropdown trigger */}
           {filterChips.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginTop: SIZES.margin.xxl, marginHorizontal: -G }}
-              contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}
+            <Pressable
+              onPress={() => setDropdownOpen(true)}
+              style={({ pressed }) => [
+                s.dropdownTrigger,
+                {
+                  marginTop: SIZES.margin.xxl,
+                  borderRadius: SIZES.radius.pill,
+                  borderColor: COLORS.heroHairlineBold,
+                  paddingHorizontal: SIZES.padding.lg,
+                  paddingVertical: SIZES.padding.sm,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
             >
-              {filterChips.map((c) => {
-                const on = filter === c.key;
-                return (
-                  <Pressable
-                    key={String(c.key)}
-                    onPress={() => setFilter(c.key)}
-                    style={({ pressed }) => [
-                      s.chip,
-                      {
-                        borderRadius: SIZES.radius.pill,
-                        paddingHorizontal: SIZES.padding.lg,
-                        paddingVertical: SIZES.padding.sm,
-                        backgroundColor: on
-                          ? COLORS.heroAccentSoft
-                          : 'transparent',
-                        borderColor: on
-                          ? COLORS.heroAccent
-                          : COLORS.heroHairlineBold,
-                        opacity: pressed ? 0.6 : 1,
-                      },
-                    ]}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        asText(FONTS.microBold),
-                        {
-                          color: on
-                            ? COLORS.heroAccent
-                            : COLORS.heroTextTertiary,
-                          maxWidth: 150,
-                        },
-                      ]}
-                    >
-                      {c.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+              <Text
+                numberOfLines={1}
+                style={[asText(FONTS.microBold), { color: COLORS.heroTextPrimary, flex: 1 }]}
+              >
+                {selectedLabel}
+              </Text>
+              <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}>▾</Text>
+            </Pressable>
           )}
         </PageHeader>
       }
@@ -342,15 +321,109 @@ export default function TransactionsScreen() {
         ))
       )}
     </ScreenCanvas>
+
+    {/* ── Scheme filter bottom-sheet modal ── */}
+    <Modal
+      visible={dropdownOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setDropdownOpen(false)}
+    >
+      <TouchableOpacity
+        style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}
+        activeOpacity={1}
+        onPress={() => setDropdownOpen(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={[
+            s.sheet,
+            {
+              backgroundColor: COLORS.canvasElevated,
+              borderTopLeftRadius: SIZES.radius.sheet,
+              borderTopRightRadius: SIZES.radius.sheet,
+              paddingBottom: SIZES.padding.xxxl,
+            },
+          ]}
+        >
+          <View style={[s.handle, { backgroundColor: COLORS.hairlineBold }]} />
+
+          <Text
+            style={[
+              asText(FONTS.displaySm),
+              {
+                color: COLORS.inkPrimary,
+                paddingHorizontal: SIZES.layout.gutter,
+                marginTop: SIZES.margin.lg,
+                marginBottom: SIZES.margin.sm,
+              },
+            ]}
+          >
+            Filter by Scheme
+          </Text>
+
+          {filterChips.map((c, i) => {
+            const on = filter === c.key;
+            return (
+              <Pressable
+                key={String(c.key)}
+                onPress={() => { setFilter(c.key); setDropdownOpen(false); }}
+                style={({ pressed }) => [
+                  s.option,
+                  {
+                    paddingHorizontal: SIZES.layout.gutter,
+                    paddingVertical: SIZES.padding.lg,
+                    borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth,
+                    borderTopColor: COLORS.hairline,
+                    backgroundColor: pressed ? COLORS.canvasSunken : on ? COLORS.primaryPale : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    asText(FONTS.body),
+                    { color: on ? COLORS.primary : COLORS.inkPrimary, flex: 1 },
+                  ]}
+                >
+                  {c.label}
+                </Text>
+                {on && (
+                  <Text style={[asText(FONTS.microBold), { color: COLORS.primary }]}>✓</Text>
+                )}
+              </Pressable>
+            );
+          })}
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+    </>
   );
 }
 
 const s = StyleSheet.create({
-  chip: { borderWidth: 1, justifyContent: 'center' },
   monthRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    gap: 8,
+  },
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  sheet: { width: '100%' },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

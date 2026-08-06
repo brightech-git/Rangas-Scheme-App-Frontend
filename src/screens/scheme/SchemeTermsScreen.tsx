@@ -143,7 +143,7 @@ export default function SchemeTermsScreen() {
         ? 'Instalment type: Fixed – the same amount is paid each month.'
         : 'Instalment type: Flexible – the amount may vary each month.',
       `Only ${mLabel.toLowerCase()} purchases are eligible under this scheme.`,
-      'Early exit before completing all instalments will result in forfeiture of bonus and may attract a processing fee.',
+      'Early exit before completing all instalments may attract a processing fee and forfeiture of accrued scheme benefits.',
     ],
     [scheme.Instalment, mLabel, isFixed],
   );
