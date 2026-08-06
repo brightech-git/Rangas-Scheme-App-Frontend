@@ -23,6 +23,7 @@ import AppText       from '../../components/ui/appcomponents/AppText';
 import AppSwitch     from '../../components/ui/appcomponents/AppSwitch';
 import CustomAlert   from '../../components/ui/CustomAlert';
 import { BiometricHelper, type BiometricLabel } from '../../utils/BiometricHelper';
+import PoweredByFooter from '../../components/ui/PoweredByFooter';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -326,9 +327,10 @@ export default function ProfileScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <AppText variant="caption" color={COLORS.textTertiary} align="center">
-            Rangas DigiGold • Version {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
+            Version {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
           </AppText>
         </View>
+        <PoweredByFooter />
       </View>
 
       {/* ── Alert ───────────────────────────────────────────── */}

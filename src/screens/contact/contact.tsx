@@ -301,7 +301,7 @@ export default function ContactScreen() {
 // ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container:   { flex: 1 },
-  content:     { paddingTop: 20, paddingBottom: 40 },
+  content:     { paddingTop: 20, paddingBottom: 150 },
   pageHeader:  { marginBottom: 20 },
   pageTitle:   { fontSize: 28, letterSpacing: -0.5 },
   pageSub:     { fontSize: 14, marginTop: 4, opacity: 0.7 },

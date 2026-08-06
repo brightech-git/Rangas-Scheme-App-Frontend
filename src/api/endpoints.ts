@@ -80,6 +80,10 @@ export const USER_PROFILE = {
   DELETE_USER:  (userId: number) => `/user/delete/${userId}`,
 };
 
+export const APP = {
+  CONFIG: '/app-config/all',
+};
+
 export const NOTIFICATIONS = {
   // Templates
   SAVE_MESSAGE:           '/notifications/saveMessage',

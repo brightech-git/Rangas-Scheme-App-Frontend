@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, ActivityIndicator } from 'react-native';
+import { Linking, View, ActivityIndicator } from 'react-native';
 import * as Screens from './index';
 import { useTheme } from '../theme';
 import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
@@ -17,6 +17,8 @@ import { PPData } from '../types/Account/PhoneDetails';
 import SplashScreen from '../screens/splash/SplashScreen';
 import WalletScreen from '../screens/wallet/WalletScreen';
 import LOGO from '../assets/company/logo.png';
+import CustomAlert from '../components/ui/CustomAlert';
+import { useAppVersion } from '../utils/useAppVersion';
 
 // SchemeItem = the real API shape (used as nav param for T&C + Join screens)
 export type SchemeItem = ApiScheme;
@@ -60,6 +62,9 @@ export default function RootNavigator() {
   const { COLORS, isDark } = useTheme();
   const [initialRoute, setInitialRoute] = useState<InitialRoute | null>(null);
   const navigationRef = useRef<any>(null);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const { updateAvailable, latestVersion, storeUrl, isMaintenance, maintenanceMsg } = useAppVersion();
+  const showUpdate = updateAvailable && !alertDismissed;
 
   useEffect(() => {
     (async () => {
@@ -101,13 +106,31 @@ export default function RootNavigator() {
     },
   };
 
-  // Branded splash while the bootstrap effect resolves the initial route.
-  // Replaces the bare ActivityIndicator this branch used to render.
   if (!initialRoute) {
     return <SplashScreen logo={LOGO} />;
   }
 
   return (
+    <>
+    <CustomAlert
+      visible={isMaintenance}
+      type="warning"
+      title="Under Maintenance"
+      message={maintenanceMsg}
+      dismissible={false}
+      buttons={[]}
+    />
+    <CustomAlert
+      visible={showUpdate}
+      type="gold"
+      title="Update Available"
+      message={`Version ${latestVersion} is available. Update now for the latest features and improvements.`}
+      dismissible={false}
+      buttons={[
+        { label: 'Later', style: 'ghost', onPress: () => setAlertDismissed(true) },
+        { label: 'Update Now', style: 'primary', onPress: () => { setAlertDismissed(true); Linking.openURL(storeUrl); } },
+      ]}
+    />
     <NavigationContainer theme={navigationTheme} ref={navigationRef} onReady={onNavigationReady}>
       <Stack.Navigator
         initialRouteName={initialRoute}
@@ -145,5 +168,6 @@ export default function RootNavigator() {
         <Stack.Screen name="DeleteAccount"   component={Screens.DeleteAccountScreen}   options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
+    </>
   );
 }
