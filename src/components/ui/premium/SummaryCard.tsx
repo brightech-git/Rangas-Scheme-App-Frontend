@@ -19,6 +19,9 @@ export type SummaryRow = {
   total?: boolean;
   icon?: string;
   onPress?: () => void;
+  /** Allows value to wrap to multiple lines (e.g. for long addresses) */
+  multiline?: boolean;
+  numberOfLines?: number;
 };
 
 type Props = {
@@ -92,6 +95,9 @@ function SummaryCard({
       <View style={{ paddingHorizontal: SIZES.padding.xl }}>
         {rows.map((r, i) => {
           const RowWrapper: React.ElementType = r.onPress ? Pressable : View;
+          const isMulti = r.multiline || (r.numberOfLines !== undefined && r.numberOfLines !== 1);
+          const numLines = isMulti ? (r.numberOfLines && r.numberOfLines > 0 ? r.numberOfLines : undefined) : 1;
+
           return (
             <RowWrapper
               key={`${r.label}-${i}`}
@@ -102,6 +108,7 @@ function SummaryCard({
                   paddingVertical: r.total ? SIZES.padding.lg : SIZES.padding.md,
                   borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth,
                   borderTopColor: border,
+                  alignItems: isMulti ? 'flex-start' : 'center',
                 },
               ]}
             >
@@ -124,9 +131,9 @@ function SummaryCard({
                 </Text>
               </View>
 
-              <View style={s.valueWrap}>
+              <View style={[s.valueWrap, isMulti ? { flex: 1, flexShrink: 1 } : undefined]}>
                 <Text
-                  numberOfLines={1}
+                  numberOfLines={numLines}
                   style={[
                     asText(r.total ? FONTS.numeral : FONTS.numeralSm),
                     { color: r.highlight ? accent : valueColor, textAlign: 'right' },

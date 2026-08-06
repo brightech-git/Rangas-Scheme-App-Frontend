@@ -1310,7 +1310,7 @@ export default function SchemeJoinScreen() {
         <Modal
           visible={showDob}
           transparent
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setShowDob(false)}
         >
           <Pressable
@@ -1322,8 +1322,9 @@ export default function SchemeJoinScreen() {
                 s.sheet,
                 {
                   backgroundColor: COLORS.canvasElevated,
-                  borderTopLeftRadius: SIZES.radius.sheet,
-                  borderTopRightRadius: SIZES.radius.sheet,
+                  borderRadius: SIZES.radius.sheet,
+                  width: '90%',
+                  overflow: 'hidden',
                 },
               ]}
             >
@@ -1373,7 +1374,7 @@ export default function SchemeJoinScreen() {
       <Modal
         visible={showAmountModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowAmountModal(false)}
       >
         <Pressable
@@ -1385,14 +1386,14 @@ export default function SchemeJoinScreen() {
               s.sheet,
               {
                 backgroundColor: COLORS.canvasElevated,
-                borderTopLeftRadius: SIZES.radius.sheet,
-                borderTopRightRadius: SIZES.radius.sheet,
-                maxHeight: '65%',
+                borderRadius: SIZES.radius.sheet,
+                width: '90%',
+                maxHeight: '75%',
                 paddingBottom: SIZES.padding.xxl,
+                overflow: 'hidden',
               },
             ]}
           >
-            <View style={[s.grabber, { backgroundColor: COLORS.hairlineBold, marginTop: 10 }]} />
             <View style={{ paddingHorizontal: G, paddingTop: SIZES.padding.xl, paddingBottom: SIZES.padding.md }}>
               <Text style={[asText(FONTS.eyebrow), { color: COLORS.primaryInk }]}>Plan</Text>
               <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: 2 }]}>Select monthly amount</Text>
@@ -1425,7 +1426,7 @@ export default function SchemeJoinScreen() {
       <Modal
         visible={showPincodeModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowPincodeModal(false)}
       >
         <Pressable
@@ -1437,17 +1438,14 @@ export default function SchemeJoinScreen() {
               s.sheet,
               {
                 backgroundColor: COLORS.canvasElevated,
-                borderTopLeftRadius: SIZES.radius.sheet,
-                borderTopRightRadius: SIZES.radius.sheet,
-                maxHeight: '65%',
+                borderRadius: SIZES.radius.sheet,
+                width: '90%',
+                maxHeight: '75%',
                 paddingBottom: SIZES.padding.xxl,
+                overflow: 'hidden',
               },
             ]}
           >
-            <View
-              style={[s.grabber, { backgroundColor: COLORS.hairlineBold, marginTop: 10 }]}
-            />
-
             <View
               style={{
                 paddingHorizontal: G,
@@ -1569,7 +1567,7 @@ const s = StyleSheet.create({
     gap: 6,
   },
   msgRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
-  overlay: { flex: 1, justifyContent: 'flex-end' },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   sheet: { width: '100%' },
   sheetHead: {
     flexDirection: 'row',
