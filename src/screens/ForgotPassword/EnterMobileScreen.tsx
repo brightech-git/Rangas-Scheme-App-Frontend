@@ -61,7 +61,6 @@ export default function EnterMobileScreen() {
     >
       <View style={{ gap: 24 }}>
         <FormField
-          surface="hero"
           label="Mobile Number"
           indicator="required"
           icon="call-outline"

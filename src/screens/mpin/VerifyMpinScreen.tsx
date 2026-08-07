@@ -2,11 +2,11 @@
 //
 // ─────────────────────────────────────────────────────────────────
 // LAYOUT
-//   A true lock screen: full warm sand, no card, no elevation. Identity sits
-//   at the top as an avatar monogram plus name, the four dots sit in
-//   the optical centre, and a borderless keypad occupies the lower
-//   third with the biometric affordance in the keypad's bottom-left
-//   position — where a phone's own lock screen puts it.
+//   A true lock screen: normal body-zone canvas, no card, no elevation.
+//   Identity sits at the top as an avatar monogram plus name, the four
+//   dots sit in the optical centre, and a borderless keypad occupies
+//   the lower third with the biometric affordance in the keypad's
+//   bottom-left position — where a phone's own lock screen puts it.
 //
 // WHY THIS IS BETTER UX
 //   • The keypad is part of the screen rather than nested inside a
@@ -44,7 +44,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -83,7 +82,9 @@ const Key = memo(function Key({
 
   const bg = press.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.14)'],
+    outputRange: isDark
+      ? ['rgba(255,255,255,0)', 'rgba(255,255,255,0.14)']
+      : ['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)'],
   });
 
   if (!label && !icon) return <View style={s.key} />;
@@ -125,7 +126,7 @@ const Key = memo(function Key({
             style={{
               fontFamily: FONTS.family.regular,
               fontSize: moderateScale(28),
-              color: COLORS.heroTextPrimary,
+              color: COLORS.inkPrimary,
               letterSpacing: -0.5,
             }}
           >
@@ -135,7 +136,7 @@ const Key = memo(function Key({
           <Ionicons
             name={icon as any}
             size={moderateScale(24)}
-            color={COLORS.heroTextSecondary}
+            color={COLORS.inkSecondary}
           />
         )}
       </Animated.View>
@@ -313,14 +314,10 @@ export default function VerifyMpinScreen() {
   const avatar = moderateScale(64);
 
   return (
-    <View style={[s.root, { backgroundColor: COLORS.heroCanvas }]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.heroCanvas} />
-
-      <LinearGradient
-        colors={COLORS.gradient.heroNoir as [string, string, ...string[]]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFill}
+    <View style={[s.root, { backgroundColor: COLORS.canvas }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={COLORS.canvas}
       />
 
       <SafeAreaView style={{ flex: 1 }}>
@@ -333,8 +330,8 @@ export default function VerifyMpinScreen() {
                 width: avatar,
                 height: avatar,
                 borderRadius: avatar / 2,
-                backgroundColor: COLORS.heroAccentSoft,
-                borderColor: COLORS.heroAccent,
+                backgroundColor: COLORS.primaryPale,
+                borderColor: COLORS.primary,
               },
             ]}
           >
@@ -342,7 +339,7 @@ export default function VerifyMpinScreen() {
               style={{
                 fontFamily: FONTS.family.semiBold,
                 fontSize: moderateScale(24),
-                color: COLORS.heroAccent,
+                color: COLORS.primary,
               }}
             >
               {initial(user?.username)}
@@ -352,7 +349,7 @@ export default function VerifyMpinScreen() {
           <Text
             style={[
               asText(FONTS.displaySm),
-              { color: COLORS.heroTextPrimary, marginTop: SIZES.margin.lg },
+              { color: COLORS.inkPrimary, marginTop: SIZES.margin.lg },
             ]}
           >
             {user?.username ?? 'User'}
@@ -360,7 +357,7 @@ export default function VerifyMpinScreen() {
           <Text
             style={[
               asText(FONTS.microBold),
-              { color: COLORS.heroTextTertiary, marginTop: 2 },
+              { color: COLORS.inkTertiary, marginTop: 2 },
             ]}
           >
             Enter your MPIN to unlock
@@ -389,13 +386,13 @@ export default function VerifyMpinScreen() {
                       backgroundColor: pinError
                         ? COLORS.primaryLighter
                         : filled
-                        ? COLORS.heroAccent
+                        ? COLORS.primary
                         : 'transparent',
                       borderColor: pinError
                         ? COLORS.primaryLighter
                         : filled
-                        ? COLORS.heroAccent
-                        : COLORS.heroHairlineBold,
+                        ? COLORS.primary
+                        : COLORS.hairlineBold,
                     },
                   ]}
                 />
@@ -405,7 +402,7 @@ export default function VerifyMpinScreen() {
 
           <View style={{ height: 22, justifyContent: 'center' }}>
             {loading ? (
-              <ActivityIndicator size="small" color={COLORS.heroAccent} />
+              <ActivityIndicator size="small" color={COLORS.primary} />
             ) : pinError && pinErrMsg ? (
               <Text
                 numberOfLines={1}
@@ -478,14 +475,14 @@ export default function VerifyMpinScreen() {
             style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
           >
             <Text
-              style={[asText(FONTS.microBold), { color: COLORS.heroAccent }]}
+              style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}
             >
               Forgot MPIN?
             </Text>
           </Pressable>
 
           <View
-            style={[s.vRule, { backgroundColor: COLORS.heroHairlineBold }]}
+            style={[s.vRule, { backgroundColor: COLORS.hairlineBold }]}
           />
 
           <Pressable
@@ -496,7 +493,7 @@ export default function VerifyMpinScreen() {
             <Text
               style={[
                 asText(FONTS.micro),
-                { color: COLORS.heroTextTertiary },
+                { color: COLORS.inkTertiary },
               ]}
             >
               Use password
@@ -512,14 +509,6 @@ export default function VerifyMpinScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  bloom: {
-    position: 'absolute',
-    top: -140,
-    alignSelf: 'center',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-  },
   identity: { alignItems: 'center' },
   avatar: {
     alignItems: 'center',

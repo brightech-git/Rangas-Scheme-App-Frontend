@@ -223,7 +223,7 @@ export default function ContactScreen() {
               <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>Working Hours</Text>
             </View>
             <Text style={[s.cardValue, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-              Mon – Sat: 9 AM – 7 PM{'\n'}
+              Mon – Sat: 9 AM – 9 PM{'\n'}
             </Text>
           </View>
 

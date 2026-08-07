@@ -1,14 +1,8 @@
 // src/components/ui/premium/PinPad.tsx
 //
-// Hero-aware PIN entry: a row of dots plus a borderless keypad.
-//
-// WHY THIS EXISTS
-//   The legacy AppPinInput is styled for a light page — its label uses
-//   textPrimary and its hint textSecondary, which measure 1.79:1 and
-//   1.16:1 against the cinnamon hero. On any AuthShell screen the
-//   labels were effectively invisible. This component reads the hero
-//   token ramp instead, so it is legible on the brand band in both
-//   themes.
+// PIN entry: a row of dots plus a borderless keypad, styled for the
+// normal body-zone canvas (ivory in light mode, espresso in dark mode)
+// that AuthShell now renders on.
 //
 // Presentation only: it owns the digit buffer and reports up via
 // onChange / onComplete. No storage, no dispatch, no navigation.
@@ -66,12 +60,14 @@ const Key = memo(function Key({
   onPress?: () => void;
   disabled?: boolean;
 }) {
-  const { COLORS, FONTS, moderateScale } = useTheme();
+  const { COLORS, FONTS, moderateScale, isDark } = useTheme();
   const press = useRef(new Animated.Value(0)).current;
 
   const bg = press.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.14)'],
+    outputRange: isDark
+      ? ['rgba(255,255,255,0)', 'rgba(255,255,255,0.14)']
+      : ['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)'],
   });
 
   if (!label && !icon) return <View style={s.key} />;
@@ -113,7 +109,7 @@ const Key = memo(function Key({
             style={{
               fontFamily: FONTS.family.regular,
               fontSize: moderateScale(27),
-              color: COLORS.heroTextPrimary,
+              color: COLORS.inkPrimary,
               letterSpacing: -0.5,
             }}
           >
@@ -123,7 +119,7 @@ const Key = memo(function Key({
           <Ionicons
             name={icon as any}
             size={moderateScale(23)}
-            color={COLORS.heroTextSecondary}
+            color={COLORS.inkSecondary}
           />
         )}
       </Animated.View>
@@ -187,7 +183,7 @@ function PinPad({
   return (
     <View style={[{ width: '100%', alignItems: 'center' }, style]}>
       {!!label && (
-        <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>
+        <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}>
           {label}
         </Text>
       )}
@@ -213,17 +209,17 @@ function PinPad({
                 borderRadius: dot / 2,
                 borderWidth: 1.5,
                 backgroundColor: error
-                  ? COLORS.heroDanger
+                  ? COLORS.error
                   : filled
-                  ? COLORS.heroAccent
+                  ? COLORS.primary
                   : 'transparent',
                 borderColor: error
-                  ? COLORS.heroDanger
+                  ? COLORS.error
                   : filled
-                  ? COLORS.heroAccent
+                  ? COLORS.primary
                   // An unfilled dot is a control boundary, so it needs
-                  // 3:1 — heroHairlineBold (30% white) only gives 2.06.
-                  : COLORS.heroDotIdle,
+                  // solid contrast against the canvas — inkTertiary.
+                  : COLORS.inkTertiary,
               }}
             />
           );
@@ -233,18 +229,18 @@ function PinPad({
       {/* ── Status line (fixed height so the pad never jumps) ── */}
       <View style={s.statusRow}>
         {loading ? (
-          <ActivityIndicator size="small" color={COLORS.heroAccent} />
+          <ActivityIndicator size="small" color={COLORS.primary} />
         ) : error && errorMessage ? (
           <Text
             numberOfLines={1}
-            style={[asText(FONTS.micro), { color: COLORS.heroDanger }]}
+            style={[asText(FONTS.micro), { color: COLORS.error }]}
           >
             {errorMessage}
           </Text>
         ) : hint ? (
           <Text
             numberOfLines={1}
-            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
+            style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}
           >
             {hint}
           </Text>

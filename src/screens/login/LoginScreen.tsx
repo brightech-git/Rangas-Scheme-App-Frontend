@@ -234,7 +234,6 @@ export default function LoginScreen() {
     >
       <View style={{ gap: 22 }}>
         <FormField
-          surface="hero"
           label="Mobile number"
           indicator="required"
           icon="call-outline"
@@ -247,7 +246,6 @@ export default function LoginScreen() {
         />
 
         <FormField
-          surface="hero"
           label="Password"
           indicator="required"
           icon="lock-closed-outline"
@@ -268,21 +266,21 @@ export default function LoginScreen() {
           {
             marginTop: SIZES.margin.xl,
             paddingVertical: SIZES.padding.md,
-            borderTopColor: COLORS.heroHairline,
-            borderBottomColor: COLORS.heroHairline,
+            borderTopColor: COLORS.hairline,
+            borderBottomColor: COLORS.hairline,
             opacity: pressed ? 0.6 : 1,
           },
         ]}
       >
         <Text
-          style={[asText(FONTS.micro), { color: COLORS.heroTextSecondary }]}
+          style={[asText(FONTS.micro), { color: COLORS.inkSecondary }]}
         >
           Forgot your password?
         </Text>
         <Ionicons
           name="chevron-forward"
           size={SIZES.icon.sm}
-          color={COLORS.heroTextMuted}
+          color={COLORS.inkMuted}
         />
       </Pressable>
 
@@ -297,21 +295,21 @@ export default function LoginScreen() {
 
       {/* Divider */}
       <View style={[s.dividerRow, { marginTop: SIZES.margin.xxl }]}>
-        <View style={[s.rule, { backgroundColor: COLORS.heroHairline }]} />
+        <View style={[s.rule, { backgroundColor: COLORS.hairline }]} />
         <Text
           style={[
             asText(FONTS.eyebrow),
-            { color: COLORS.heroTextMuted, fontSize: 9 },
+            { color: COLORS.inkMuted, fontSize: 9 },
           ]}
         >
           or
         </Text>
-        <View style={[s.rule, { backgroundColor: COLORS.heroHairline }]} />
+        <View style={[s.rule, { backgroundColor: COLORS.hairline }]} />
       </View>
 
       <PremiumButton
         label={googleLoading ? 'Signing in…' : 'Continue with Google'}
-        variant="glass"
+        variant="outline"
         size="lg"
         icon="logo-google"
         onPress={handleGoogleSignIn}
@@ -324,11 +322,11 @@ export default function LoginScreen() {
           style={({ pressed }) => [s.footerRow, { opacity: pressed ? 0.6 : 1 ,marginTop: SIZES.margin.xl}]}
         >
           <Text
-            style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}
+            style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}
           >
             New to Rangas?
           </Text>
-          <Text style={[asText(FONTS.microBold), { color: COLORS.heroAccent }]}>
+          <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
             Create an account
           </Text>
         </Pressable>

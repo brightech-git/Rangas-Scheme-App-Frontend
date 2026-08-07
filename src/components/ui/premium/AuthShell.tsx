@@ -1,9 +1,9 @@
 // src/components/ui/premium/AuthShell.tsx
 //
-// Warm-sand scaffold for pre-authentication screens (login, register,
-// OTP, MPIN). Unlike the in-app screens — which pair a warm hero with a
-// paper body — auth is warm sand edge to edge. That gives the app a clear
-// "threshold": you cross from a warm vestibule into the ivory product.
+// Normal-canvas scaffold for pre-authentication screens (login, register,
+// OTP, MPIN). Uses the same body-zone surface as the rest of the app
+// (ivory in light mode, espresso in dark mode) rather than a distinct
+// dark hero band, so auth reads as part of the same product.
 //
 // Content is bottom-weighted so form fields sit within thumb reach and
 // stay clear of the keyboard.
@@ -22,7 +22,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../theme';
 import { asText } from './tokens';
 
@@ -71,7 +70,7 @@ function AuthShell({
               width: moderateScale(38),
               height: moderateScale(38),
               borderRadius: SIZES.radius.md,
-              borderColor: COLORS.heroHairlineBold,
+              borderColor: COLORS.hairlineBold,
               opacity: pressed ? 0.55 : 1,
             },
           ]}
@@ -79,7 +78,7 @@ function AuthShell({
           <Ionicons
             name="arrow-back"
             size={SIZES.icon.md}
-            color={COLORS.heroTextPrimary}
+            color={COLORS.inkPrimary}
           />
         </Pressable>
       )}
@@ -95,7 +94,7 @@ function AuthShell({
                 height: 3,
                 borderRadius: 1.5,
                 backgroundColor:
-                  i < step.current ? COLORS.heroAccent : COLORS.heroHairline,
+                  i < step.current ? COLORS.primary : COLORS.hairline,
               }}
             />
           ))}
@@ -108,14 +107,14 @@ function AuthShell({
         }}
       >
         {!!eyebrow && (
-          <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroAccent }]}>
+          <Text style={[asText(FONTS.eyebrow), { color: COLORS.primaryInk }]}>
             {eyebrow}
           </Text>
         )}
         <Text
           style={[
             asText(FONTS.displayLg),
-            { color: COLORS.heroTextPrimary, marginTop: eyebrow ? 4 : 0 },
+            { color: COLORS.inkPrimary, marginTop: eyebrow ? 4 : 0 },
           ]}
         >
           {title}
@@ -124,7 +123,7 @@ function AuthShell({
           <Text
             style={[
               asText(FONTS.micro),
-              { color: COLORS.heroTextPrimary, marginTop: 6, lineHeight: 19 },
+              { color: COLORS.inkSecondary, marginTop: 6, lineHeight: 19 },
             ]}
           >
             {caption}
@@ -147,22 +146,11 @@ function AuthShell({
   );
 
   return (
-    <View style={[s.root, { backgroundColor: COLORS.heroCanvas }, style]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.heroCanvas} />
-
-      <LinearGradient
-        colors={COLORS.gradient.heroNoir as [string, string, ...string[]]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFill}
+    <View style={[s.root, { backgroundColor: COLORS.canvas }, style]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={COLORS.canvas}
       />
-
-      {/* Single gold bloom, top-right */}
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <View
-          style={[s.bloom, { backgroundColor: COLORS.heroGoldVeil }]}
-        />
-      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 ,}}
@@ -206,14 +194,6 @@ function AuthShell({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  bloom: {
-    position: 'absolute',
-    top: -120,
-    right: -80,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-  },
   back: {
     alignItems: 'center',
     justifyContent: 'center',

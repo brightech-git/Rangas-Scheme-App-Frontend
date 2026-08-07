@@ -303,7 +303,7 @@ export const COLORS = {
     // `heroNoir` keeps its name so no component import has to change.
     // Every stop stays at or below #7F4416 so white AND champagne both
     // clear AA anywhere in the sweep.
-    heroNoir:     ["#7F4416", "#753E14", "#663610"],
+    heroNoir:     ["#d68547", "#753E14", "#663610"],
     heroOxblood:  ["#8A4A18", "#6B3712"],
     heroEmber:    ["#7F4416", "#6B3712", "#5C2F10"],
     heroGoldWash: ["rgba(216,195,175,0.28)", "rgba(216,195,175,0)"],

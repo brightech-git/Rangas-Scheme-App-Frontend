@@ -172,10 +172,10 @@ export default function RegisterScreen() {
           onPress={() => navigation.navigate('Login')}
           style={({ pressed }) => [s.footerRow, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}>
+          <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>
             Already have an account?
           </Text>
-          <Text style={[asText(FONTS.microBold), { color: COLORS.heroAccent }]}>
+          <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
             Sign In
           </Text>
         </Pressable>
@@ -183,7 +183,6 @@ export default function RegisterScreen() {
     >
       <View style={{ gap: 22 }}>
         <FormField
-          surface="hero"
           label="Username"
           indicator="required"
           icon="person-outline"
@@ -195,7 +194,6 @@ export default function RegisterScreen() {
         />
 
         <FormField
-          surface="hero"
           label="Email"
           indicator="required"
           icon="mail-outline"
@@ -208,7 +206,6 @@ export default function RegisterScreen() {
         />
 
         <FormField
-          surface="hero"
           label="Mobile number"
           indicator="required"
           icon="call-outline"
@@ -221,7 +218,6 @@ export default function RegisterScreen() {
         />
 
         <FormField
-          surface="hero"
           label="Password"
           indicator="required"
           icon="lock-closed-outline"
@@ -246,16 +242,16 @@ export default function RegisterScreen() {
 
       {/* Divider */}
       <View style={[s.dividerRow, { marginTop: SIZES.margin.xxl }]}>
-        <View style={[s.rule, { backgroundColor: COLORS.heroHairline }]} />
-        <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextMuted, fontSize: 9 }]}>
+        <View style={[s.rule, { backgroundColor: COLORS.hairline }]} />
+        <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkMuted, fontSize: 9 }]}>
           or
         </Text>
-        <View style={[s.rule, { backgroundColor: COLORS.heroHairline }]} />
+        <View style={[s.rule, { backgroundColor: COLORS.hairline }]} />
       </View>
 
       <PremiumButton
         label={googleLoading ? 'Signing in…' : 'Continue with Google'}
-        variant="glass"
+        variant="outline"
         size="lg"
         icon="logo-google"
         onPress={handleGoogleSignIn}

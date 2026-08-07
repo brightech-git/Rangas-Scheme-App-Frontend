@@ -89,7 +89,7 @@ export default function RegisterOTPVerifyScreen() {
     >
       <View style={{ gap: 24 }}>
         {autoDetecting && (
-          <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary, textAlign: 'center' }]}>
+          <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, textAlign: 'center' }]}>
             📲 Waiting for SMS auto-detection...
           </Text>
         )}
