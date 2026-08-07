@@ -11,6 +11,7 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import useFonts from "./src/utils/Fonts";
 import { ToastProvider } from "./src/components/ui/Toast";
 
+
 SplashScreen.preventAutoHideAsync();
 
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {

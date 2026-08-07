@@ -18,8 +18,10 @@ export { default as ProfileScreen }                from '../screens/profile/Prof
 export { default as SchemeTermsScreen }            from '../screens/scheme/SchemeTermsScreen';
 export { default as SchemeJoinScreen }             from '../screens/scheme/SchemeJoinScreen';
 export { default as PayInstallmentScreen }         from '../screens/payment/PayInstallmentScreen';
+export { default as ViewInstallmentScreen }        from '../screens/payment/ViewInstallmentScreen';
 export { default as RatesScreen } from '../screens/rates/RatesScreen';
 export { default as LoginLog } from '../screens/login/LoginLogs';
 export { default as BuyGoldScreen } from '../screens/buygold/BuyGoldScreen';
 export { default as PortfolioScreen } from '../screens/portfolio/PortfolioScreen';
 export { default as TransactionsScreen } from '../screens/transactions/TransactionsScreen';
+export { default as DeleteAccountScreen } from '../screens/profile/DeleteAccountScreen';

@@ -1,252 +1,123 @@
 // src/screens/mpin/ResetMpinScreen.tsx
 
-import React, { useRef, useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme';
-import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { resetMpin } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-
-import AppPinInput, {
-  AppPinInputRef,
-} from '../../components/ui/appcomponents/AppPinInput';
-import AppButton from '../../components/ui/appcomponents/AppButton';
-import AppHeader from '../../components/ui/appcomponents/AppHeader';
 import { useToast } from '../../components/ui/Toast';
+import { AuthShell, PinPad, PremiumButton } from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+const PIN_LENGTH = 4;
 
 export default function ResetMpinScreen() {
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
   const toast = useToast();
-
   const { loading } = useAppSelector((s) => s.mpin);
-  const theme = useTheme();
-  const { COLORS, SIZES } = theme;
-  const styles = useMemo(() => makeStyles(theme), [theme]);
-
-  const oldRef = useRef<AppPinInputRef>(null);
-  const newRef = useRef<AppPinInputRef>(null);
+  const { SIZES } = useTheme();
 
   const [step, setStep] = useState<'old' | 'new'>('old');
-
   const [oldMpin, setOldMpin] = useState('');
   const [newMpin, setNewMpin] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const [oldError, setOldError] = useState(false);
-  const [newError, setNewError] = useState(false);
+  const isOld = step === 'old';
 
-  const handleVerifyOldMpin = () => {
-    if (oldMpin.length < 4) {
-      setOldError(true);
+  const handleChange = useCallback(
+    (next: string) => {
+      setError(null);
+      if (isOld) setOldMpin(next);
+      else setNewMpin(next);
+    },
+    [isOld],
+  );
+
+  const handleContinue = useCallback(() => {
+    if (oldMpin.length < PIN_LENGTH) {
+      setError('Enter your current 4-digit MPIN');
       return;
     }
-
+    setError(null);
+    setNewMpin('');
     setStep('new');
-  };
+  }, [oldMpin]);
 
-  const handleReset = async () => {
-    if (oldMpin.length < 4) {
-      setOldError(true);
+  const handleBack = useCallback(() => {
+    setNewMpin('');
+    setError(null);
+    setStep('old');
+  }, []);
+
+  const handleReset = useCallback(async () => {
+    if (newMpin.length < PIN_LENGTH) {
+      setError('Enter a new 4-digit MPIN');
       return;
     }
-
-    if (newMpin.length < 4) {
-      setNewError(true);
-      return;
-    }
-
     if (oldMpin === newMpin) {
-      setNewError(true);
-
-      toast.warning('Same MPIN', {
-        message: 'New MPIN must be different from current MPIN',
-      });
-
+      setError('New MPIN must be different from current MPIN');
       return;
     }
 
-    const res = await dispatch(
-      resetMpin({
-        oldMpin,
-        newMpin,
-      })
-    );
-
-   if (resetMpin.fulfilled.match(res)) {
-  toast.success('MPIN Changed!', {
-    message: 'Your MPIN has been updated successfully',
-  });
-
-  navigation.replace('MpinLogin');
-} else {
-      setOldError(true);
-
-      toast.error('Failed', {
-        message: (res.payload as string) || 'Unable to change MPIN',
-      });
-
-      oldRef.current?.clear();
-
+    const res = await dispatch(resetMpin({ oldMpin, newMpin }));
+    if (resetMpin.fulfilled.match(res)) {
+      toast.success('MPIN Changed!', { message: 'Your MPIN has been updated successfully' });
+      navigation.replace('MpinLogin');
+    } else {
       setOldMpin('');
+      setNewMpin('');
       setStep('old');
+      setError('Incorrect current MPIN. Please try again.');
+      toast.error('Failed', { message: (res.payload as string) || 'Unable to change MPIN' });
     }
-  };
+  }, [oldMpin, newMpin, dispatch, toast, navigation]);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: COLORS.background,
-      }}
+    <AuthShell
+      eyebrow="Rangas DigiGold"
+      title={isOld ? 'Current MPIN' : 'New MPIN'}
+      caption={
+        isOld
+          ? 'Enter your existing 4-digit MPIN'
+          : 'Enter a new 4-digit MPIN'
+      }
+      onBack={isOld ? () => navigation.goBack() : handleBack}
+      step={{ current: isOld ? 1 : 2, total: 2 }}
+      align="top"
     >
-      <AppHeader
-        title="Change MPIN"
-        showBack
-        variant="white"
-      />
+      <View style={{ alignItems: 'center' }}>
+        <PinPad
+          key={step}
+          value={isOld ? oldMpin : newMpin}
+          onChange={handleChange}
+          length={PIN_LENGTH}
+          label={isOld ? 'Current MPIN' : 'New MPIN'}
+          hint={
+            isOld
+              ? 'Enter the MPIN you use to unlock the app'
+              : 'Avoid sequences like 1234 or repeated digits'
+          }
+          error={!!error}
+          errorMessage={error ?? undefined}
+          loading={loading}
+        />
 
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: SIZES.padding.xl,
-          paddingTop: SIZES.lg,
-          paddingBottom: 32,
-        }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              {step === 'old'
-                ? 'Verify Current MPIN'
-                : 'Set New MPIN'}
-            </Text>
-
-            <Text style={styles.subtitle}>
-              {step === 'old'
-                ? 'Enter your existing 4-digit MPIN'
-                : 'Choose a new secure 4-digit MPIN'}
-            </Text>
-          </View>
-
-          {step === 'old' && (
-            <>
-              <View style={styles.card}>
-                <AppPinInput
-                  ref={oldRef}
-                  length={4}
-                  label="Current MPIN"
-                  hint="Enter your existing 4-digit PIN"
-                  variant="dots"
-                  showKeypad
-                  autoFocus
-                  error={oldError}
-                  errorMessage="Incorrect MPIN"
-                  onChangeText={(v) => {
-                    setOldMpin(v);
-                    setOldError(false);
-                  }}
-                  onComplete={(v) => {
-                    setOldMpin(v);
-
-                    if (v.length === 4) {
-                      setTimeout(() => {
-                        setStep('new');
-                      }, 200);
-                    }
-                  }}
-                />
-              </View>
-
-              <AppButton
-                label="Continue"
-                onPress={handleVerifyOldMpin}
-                disabled={oldMpin.length < 4}
-                size="lg"
-              />
-            </>
-          )}
-
-          {step === 'new' && (
-            <>
-              <View style={styles.card}>
-                <AppPinInput
-                  ref={newRef}
-                  length={4}
-                  label="New MPIN"
-                  hint="Set your new 4-digit PIN"
-                  variant="dots"
-                  showKeypad
-                  autoFocus
-                  error={newError}
-                  errorMessage="Enter a valid 4-digit MPIN"
-                  onChangeText={(v) => {
-                    setNewMpin(v);
-                    setNewError(false);
-                  }}
-                  onComplete={(v) => {
-                    setNewMpin(v);
-                  }}
-                />
-              </View>
-
-              <AppButton
-                label="Change MPIN"
-                onPress={handleReset}
-                loading={loading}
-                disabled={newMpin.length < 4}
-                size="lg"
-              />
-            </>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        <PremiumButton
+          label={isOld ? 'Continue' : 'Change MPIN'}
+          size="lg"
+          onPress={isOld ? handleContinue : handleReset}
+          loading={!isOld && loading}
+          disabled={(isOld ? oldMpin : newMpin).length < PIN_LENGTH || loading}
+          iconRight="arrow-forward"
+          style={{ marginTop: SIZES.margin.xxl }}
+        />
+      </View>
+    </AuthShell>
   );
 }
-
-const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
-  StyleSheet.create({
-    content: {
-      flex: 1,
-      paddingTop: SIZES.xl,
-      gap: SIZES.xl,
-    },
-
-    header: {
-      gap: 6,
-    },
-
-    title: {
-      fontFamily: FONTS.family.bold,
-      fontSize: SIZES.heading.h3,
-      color: COLORS.textPrimary,
-      letterSpacing: -0.3,
-    },
-
-    subtitle: {
-      fontFamily: FONTS.family.regular,
-      fontSize: SIZES.font.sm,
-      color: COLORS.textSecondary,
-    },
-
-    card: {
-      backgroundColor: COLORS.card,
-      borderRadius: SIZES.radius.xl,
-      padding: SIZES.padding.xl,
-      alignItems: 'center',
-      ...SHADOWS.md,
-    },
-  });

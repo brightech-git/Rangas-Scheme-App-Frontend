@@ -61,7 +61,7 @@ function buildHtml(options: Record<string, any>): string {
     }
     .loader {
       text-align: center;
-      color: #6B7280;
+      color: #74563C;
       font-size: 14px;
     }
     .dot { display: inline-block; animation: bounce 1.2s infinite; }
@@ -182,21 +182,11 @@ const RazorpayWebCheckout = forwardRef<RazorpayWebCheckoutRef>((_, ref) => {
       onRequestClose={handleUserCancel}
       statusBarTranslucent
     >
-      <SafeAreaView style={[s.safe, { backgroundColor: COLORS.background }]} edges={['top']}>
-        {/* Header */}
-        <View style={[s.header, { borderBottomColor: COLORS.borderLight }]}>
-          <Text style={[s.title, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-            Secure Payment
-          </Text>
-          <TouchableOpacity onPress={handleUserCancel} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={24} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
+      <SafeAreaView style={[s.safe, { backgroundColor: COLORS.background }]} edges={['top','bottom']}>
         {/* Loading overlay */}
         {loading && (
           <View style={[s.loadingOverlay, { backgroundColor: COLORS.background }]}>
-            <ActivityIndicator size="large" color="#C9A84C" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={[s.loadingTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
               Loading payment gateway…
             </Text>

@@ -44,8 +44,8 @@
 //       logoHeight:      40,
 //       headerBgBase64:  bgB64,         // optional header bg image
 //       headerBgMimeType:'image/png',
-//       primaryColor:    '#FF971D',     // accent / table header color
-//       secondaryColor:  '#C9B15D',
+//       primaryColor:    '#C17436',     // accent / table header color
+//       secondaryColor:  '#D8C3AF',
 //       companyName:     'DigiGold',
 //       watermarkText:   'CONFIDENTIAL',// optional diagonal watermark
 //     },
@@ -151,8 +151,8 @@ function today() {
 // ─────────────────────────────────────────────────────────────────
 function buildPDFHtml(data: ExportData): string {
   const br       = data.branding ?? {};
-  const primary  = br.primaryColor  ?? '#FF971D';
-  const secondary= br.secondaryColor ?? '#C9B15D';
+  const primary  = br.primaryColor  ?? '#C17436';
+  const secondary= br.secondaryColor ?? '#D8C3AF';
   const company  = br.companyName   ?? 'DigiGold';
   const dateStr  = today();
 
@@ -195,7 +195,7 @@ function buildPDFHtml(data: ExportData): string {
   const trRows = data.rows.map((row, i) => {
     const cells = data.columns.map(c =>
       `<td style="padding:9px 14px;text-align:${c.align ?? 'left'};
-                  border-bottom:1px solid #F3F4F6;font-size:13px;">
+                  border-bottom:1px solid #F3ECE6;font-size:13px;">
          ${row[c.key] ?? ''}
        </td>`
     ).join('');
@@ -212,7 +212,7 @@ function buildPDFHtml(data: ExportData): string {
          <table style="width:100%;border-collapse:collapse;">
            ${(data.summary ?? []).map(s =>
              `<tr>
-               <td style="padding:8px 16px;color:#6B7280;font-size:13px;">${s.label}</td>
+               <td style="padding:8px 16px;color:#74563C;font-size:13px;">${s.label}</td>
                <td style="padding:8px 16px;font-weight:700;color:${primary};text-align:right;font-size:14px;">${s.value}</td>
               </tr>`
            ).join('')}
@@ -243,13 +243,13 @@ function buildPDFHtml(data: ExportData): string {
     .header-doc  { font-size:13px; color:rgba(255,255,255,0.55); }
     .body { padding:28px 36px; position:relative; z-index:1; }
     .doc-title { font-size:22px;font-weight:700;color:#111;margin-bottom:4px; }
-    .doc-sub   { font-size:13px;color:#6B7280;margin-bottom:22px; }
+    .doc-sub   { font-size:13px;color:#74563C;margin-bottom:22px; }
     table { width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden; }
     .footer {
-      margin-top:32px; border-top:1px solid #F3F4F6;
+      margin-top:32px; border-top:1px solid #F3ECE6;
       padding-top:14px; display:flex; justify-content:space-between;
     }
-    .footer-text { font-size:11px; color:#9CA3AF; }
+    .footer-text { font-size:11px; color:#B99878; }
     .stripe { height:4px; background:linear-gradient(90deg,${primary},${secondary}); }
   </style>
 </head>
@@ -315,7 +315,7 @@ async function exportExcel(data: ExportData, filename: string) {
   catch { Alert.alert('Missing package', 'Run: npm install xlsx'); return; }
 
   const br      = data.branding ?? {};
-  const primary = (br.primaryColor ?? '#FF971D').replace('#', '');
+  const primary = (br.primaryColor ?? '#C17436').replace('#', '');
   const wb      = XLSX.utils.book_new();
 
   // ── Title block rows ──
@@ -415,7 +415,7 @@ async function exportWord(data: ExportData, filename: string) {
   } = docx;
 
   const br        = data.branding ?? {};
-  const primary   = br.primaryColor  ?? '#FF971D';
+  const primary   = br.primaryColor  ?? '#C17436';
   const pHex      = primary.replace('#', '');
   const company   = br.companyName   ?? 'DigiGold';
   const dateStr   = today();
@@ -616,10 +616,13 @@ async function exportWord(data: ExportData, filename: string) {
 // ─────────────────────────────────────────────────────────────────
 type FormatCfg = { key: ExportFormat; label: string; ext: string; icon: string; desc: string; iconColor: string; iconBg: string };
 
+// File-format icon colours below are Microsoft product colours (Excel
+// green, Word blue) and are intentionally left un-themed so the export
+// options stay instantly recognisable. PDF uses the brand maroon.
 function useFormats(): FormatCfg[] {
   return [
-    { key: 'pdf',   label: 'PDF',   ext: 'pdf',  icon: 'document-text', desc: 'Branded report with logo & bg',    iconColor: '#DC2626', iconBg: 'rgba(220,38,38,0.1)'  },
-    { key: 'excel', label: 'Excel', ext: 'xlsx', icon: 'grid',          desc: 'Spreadsheet with styled header',   iconColor: '#16A34A', iconBg: 'rgba(22,163,74,0.1)'   },
+    { key: 'pdf',   label: 'PDF',   ext: 'pdf',  icon: 'document-text', desc: 'Branded report with logo & bg',    iconColor: '#8F1D24', iconBg: 'rgba(143,29,36,0.1)'  },
+    { key: 'excel', label: 'Excel', ext: 'xlsx', icon: 'grid',          desc: 'Spreadsheet with styled header',   iconColor: '#16A34A', iconBg: 'rgba(53,107,66,0.1)'   },
     { key: 'word',  label: 'Word',  ext: 'docx', icon: 'document',      desc: 'Document with logo & watermark',   iconColor: '#2563EB', iconBg: 'rgba(37,99,235,0.1)'   },
   ];
 }

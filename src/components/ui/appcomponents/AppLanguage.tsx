@@ -192,7 +192,7 @@ function LangRow({
             borderColor:     selected ? COLORS.primary : COLORS.border,
           },
         ]}>
-          {selected && <Ionicons name="checkmark" size={moderateScale(13)} color="#fff" />}
+          {selected && <Ionicons name="checkmark" size={moderateScale(13)} color={COLORS.textOnPrimary} />}
         </Animated.View>
       </Animated.View>
     </TouchableOpacity>
@@ -244,8 +244,8 @@ function LangCard({
           {lang.name}
         </Text>
         {selected && (
-          <View style={[styles.cardTick, { backgroundColor: COLORS.primary }]}>
-            <Ionicons name="checkmark" size={10} color="#fff" />
+          <View style={[styles.cardTick, { backgroundColor: COLORS.primaryFill }]}>
+            <Ionicons name="checkmark" size={10} color={COLORS.textOnPrimary} />
           </View>
         )}
       </Animated.View>

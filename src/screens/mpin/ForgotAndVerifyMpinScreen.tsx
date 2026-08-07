@@ -1,21 +1,18 @@
 // src/screens/mpin/ForgotAndVerifyMpinScreen.tsx
 
-import React, { useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Platform, SafeAreaView, ScrollView } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOtpVerify, removeListener } from 'react-native-otp-verify';
 import { useTheme } from '../../theme';
-import type { ThemeContextType } from '../../theme/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { forgotMpinSendOtp, forgotMpinVerify } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import AppOTPInput, { AppOTPInputRef } from '../../components/ui/appcomponents/AppOTPInput';
 import AppPinInput, { AppPinInputRef } from '../../components/ui/appcomponents/AppPinInput';
-import AppButton from '../../components/ui/appcomponents/AppButton';
-import AppHeader from '../../components/ui/appcomponents/AppHeader';
 import { useToast } from '../../components/ui/Toast';
-import { useEffect } from 'react';
+import { AuthShell, PremiumButton, asText } from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -24,12 +21,10 @@ export default function ForgotAndVerifyMpinScreen() {
   const dispatch   = useAppDispatch();
   const { loading } = useAppSelector((s) => s.mpin);
   const toast = useToast();
-  const theme = useTheme();
-  const { COLORS, SIZES } = theme;
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { COLORS, FONTS, SIZES } = useTheme();
 
-  const otpRef  = useRef<AppOTPInputRef>(null);
-  const pinRef  = useRef<AppPinInputRef>(null);
+  const otpRef = useRef<AppOTPInputRef>(null);
+  const pinRef = useRef<AppPinInputRef>(null);
 
   const [step, setStep]               = useState<'send' | 'verify'>('send');
   const [otpCode, setOtpCode]         = useState('');
@@ -39,7 +34,6 @@ export default function ForgotAndVerifyMpinScreen() {
   const [pinError, setPinError]       = useState(false);
   const [autoDetecting, setAutoDetecting] = useState(false);
 
-  // ── Auto OTP read ─────────────────────────────────────────────
   const { otp: smsOtp } = useOtpVerify({ numberOfDigits: 6 });
 
   useEffect(() => {
@@ -55,7 +49,6 @@ export default function ForgotAndVerifyMpinScreen() {
 
   useEffect(() => { return () => { removeListener(); }; }, []);
 
-  // ── Step 1: Send OTP ──────────────────────────────────────────
   const handleSendOtp = async () => {
     const res = await dispatch(forgotMpinSendOtp());
     if (forgotMpinSendOtp.fulfilled.match(res)) {
@@ -67,7 +60,6 @@ export default function ForgotAndVerifyMpinScreen() {
     }
   };
 
-  // ── Step 2: Verify OTP + new MPIN ─────────────────────────────
   const handleVerify = async () => {
     if (otpCode.length < 6) { setOtpError(true); setOtpErrMsg('Enter the OTP'); return; }
     if (newMpin.length < 4) { setPinError(true); return; }
@@ -95,55 +87,48 @@ export default function ForgotAndVerifyMpinScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <AppHeader title="Forgot MPIN" showBack variant="white" />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: SIZES.padding.xl, paddingTop: SIZES.lg, paddingBottom: 32 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>
-            {step === 'send' ? 'Reset Your MPIN' : 'Verify & Set New MPIN'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {step === 'send'
-              ? 'We will send an OTP to your registered mobile number.'
-              : 'Enter the OTP and set your new MPIN.'}
-          </Text>
-        </View>
-
+    <AuthShell
+      eyebrow="Rangas DigiGold"
+      title={step === 'send' ? 'Reset Your MPIN' : 'Verify & Set New MPIN'}
+      caption={
+        step === 'send'
+          ? "We'll send an OTP to your registered mobile number."
+          : 'Enter the OTP and set your new MPIN.'
+      }
+      onBack={() => navigation.goBack()}
+      align="top"
+    >
+      <View style={{ gap: 24 }}>
         {step === 'send' ? (
-          <View style={styles.card}>
-            <AppButton
-              label="Send OTP to Mobile"
-              onPress={handleSendOtp}
-              loading={loading}
-              size="lg"
-              leftIcon="phone-portrait-outline"
-            />
-          </View>
+          <PremiumButton
+            label="Send OTP to Mobile"
+            size="lg"
+            onPress={handleSendOtp}
+            loading={loading}
+            icon="phone-portrait-outline"
+            iconRight="arrow-forward"
+          />
         ) : (
           <>
-            {/* OTP Card */}
-            <View style={styles.card}>
-              {autoDetecting && (
-                <View style={styles.autoDetectRow}>
-                  <Text style={styles.autoDetectText}>📲 Waiting for SMS auto-detection...</Text>
-                </View>
-              )}
-              <AppOTPInput
-                ref={otpRef}
-                length={6}
-                autoFocus
-                value={otpCode}
-                error={otpError}
-                errorMessage={otpErrMsg}
-                onComplete={(code) => { setOtpCode(code); setOtpError(false); }}
-                onResend={handleResend}
-                resendCountdown={30}
-              />
-            </View>
+            {autoDetecting && (
+              <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary, textAlign: 'center' }]}>
+                📲 Waiting for SMS auto-detection...
+              </Text>
+            )}
 
-            {/* New MPIN Card */}
-            <View style={styles.card}>
+            <AppOTPInput
+              ref={otpRef}
+              length={6}
+              autoFocus
+              value={otpCode}
+              error={otpError}
+              errorMessage={otpErrMsg}
+              onComplete={(code) => { setOtpCode(code); setOtpError(false); }}
+              onResend={handleResend}
+              resendCountdown={30}
+            />
+
+            <View style={{ alignItems: 'center' }}>
               <AppPinInput
                 ref={pinRef}
                 length={4}
@@ -158,56 +143,18 @@ export default function ForgotAndVerifyMpinScreen() {
               />
             </View>
 
-            <AppButton
+            <PremiumButton
               label="Reset MPIN"
+              size="lg"
               onPress={handleVerify}
               loading={loading}
               disabled={otpCode.length < 6 || newMpin.length < 4}
-              size="lg"
+              iconRight="arrow-forward"
+              style={{ marginTop: SIZES.margin.md }}
             />
           </>
         )}
       </View>
-      </ScrollView>
-    </SafeAreaView>
+    </AuthShell>
   );
 }
-
-const makeStyles = ({ COLORS, FONTS, SIZES, SHADOWS }: ThemeContextType) =>
-  StyleSheet.create({
-    content: { flex: 1, paddingTop: SIZES.xl, gap: SIZES.xl },
-    header:  { gap: 8 },
-    title: {
-      fontFamily: FONTS.family.bold,
-      fontSize:   SIZES.heading.h3,
-      color:      COLORS.textPrimary,
-      letterSpacing: -0.3,
-    },
-    subtitle: {
-      fontFamily: FONTS.family.regular,
-      fontSize:   SIZES.font.sm,
-      color:      COLORS.textSecondary,
-      lineHeight: 22,
-    },
-    card: {
-      backgroundColor: COLORS.card,
-      borderRadius:    SIZES.radius.xl,
-      padding:         SIZES.padding.xl,
-      alignItems:      'center',
-      ...SHADOWS.md,
-    },
-    autoDetectRow: {
-      backgroundColor: COLORS.primaryPale,
-      borderRadius:    SIZES.radius.sm,
-      paddingHorizontal: SIZES.padding.md,
-      paddingVertical:   SIZES.padding.sm,
-      alignItems: 'center',
-      marginBottom: SIZES.md,
-      width: '100%',
-    },
-    autoDetectText: {
-      fontFamily: FONTS.family.regular,
-      fontSize:   SIZES.font.xs,
-      color:      COLORS.primaryDark,
-    },
-  });

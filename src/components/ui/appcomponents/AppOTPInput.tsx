@@ -314,7 +314,7 @@ const AppOTPInput = forwardRef<AppOTPInputRef, AppOTPInputProps>(
       cursor: {
         width: 2,
         height: BOX_SIZE * 0.45,
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.primaryFill,
         borderRadius: 1,
       },
       errorMsg: {
@@ -329,8 +329,8 @@ const AppOTPInput = forwardRef<AppOTPInputRef, AppOTPInputProps>(
         marginTop: 16,
         gap: 4,
       },
-      resendLabel: { ...FONTS.bodySmall, color: COLORS.textSecondary },
-      resendBtn: { ...FONTS.bodySmall, color: COLORS.primary },
+      resendLabel: { ...FONTS.bodyMedium, color: COLORS.textOnPrimary },
+      resendBtn: { ...FONTS.bodyMedium, color: COLORS.secondary, textDecorationLine: "underline" },
       resendDisabled: { ...FONTS.bodySmall, color: COLORS.textTertiary },
     });
 

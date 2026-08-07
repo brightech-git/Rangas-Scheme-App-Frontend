@@ -350,12 +350,12 @@ export default function InAppMessageModal() {
             {/* CTA button */}
             <TouchableOpacity
               onPress={() => dismiss(hasAction)}
-              style={[styles.btn, { backgroundColor: COLORS.primary }]}
+              style={[styles.btn, { backgroundColor: COLORS.primaryFill }]}
               activeOpacity={0.82}
               accessibilityRole="button"
               accessibilityLabel={hasAction ? `View ${currentMsg.screenName}` : 'Dismiss'}
             >
-              <Text style={[FONTS.button, { color: COLORS.white }]}>
+              <Text style={[FONTS.button, { color: COLORS.textOnPrimary }]}>
                 {hasAction ? 'View' : 'Got it'}
               </Text>
             </TouchableOpacity>

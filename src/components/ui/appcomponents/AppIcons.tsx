@@ -23,8 +23,8 @@ export default function AppIcon({ name, size, variant = 'default', onPress, cont
     default: { bg: COLORS.gray100,        color: COLORS.textSecondary },
     primary: { bg: COLORS.primaryPale,    color: COLORS.primary       },
     gold:    { bg: COLORS.goldLight,      color: COLORS.secondary     },
-    success: { bg: 'rgba(123,174,58,.12)',color: COLORS.success       },
-    error:   { bg: 'rgba(220,38,38,.1)',  color: COLORS.error         },
+    success: { bg: COLORS.successBg      ,color: COLORS.success       },
+    error:   { bg: COLORS.errorBg       ,  color: COLORS.error         },
     ghost:   { bg: 'transparent',         color: COLORS.textPrimary   },
   };
   const cfg  = configs[variant];

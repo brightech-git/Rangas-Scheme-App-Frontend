@@ -15,8 +15,10 @@ export default function WebViewComponent() {
   const { COLORS } = useTheme();
   const navigation = useNavigation();
   const { params } = useRoute<WebViewRoute>();
-  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(false);
+
+  const loading = progress < 1;
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
@@ -30,15 +32,25 @@ export default function WebViewComponent() {
 
       <WebView
         source={{ uri: params.url }}
-        onLoadStart={() => { setLoading(true); setError(false); }}
-        onLoadEnd={() => setLoading(false)}
-        onError={() => { setLoading(false); setError(true); }}
+        onLoadStart={() => { setProgress(0); setError(false); }}
+        onLoadProgress={({ nativeEvent }) => setProgress(nativeEvent.progress)}
+        onLoadEnd={() => setProgress(1)}
+        onError={() => { setProgress(1); setError(true); }}
         style={{ flex: 1 }}
+        cacheEnabled
+        cacheMode="LOAD_CACHE_ELSE_NETWORK"
+        domStorageEnabled
+        javaScriptEnabled
+        setSupportMultipleWindows={false}
+        renderLoading={() => <View />}
       />
 
       {loading && !error && (
         <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#D4AF37" />
+          <ActivityIndicator size="large" color="#D8C3AF" />
+          <Text style={{ color: COLORS.textSecondary, marginTop: 8, fontSize: 12 }}>
+            {Math.round(progress * 100)}%
+          </Text>
         </View>
       )}
 

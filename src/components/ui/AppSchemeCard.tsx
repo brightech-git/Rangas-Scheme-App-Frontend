@@ -82,11 +82,11 @@ export type AppSchemeCardProps = {
 // Helpers
 // ─────────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<SchemeStatus, { label: string; color: string; bg: string }> = {
-  active:   { label: 'Active',    color: '#FFFFFF', bg: '#7BAE3A' },
-  expired:  { label: 'Closed',    color: '#FFFFFF', bg: '#6B7280' },
-  closing:  { label: 'Closing',   color: '#FFFFFF', bg: '#DC2626' },
-  new:      { label: 'New',       color: '#FFFFFF', bg: '#FF971D' },
-  trending: { label: 'Trending',  color: '#FFFFFF', bg: '#FF971D' },
+  active:   { label: 'Active',    color: '#FFFFFF', bg: '#356B42' },
+  expired:  { label: 'Closed',    color: '#FFFFFF', bg: '#74563C' },
+  closing:  { label: 'Closing',   color: '#FFFFFF', bg: '#8F1D24' },
+  new:      { label: 'New',       color: '#FFFFFF', bg: '#C17436' },
+  trending: { label: 'Trending',  color: '#FFFFFF', bg: '#C17436' },
 };
 
 function resolveImageSource(
@@ -120,7 +120,7 @@ function Shimmer({
   return (
     <Animated.View
       style={[
-        { width, height, borderRadius, backgroundColor: '#E5E7EB', opacity: anim },
+        { width, height, borderRadius, backgroundColor: '#E7D4C4', opacity: anim },
         style,
       ]}
     />
@@ -223,7 +223,7 @@ function WishlistBtn({
         <Ionicons
           name={active ? 'heart' : 'heart-outline'}
           size={18}
-          color={active ? '#DC2626' : '#9CA3AF'}
+          color={active ? '#8F1D24' : '#B99878'}
         />
       </Animated.View>
     </TouchableOpacity>
@@ -301,8 +301,8 @@ function DefaultCard({
       android_ripple={{ color: COLORS.orangeOpacity10 }}
     >
       {scheme.isFeatured && (
-        <View style={[styles.featuredBadge, { backgroundColor: COLORS.primary }]}>
-          <Text style={[styles.featuredBadgeText, { fontFamily: FONTS.family.bold, fontSize: SIZES.font.xxs, color: COLORS.white }]}>
+        <View style={[styles.featuredBadge, { backgroundColor: COLORS.primaryFill }]}>
+          <Text style={[styles.featuredBadgeText, { fontFamily: FONTS.family.bold, fontSize: SIZES.font.xxs, color: COLORS.textOnPrimary }]}>
             MOST POPULAR
           </Text>
         </View>
@@ -448,8 +448,8 @@ function DefaultCard({
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.btn, styles.btnGold, { backgroundColor: COLORS.secondary }]} onPress={() => onBuy?.(scheme.id)} activeOpacity={0.8}>
-                  <Ionicons name="add-circle-outline" size={15} color={COLORS.white} />
-                  <Text style={[styles.btnText, { color: COLORS.white, fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.sm }]}>
+                  <Ionicons name="add-circle-outline" size={15} color={COLORS.textOnPrimary} />
+                  <Text style={[styles.btnText, { color: COLORS.textOnPrimary, fontFamily: FONTS.family.semiBold, fontSize: SIZES.font.sm }]}>
                     Start SIP
                   </Text>
                 </TouchableOpacity>
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 0.5,
-    borderColor: '#E5E5E5',
+    borderColor: '#E7D4C4',
   },
   body:            { padding: 14 },
   metaRow:         { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
@@ -657,9 +657,9 @@ const styles = StyleSheet.create({
   statsRow:        { flexDirection: 'row', gap: 8, marginBottom: 12 },
   statBlock:       { flex: 1, borderRadius: 10, padding: 8, alignItems: 'center' },
   statVal:         { fontSize: 14, fontWeight: '700', lineHeight: 18 },
-  statLabel:       { fontSize: 9, color: '#9CA3AF', fontWeight: '600', marginTop: 3, letterSpacing: 0.3, textTransform: 'uppercase' },
+  statLabel:       { fontSize: 9, color: '#B99878', fontWeight: '600', marginTop: 3, letterSpacing: 0.3, textTransform: 'uppercase' },
   progressLabelRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
-  progressTrack:   { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
+  progressTrack:   { height: 6, backgroundColor: '#F3ECE6', borderRadius: 3, overflow: 'hidden' },
   progressFill:    { height: '100%', borderRadius: 3 },
   tagsRow:         { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   tag:             { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20, borderWidth: 0.5 },
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   btnText:         { letterSpacing: 0.2 },
   btnOutline:      { borderWidth: 1.5 },
   btnGold:         {},
-  btnDisabled:     { backgroundColor: '#F3F4F6' },
+  btnDisabled:     { backgroundColor: '#F3ECE6' },
   badge:           { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20 },
   badgeText:       { letterSpacing: 0.4 },
   wishlistBtn:     { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   expiredPill:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5 },
   expiredText:     {},
   // horizontal
-  hCard:           { flexDirection: 'row', borderRadius: 16, overflow: 'hidden', borderWidth: 0.5, borderColor: '#E5E5E5' },
+  hCard:           { flexDirection: 'row', borderRadius: 16, overflow: 'hidden', borderWidth: 0.5, borderColor: '#E7D4C4' },
   hBody:           { flex: 1, padding: 12, justifyContent: 'space-between', minWidth: 0 },
   hName:           { marginBottom: 3 },
   hDesc:           { lineHeight: 16, marginBottom: 8 },
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   hActions:        { flexDirection: 'row', gap: 6 },
   hBtn:            { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   // mini
-  miniCard:        { borderRadius: 14, overflow: 'hidden', borderWidth: 0.5, borderColor: '#E5E5E5' },
+  miniCard:        { borderRadius: 14, overflow: 'hidden', borderWidth: 0.5, borderColor: '#E7D4C4' },
   miniBody:        { padding: 10 },
   miniName:        { marginBottom: 2 },
   miniBtn:         { width: '100%', marginTop: 8, paddingVertical: 9, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

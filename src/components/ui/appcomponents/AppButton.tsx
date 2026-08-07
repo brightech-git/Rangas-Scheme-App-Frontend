@@ -47,12 +47,12 @@ export default function AppButton({
   // ── Variant colors ──
   type VC = { bg: string; border: string; text: string; loaderColor: string };
   const variants: Record<ButtonVariant, VC> = {
-    primary:   { bg: COLORS.primary,   border: COLORS.primary,     text: COLORS.white,       loaderColor: COLORS.white       },
-    secondary: { bg: COLORS.gray100,   border: COLORS.gray100,     text: COLORS.textPrimary,  loaderColor: COLORS.primary     },
-    outline:   { bg: 'transparent',    border: COLORS.primary,     text: COLORS.primary,      loaderColor: COLORS.primary     },
-    ghost:     { bg: 'transparent',    border: 'transparent',      text: COLORS.textSecondary,loaderColor: COLORS.primary     },
-    danger:    { bg: COLORS.error,     border: COLORS.error,       text: COLORS.white,        loaderColor: COLORS.white       },
-    gold:      { bg: COLORS.secondary, border: COLORS.secondary,   text: COLORS.white,        loaderColor: COLORS.white       },
+    primary:   { bg: COLORS.primaryFill, border: COLORS.primaryFill, text: COLORS.textOnPrimary, loaderColor: COLORS.textOnPrimary },
+    secondary: { bg: COLORS.gray100,   border: COLORS.gray100,     text: COLORS.textPrimary,  loaderColor: COLORS.primaryInk  },
+    outline:   { bg: 'transparent',    border: COLORS.primaryFill, text: COLORS.primaryInk,   loaderColor: COLORS.primaryInk  },
+    ghost:     { bg: 'transparent',    border: 'transparent',      text: COLORS.textSecondary,loaderColor: COLORS.primaryInk  },
+    danger:    { bg: COLORS.error,     border: COLORS.error,       text: COLORS.textOnStatus, loaderColor: COLORS.textOnStatus },
+    gold:      { bg: COLORS.secondary, border: COLORS.secondary,   text: COLORS.textOnGold,   loaderColor: COLORS.textOnGold  },
   };
   const vc = variants[variant];
   const iSize = iconSize ?? iconSizes[size];

@@ -84,7 +84,11 @@ const setThemePreference = (pref: ThemePreference) =>
   AsyncStorage.setItem(KEYS.THEME, pref);
 const getThemePreference = async (): Promise<ThemePreference> => {
   const raw = await AsyncStorage.getItem(KEYS.THEME);
-  return raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system';
+  // Defaults to 'light', NOT 'system'. The Rangas palette (Warm Ivory /
+  // Cinnamon) is a light-only brand palette, so following the device's
+  // dark setting would show an espresso theme the brand never specified.
+  // Users can still opt into dark explicitly from Profile.
+  return raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'light';
 };
 
 // ── Clear session (logout) ────────────────────────────────────────

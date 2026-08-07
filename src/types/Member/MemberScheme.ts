@@ -3,5 +3,6 @@
 export interface MemberSchemeGroup {
   AMOUNT:       number;
   GROUPCODE:    string;
-  CURRENTREGNO: number;
+  CURRENTREGNO?: number;
+  REGNO?:        number;
 }

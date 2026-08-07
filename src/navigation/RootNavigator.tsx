@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, ActivityIndicator } from 'react-native';
+import { Linking, View, ActivityIndicator } from 'react-native';
 import * as Screens from './index';
 import { useTheme } from '../theme';
 import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
@@ -14,6 +14,11 @@ import {
 } from '../utils/NotificationHandler';
 import { ApiScheme } from '../types/Scheme/Scheme';
 import { PPData } from '../types/Account/PhoneDetails';
+import SplashScreen from '../screens/splash/SplashScreen';
+import WalletScreen from '../screens/wallet/WalletScreen';
+import LOGO from '../assets/company/logo.png';
+import CustomAlert from '../components/ui/CustomAlert';
+import { useAppVersion } from '../utils/useAppVersion';
 
 // SchemeItem = the real API shape (used as nav param for T&C + Join screens)
 export type SchemeItem = ApiScheme;
@@ -40,10 +45,13 @@ export type RootStackParamList = {
   SchemeTerms:             { scheme: SchemeItem };
   SchemeJoin:              { scheme: SchemeItem };
   PayInstallment:          { ppData: PPData };
+  ViewInstallment:         { ppData: PPData };
   Rates:                   { metal?: 'Gold' | 'Silver' };
   BuyGold:                 undefined;
   Portfolio:               undefined;
   Transactions:            undefined;
+  Wallet:                  undefined;
+  DeleteAccount:           undefined;
 };
 
 type InitialRoute = 'Onboarding' | 'Register' | 'Login' | 'CreateMpin' | 'MpinLogin' | 'Main';
@@ -54,6 +62,9 @@ export default function RootNavigator() {
   const { COLORS, isDark } = useTheme();
   const [initialRoute, setInitialRoute] = useState<InitialRoute | null>(null);
   const navigationRef = useRef<any>(null);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const { updateAvailable, latestVersion, storeUrl, isMaintenance, maintenanceMsg } = useAppVersion();
+  const showUpdate = updateAvailable && !alertDismissed;
 
   useEffect(() => {
     (async () => {
@@ -96,14 +107,30 @@ export default function RootNavigator() {
   };
 
   if (!initialRoute) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
+    return <SplashScreen logo={LOGO} />;
   }
 
   return (
+    <>
+    <CustomAlert
+      visible={isMaintenance}
+      type="warning"
+      title="Under Maintenance"
+      message={maintenanceMsg}
+      dismissible={false}
+      buttons={[]}
+    />
+    <CustomAlert
+      visible={showUpdate}
+      type="gold"
+      title="Update Available"
+      message={`Version ${latestVersion} is available. Update now for the latest features and improvements.`}
+      dismissible={false}
+      buttons={[
+        { label: 'Later', style: 'ghost', onPress: () => setAlertDismissed(true) },
+        { label: 'Update Now', style: 'primary', onPress: () => { setAlertDismissed(true); Linking.openURL(storeUrl); } },
+      ]}
+    />
     <NavigationContainer theme={navigationTheme} ref={navigationRef} onReady={onNavigationReady}>
       <Stack.Navigator
         initialRouteName={initialRoute}
@@ -131,12 +158,16 @@ export default function RootNavigator() {
         <Stack.Screen name="SchemeTerms"      component={Screens.SchemeTermsScreen}      options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="SchemeJoin"       component={Screens.SchemeJoinScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="PayInstallment"   component={Screens.PayInstallmentScreen}   options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="ViewInstallment"  component={Screens.ViewInstallmentScreen}  options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Rates"            component={Screens.RatesScreen}            options={{ animation: 'slide_from_bottom', headerShown: false }} />
         <Stack.Screen name="LoginLog"            component={Screens.LoginLog} />
         <Stack.Screen name="BuyGold"         component={Screens.BuyGoldScreen}         options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Portfolio"       component={Screens.PortfolioScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Transactions"    component={Screens.TransactionsScreen}    options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Wallet"          component={WalletScreen}                  options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="DeleteAccount"   component={Screens.DeleteAccountScreen}   options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
+    </>
   );
 }

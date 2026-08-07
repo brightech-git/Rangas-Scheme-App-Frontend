@@ -61,8 +61,8 @@ export default function AppAvatar({
       )}
 
       {showEdit && (
-        <TouchableOpacity onPress={onEditPress} style={[styles.editBtn, { width: editSz, height: editSz, borderRadius: editSz / 2, backgroundColor: COLORS.primary, borderColor: COLORS.white }]}>
-          <Ionicons name="camera" size={editSz * 0.45} color={COLORS.white} />
+        <TouchableOpacity onPress={onEditPress} style={[styles.editBtn, { width: editSz, height: editSz, borderRadius: editSz / 2, backgroundColor: COLORS.primaryFill, borderColor: COLORS.white }]}>
+          <Ionicons name="camera" size={editSz * 0.45} color={COLORS.textOnPrimary} />
         </TouchableOpacity>
       )}
     </View>

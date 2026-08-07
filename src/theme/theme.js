@@ -22,134 +22,172 @@ const fontScale = (size) => {
 
 // ============================================
 // 🎨 COLOR PALETTE — Rangas DigiGold
-// Primary: #aa0404 (Deep Red) | Secondary: #ffcc00 (Gold Yellow)
+// Primary   Cinnamon Brown  #C17436   Primary Dark  Burnt Brown  #A95F28
+// Secondary Champagne Gold  #D8C3AF   Accent        Deep Maroon  #8F1D24
+// Background Warm Ivory     #F6E9DD   Surface       White Cream  #FFF8F2
+// Text      Dark Brown      #3A2A22   Border        Soft Beige   #E7D4C4
 // ============================================
 export const COLORS = {
-  // ===== PRIMARY BRAND COLORS (DEEP RED) =====
-  primary: "#aa0404",
-  primaryLight: "#cc0505",
-  primaryDark: "#7a0303",
-  primaryLighter: "#dd2020",
-  primaryPale: "#fff5f5",
+  // ===== PRIMARY BRAND COLORS (CINNAMON BROWN) =====
+  primary: "#C17436",
+  primaryLight: "#D18F5A",
+  primaryDark: "#A95F28",
+  primaryLighter: "#DDA878",
+  primaryPale: "#FBF1E8",
+  // Cinnamon at full strength is only 3.03:1 on Warm Ivory, so it fails
+  // WCAG AA for small text. These two are the accessible substitutes:
+  //   primaryInk   — brand colour for LABELS / LINKS on a light surface (4.72:1)
+  //   primaryFill  — brand colour for SOLID BUTTONS with a white label (4.82:1)
+  // Use `primary` for large display type, icons, rules and fills only.
+  primaryInk: "#9C5522",
+  primaryFill: "#A95F28",
 
-  secondary: "#ffcc00",
-  secondaryLight: "#ffd633",
-  secondaryDark: "#cc9900",
-  secondaryLighter: "#ffe566",
+  secondary: "#D8C3AF",
+  secondaryLight: "#E4D3C3",
+  secondaryDark: "#C2A98D",
+  secondaryLighter: "#EEE1D4",
 
-  accent: "#ffcc00",
-  accentLight: "#ffe566",
-  accentDark: "#cc9900",
-  bottomGlow: "rgb(170, 4, 4)",
+  accent: "#8F1D24",
+  accentLight: "#A83840",
+  accentDark: "#6B1519",
+  bottomGlow: "rgb(143, 29, 36)",
 
   // ===== NEUTRAL COLORS =====
   white: "#FFFFFF",
   black: "#000000",
-  background: "#fffbfb",
-  backgroundSecondary: "#fff5f5",
-  backgroundTertiary: "#ffebe8",
-  backgroundDark: "#1a0000",
-  backgroundOrange: "#fff5f5",
-  backgroundGold: "#fffbf0",
-  surface: "#fffbfb",
-  card: "#FFFFFF",
-  softCard: "#fff5f5",
-  overlay: "rgba(170, 4, 4, 0.7)",
+  background: "#F6E9DD",
+  backgroundSecondary: "#F1DFCF",
+  backgroundTertiary: "#EAD2BC",
+  backgroundDark: "#241209",
+  backgroundOrange: "#F6E9DD",
+  backgroundGold: "#FBF3E8",
+  surface: "#FFF8F2",
+  card: "#FFF8F2",
+  softCard: "#F6E9DD",
+  overlay: "rgba(143, 29, 36, 0.7)",
   overlayDark: "rgba(0, 0, 0, 0.7)",
-  overlayGold: "rgba(255, 204, 0, 0.1)",
-  overlayOrange: "rgba(170, 4, 4, 0.1)",
+  overlayGold: "rgba(216, 195, 175, 0.1)",
+  overlayOrange: "rgba(193, 116, 54, 0.1)",
+
+  // ============================================================
+  // ===== TEXT *ON* COLOURED SURFACES ==========================
+  // Never write `color: COLORS.white` for text again. White is a fixed
+  // value that does not follow the theme, so the moment a fill changes
+  // the label silently breaks. Use the matching token below and the
+  // text updates everywhere automatically.
+  //
+  //   fill you're drawing on          ->  text token
+  //   primary / primaryFill / Dark    ->  textOnPrimary
+  //   accent (Deep Maroon)            ->  textOnAccent
+  //   gold foil / champagne           ->  textOnGold
+  //   success / error / info fills    ->  textOnStatus
+  //   any dark surface or photo       ->  textOnDark  (+ Muted)
+  // ============================================================
+  textOnPrimary:     "#FFFFFF",
+  /** Secondary text on a brand fill. Pure-white alpha, NOT warm ivory —
+   *  cinnamon is a mid-tone, so a warm tint loses too much contrast. */
+  textOnPrimaryMuted: "rgba(255, 255, 255, 0.82)",
+  textOnAccent:      "#FFFFFF",
+  textOnGold:        "#3A2A22",
+  textOnStatus:      "#FFFFFF",
+  /** ONLY for genuinely dark surfaces (espresso, photo overlays).
+   *  Do not use on cinnamon/primary fills — those need textOnPrimary. */
+  textOnDark:        "#F6E9DD",
+  textOnDarkMuted:   "rgba(246, 233, 221, 0.72)",
+  textOnDarkFaint:   "rgba(246, 233, 221, 0.45)",
 
   // ===== TEXT COLORS =====
-  textPrimary: "#1a0000",
-  textSecondary: "#5c1010",
-  textTertiary: "#9a4040",
-  textDisabled: "#ddb9b9",
+  textPrimary: "#3A2A22",
+  textSecondary: "#5C4536",
+  textTertiary: "#8A6F5D",
+  textDisabled: "#D9C6B8",
   textInverse: "#FFFFFF",
-  textOrange: "#aa0404",
-  textOrangeDark: "#7a0303",
-  textGold: "#cc9900",
-  textGoldDark: "#997700",
+  textOrange: "#C17436",
+  textOrangeDark: "#A95F28",
+  textGold: "#A98C68",
+  textGoldDark: "#8A7052",
 
-  // ===== GRAY SCALE (neutral) =====
-  gray50: "#fafafa",
-  gray100: "#f5f0f0",
-  gray200: "#ead8d8",
-  gray300: "#dbb9b9",
-  gray400: "#b07070",
-  gray500: "#7a4040",
-  gray600: "#5c2a2a",
-  gray700: "#3d1515",
-  gray800: "#2a0808",
-  gray900: "#1a0000",
+  // ===== GRAY SCALE (neutral, warm-tinted) =====
+  gray50: "#FAF7F5",
+  gray100: "#F3ECE6",
+  gray200: "#E7D4C4",
+  gray300: "#D9C2AC",
+  gray400: "#B99878",
+  gray500: "#977150",
+  gray600: "#74563C",
+  gray700: "#513C29",
+  gray800: "#362619",
+  gray900: "#241209",
 
-  // ===== RED VARIATIONS (replaces "orange") =====
-  orangeLight: "#fff5f5",
-  orangeMedium: "#dd2020",
-  orangeDark: "#7a0303",
-  orangeVivid: "#cc0505",
-  orangeIce: "#ffebe8",
-  orangeSoft: "#ffc9c9",
-  orangeDeep: "#550000",
+  // ===== CINNAMON VARIATIONS (replaces "orange") =====
+  orangeLight: "#F6E9DD",
+  orangeMedium: "#DDA878",
+  orangeDark: "#A95F28",
+  orangeVivid: "#C17436",
+  orangeIce: "#F1DFCF",
+  orangeSoft: "#E4B992",
+  orangeDeep: "#6B4520",
 
   // ===== BORDER & DIVIDER =====
-  border: "#ead8d8",
-  borderLight: "#fff0f0",
-  borderMedium: "#dbb9b9",
-  borderDark: "#7a0303",
-  borderOrange: "#aa0404",
-  borderGold: "#ffcc00",
-  divider: "#ead8d8",
+  border: "#E7D4C4",
+  borderLight: "#F1E4D6",
+  borderMedium: "#D9C2AC",
+  borderDark: "#A95F28",
+  borderOrange: "#C17436",
+  borderGold: "#D8C3AF",
+  divider: "#E7D4C4",
 
   // ===== INPUT COLORS =====
-  inputBackground: "#fffbfb",
-  inputBorder: "#ead8d8",
-  inputPlaceholder: "rgba(170, 4, 4, 0.35)",
-  inputFocused: "#aa0404",
-  inputFocusedAlt: "#ffcc00",
+  inputBackground: "#FFF8F2",
+  inputBorder: "#E7D4C4",
+  inputPlaceholder: "rgba(193, 116, 54, 0.35)",
+  inputFocused: "#C17436",
+  inputFocusedAlt: "#D8C3AF",
 
   // ===== STATUS COLORS =====
   // Subtle status backgrounds (for chips, badges, banners) — pair with the solid color for text/icon
-  successBg: "#e6f4ea",
-  warningBg: "#fff8e1",
-  errorBg: "#fdeaea",
-  infoBg: "#e7f1fb",
+  // Warm-shifted so chips/banners sit on Warm Ivory without going cool
+  successBg: "#E6F0E4",
+  warningBg: "#F7EEDC",
+  errorBg: "#F7E4E4",
+  infoBg: "#E6EDF3",
 
-  success: "#1e7a34",
-  successLight: "#27ae60",
-  successDark: "#155a24",
-  error: "#aa0404",
-  errorLight: "#cc0505",
-  errorDark: "#7a0303",
-  warning: "#ffcc00",
-  warningLight: "#ffd633",
-  warningDark: "#cc9900",
+  success: "#356B42",
+  successLight: "#57A169",
+  successDark: "#2C5A38",
+  error: "#8F1D24",
+  errorLight: "#A83840",
+  errorDark: "#6B1519",
+  warning: "#B8935F",
+  warningLight: "#D8C3AF",
+  warningDark: "#8A6F42",
   info: "#1a5fa4",
   infoLight: "#2e86de",
   infoDark: "#0e3d6e",
-  disabled: "#f5eded",
+  disabled: "#F3ECE6",
 
-  // ===== YELLOW/GOLD VARIATIONS =====
-  goldPrimary: "#ffcc00",
-  goldSecondary: "#ffd633",
-  goldTertiary: "#ffe566",
-  goldBronze: "#cc8800",
-  goldRose: "#ff8844",
-  goldLight: "#fffbee",
-  goldMedium: "#ffcc00",
-  goldDark: "#cc9900",
+  // ===== CHAMPAGNE / GOLD VARIATIONS =====
+  goldPrimary: "#D8C3AF",
+  goldSecondary: "#E4D3C3",
+  goldTertiary: "#EEE1D4",
+  goldBronze: "#A98C68",
+  goldRose: "#C79572",
+  goldLight: "#FBF3E8",
+  goldMedium: "#D8C3AF",
+  goldDark: "#B8935F",
 
   // ===== TRANSPARENT COLORS =====
   transparent: "transparent",
-  // Red (primary) opacity
-  orangeOpacity10: "rgba(170, 4, 4, 0.1)",
-  orangeOpacity20: "rgba(170, 4, 4, 0.2)",
-  orangeOpacity30: "rgba(170, 4, 4, 0.3)",
-  orangeOpacity40: "rgba(170, 4, 4, 0.4)",
-  orangeOpacity50: "rgba(170, 4, 4, 0.5)",
-  orangeOpacity60: "rgba(170, 4, 4, 0.6)",
-  orangeOpacity70: "rgba(170, 4, 4, 0.7)",
-  orangeOpacity80: "rgba(170, 4, 4, 0.8)",
-  orangeOpacity90: "rgba(170, 4, 4, 0.9)",
+  // Cinnamon (primary) opacity
+  orangeOpacity10: "rgba(193, 116, 54, 0.1)",
+  orangeOpacity20: "rgba(193, 116, 54, 0.2)",
+  orangeOpacity30: "rgba(193, 116, 54, 0.3)",
+  orangeOpacity40: "rgba(193, 116, 54, 0.4)",
+  orangeOpacity50: "rgba(193, 116, 54, 0.5)",
+  orangeOpacity60: "rgba(193, 116, 54, 0.6)",
+  orangeOpacity70: "rgba(193, 116, 54, 0.7)",
+  orangeOpacity80: "rgba(193, 116, 54, 0.8)",
+  orangeOpacity90: "rgba(193, 116, 54, 0.9)",
   // Black opacity
   blackOpacity10: "rgba(0, 0, 0, 0.1)",
   blackOpacity20: "rgba(0, 0, 0, 0.2)",
@@ -168,49 +206,140 @@ export const COLORS = {
   whiteOpacity70: "rgba(255, 255, 255, 0.7)",
   whiteOpacity80: "rgba(255, 255, 255, 0.8)",
   whiteOpacity90: "rgba(255, 255, 255, 0.9)",
-  // Gold opacity
-  goldOpacity10: "rgba(255, 204, 0, 0.1)",
-  goldOpacity20: "rgba(255, 204, 0, 0.2)",
-  goldOpacity30: "rgba(255, 204, 0, 0.3)",
-  goldOpacity50: "rgba(255, 204, 0, 0.5)",
+  // Champagne gold opacity
+  goldOpacity10: "rgba(216, 195, 175, 0.1)",
+  goldOpacity20: "rgba(216, 195, 175, 0.2)",
+  goldOpacity30: "rgba(216, 195, 175, 0.3)",
+  goldOpacity50: "rgba(216, 195, 175, 0.5)",
 
   // ===== SHADOW & EFFECTS =====
-  shadow: "rgba(170, 4, 4, 0.07)",
-  shadowMedium: "rgba(170, 4, 4, 0.14)",
-  shadowStrong: "rgba(170, 4, 4, 0.24)",
-  shadowOrange: "rgba(170, 4, 4, 0.2)",
-  shadowGold: "rgba(255, 204, 0, 0.25)",
+  shadow: "rgba(193, 116, 54, 0.07)",
+  shadowMedium: "rgba(193, 116, 54, 0.14)",
+  shadowStrong: "rgba(193, 116, 54, 0.24)",
+  shadowOrange: "rgba(193, 116, 54, 0.2)",
+  shadowGold: "rgba(216, 195, 175, 0.25)",
+
+  // ============================================================
+  // ===== V2 — "WARM HERO / IVORY BODY" DESIGN LANGUAGE =========
+  // Additive tokens for the premium redesign. Nothing above is
+  // renamed or removed — existing screens keep working untouched.
+  // ============================================================
+
+  // ----- Hero zone -------------------------------------------------
+  // A RICH CINNAMON band — the Burnt Brown family pushed one step
+  // deeper. This is a saturated brand colour, not a neutral: it sits
+  // 6.4:1 away from the Warm Ivory body, so the header and the page
+  // read as genuinely different zones. (A sand-toned header measured
+  // only 1.13:1 against the body — effectively invisible.)
+  //
+  // The depth is chosen so that BOTH pure white AND Champagne Gold
+  // clear 4.5:1 on the lightest gradient stop. Lighten `heroCanvas`
+  // past #7F4416 and the champagne accent starts failing.
+  heroCanvas:        "#7F4416",
+  heroCanvasAlt:     "#753E14",
+  // Panels sitting ON the header are inset (darker), so they read as
+  // recessed rather than floating.
+  heroElevated:      "#6B3712",
+  heroElevatedAlt:   "#5C2F10",
+  // Back to white-on-colour alpha now the hero carries a brand fill.
+  heroHairline:      "rgba(255, 255, 255, 0.16)",
+  heroHairlineBold:  "rgba(255, 255, 255, 0.30)",
+  heroGlass:         "rgba(255, 255, 255, 0.10)",
+  heroGlassBold:     "rgba(255, 255, 255, 0.18)",
+  heroGoldVeil:      "rgba(216, 195, 175, 0.16)",
+  heroRedVeil:       "rgba(143, 29, 36, 0.22)",
+  heroTextPrimary:   "#FFFFFF",
+  heroTextSecondary: "rgba(255, 255, 255, 0.86)",
+  heroTextTertiary:  "rgba(255, 255, 255, 0.70)",
+  heroTextMuted:     "rgba(255, 255, 255, 0.52)",
+  // Champagne Gold finally gets to be the accent — it reads beautifully
+  // on cinnamon and clears AA (4.50:1 at the lightest stop).
+  heroAccent:        "#D8C3AF",
+  heroAccentSoft:    "rgba(216, 195, 175, 0.20)",
+  /** Outline for unfilled PIN dots / empty control boundaries (3.5:1). */
+  heroDotIdle:       "rgba(255, 255, 255, 0.55)",
+  /** Label colour to sit ON heroAccent (badges, filled markers). */
+  heroOnAccent:      "#3A2A22",
+
+  // ----- Semantic colours FOR the hero zone -------------------------
+  // Lifted variants, because the hero is now a deep cinnamon fill.
+  // dark.js keeps the same lifted set, so components can just use
+  // heroSuccess/heroWarning/… without an isDark branch.
+  heroSuccess:       "#7FCB94",
+  heroWarning:       "#DDB77F",
+  // Light enough to clear 4.5:1 on the cinnamon hero (#EC8F96 was
+  // tuned for espresso and only reached 3.26 there).
+  heroDanger:        "#F7BEC2",
+  heroInfo:          "#84B7E5",
+
+  // ----- Body zone (light in light mode, dark in dark mode) -----
+  // Warm ivory neutral, matches the brand background exactly.
+  canvas:            "#F6E9DD",
+  canvasElevated:    "#FFF8F2",
+  canvasSunken:      "#EAD2BC",
+  canvasTint:        "#FBF3E8",
+  hairline:          "#E7D4C4",
+  hairlineBold:      "#D9C2AC",
+
+  // ----- Editorial text ramp for the body zone -----
+  inkPrimary:        "#3A2A22",
+  inkSecondary:      "#5C4536",
+  inkTertiary:       "#8A6F5D",
+  inkMuted:          "#C4AFA0",
+
+  // ----- Metal identity (used by scheme / rate surfaces) -----
+  metalGold:         "#C2A06B",
+  metalGoldSoft:     "#F7EFD3",
+  metalSilver:       "#8C9199",
+  metalSilverSoft:   "#EEF0F2",
+  metalPlatinum:     "#6B7C88",
+  metalPlatinumSoft: "#E9EEF1",
+  metalDiamond:      "#3EA0B5",
+  metalDiamondSoft:  "#E2F2F6",
 
   // ===== GRADIENT COLORS =====
   gradient: {
-    // Primary red gradients
-    orangePrimary: ["#aa0404", "#cc0505"],
-    orangeDeep: ["#7a0303", "#aa0404"],
-    orangeLight: ["#cc0505", "#ee3333"],
-    orangeVivid: ["#550000", "#aa0404"],
-    orangeToWhite: ["#aa0404", "#fffbfb"],
-    orangeToRed: ["#7a0303", "#aa0404"],
+    // ----- V2 hero gradients — rich cinnamon brand band -----
+    // `heroNoir` keeps its name so no component import has to change.
+    // Every stop stays at or below #7F4416 so white AND champagne both
+    // clear AA anywhere in the sweep.
+    heroNoir:     ["#7F4416", "#753E14", "#663610"],
+    heroOxblood:  ["#8A4A18", "#6B3712"],
+    heroEmber:    ["#7F4416", "#6B3712", "#5C2F10"],
+    heroGoldWash: ["rgba(216,195,175,0.28)", "rgba(216,195,175,0)"],
+    heroFade:     ["rgba(127,68,22,0)", "rgba(127,68,22,0.95)"],
+    goldFoil:     ["#EAD9B8", "#C2A06B", "#F2E6C8"],
+    goldEdge:     ["rgba(193,116,54,0.45)", "rgba(193,116,54,0)"],
+    paperLift:    ["#FFFFFF", "#F6E9DD"],
+    glassSheen:   ["rgba(255,255,255,0.16)", "rgba(255,255,255,0.02)"],
 
-    // Gold / yellow gradients
-    goldLight: ["#ffcc00", "#ffd633"],
-    goldDark: ["#cc9900", "#ffcc00"],
-    luxuryGold: ["#ffcc00", "#ffd633", "#ffe566"],
-    shimmer: ["#ffcc00", "#ffe566", "#ffcc00"],
+    // Primary cinnamon gradients
+    orangePrimary: ["#C17436", "#D18F5A"],
+    orangeDeep: ["#A95F28", "#C17436"],
+    orangeLight: ["#D18F5A", "#E4A876"],
+    orangeVivid: ["#6B4520", "#C17436"],
+    orangeToWhite: ["#C17436", "#FFF8F2"],
+    orangeToRed: ["#A95F28", "#C17436"],
 
-    // Red & Gold combinations
-    orangeToGold: ["#aa0404", "#ffcc00"],
-    goldToOrange: ["#ffcc00", "#aa0404"],
-    elegance: ["#7a0303", "#ffcc00"],
-    luxury: ["#aa0404", "#cc0505", "#ffcc00"],
-    premium: ["#550000", "#aa0404", "#ffcc00"],
+    // Champagne gold gradients
+    goldLight: ["#D8C3AF", "#E4D3C3"],
+    goldDark: ["#C2A98D", "#D8C3AF"],
+    luxuryGold: ["#D8C3AF", "#E4D3C3", "#EEE1D4"],
+    shimmer: ["#D8C3AF", "#EEE1D4", "#D8C3AF"],
+
+    // Cinnamon & Champagne combinations
+    orangeToGold: ["#C17436", "#D8C3AF"],
+    goldToOrange: ["#D8C3AF", "#C17436"],
+    elegance: ["#A95F28", "#D8C3AF"],
+    luxury: ["#C17436", "#D18F5A", "#D8C3AF"],
+    premium: ["#6B4520", "#C17436", "#D8C3AF"],
 
     // Neutral surfaces
-    surface: ["#fff5f5", "#fffbfb"],
-    surfaceWarm: ["#ffebe8", "#fffbfb"],
-    darkSurface: ["#1a0000", "#330000"],
+    surface: ["#F6E9DD", "#FFF8F2"],
+    surfaceWarm: ["#EAD2BC", "#FFF8F2"],
+    darkSurface: ["#241209", "#472314"],
   },
 };
-
 // ============================================
 // 📐 SIZING SYSTEM
 // ============================================
@@ -258,6 +387,26 @@ export const SIZES = {
     card: moderateScale(16),
     button: moderateScale(12),
     input: moderateScale(10),
+
+    // ----- V2 radii — larger, softer, more "product" than "app" -----
+    tile: moderateScale(20),
+    panel: moderateScale(24),
+    hero: moderateScale(28),
+    sheet: moderateScale(32),
+    pill: 9999,
+  },
+
+  // ----- V2 layout rhythm -----
+  // The old `padding.container` is 5px, which the redesign replaces
+  // with a real editorial gutter. Kept separate so nothing breaks.
+  layout: {
+    gutter: moderateScale(20),
+    gutterTight: moderateScale(16),
+    gutterWide: moderateScale(24),
+    section: moderateScale(32),
+    sectionTight: moderateScale(24),
+    block: moderateScale(14),
+    hairline: 1,
   },
 
   font: {
@@ -530,6 +679,79 @@ export const FONTS = {
     lineHeight: SIZES.font.md * 1.5,
     color: COLORS.goldPrimary,
   },
+
+  // ============================================================
+  // V2 EDITORIAL TYPOGRAPHY
+  // Big, tight, low-contrast-weight display numerals for balances
+  // and rates; wide-tracked micro caps for section eyebrows.
+  // ============================================================
+  displayXL: {
+    fontFamily: "Poppins-Bold",
+    fontSize: fontScale(44),
+    lineHeight: fontScale(44) * 1.06,
+    letterSpacing: -1.6,
+    color: COLORS.textPrimary,
+  },
+  displayLg: {
+    fontFamily: "Poppins-Bold",
+    fontSize: fontScale(36),
+    lineHeight: fontScale(36) * 1.08,
+    letterSpacing: -1.2,
+    color: COLORS.textPrimary,
+  },
+  displayMd: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(28),
+    lineHeight: fontScale(28) * 1.12,
+    letterSpacing: -0.8,
+    color: COLORS.textPrimary,
+  },
+  displaySm: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(22),
+    lineHeight: fontScale(22) * 1.16,
+    letterSpacing: -0.5,
+    color: COLORS.textPrimary,
+  },
+  /** Wide-tracked micro caps — section eyebrows, table headers */
+  eyebrow: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(10),
+    lineHeight: fontScale(10) * 1.4,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: COLORS.textTertiary,
+  },
+  /** Smallest legible metadata — timestamps, footnotes */
+  micro: {
+    fontFamily: "Poppins-Regular",
+    fontSize: fontScale(12),
+    lineHeight: fontScale(12) * 1.35,
+    letterSpacing: 0.1,
+    color: COLORS.textTertiary,
+  },
+  microBold: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: fontScale(12),
+    lineHeight: fontScale(12) * 1.35,
+    letterSpacing: 0.2,
+    color: COLORS.textPrimary,
+  },
+  /** Tabular-ish numerals for money rows */
+  numeral: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: SIZES.font.lg,
+    lineHeight: SIZES.font.lg * 1.3,
+    letterSpacing: -0.3,
+    color: COLORS.textPrimary,
+  },
+  numeralSm: {
+    fontFamily: "Poppins-Medium",
+    fontSize: SIZES.font.md,
+    lineHeight: SIZES.font.md * 1.3,
+    letterSpacing: -0.2,
+    color: COLORS.textPrimary,
+  },
 };
 
 // ============================================
@@ -605,6 +827,50 @@ export const SHADOWS = {
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 8,
+  },
+
+  // ----- V2 shadows — wide, low-opacity, "floating paper" -----
+  hairline: {
+    shadowColor: "#3A2A22",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  lift: {
+    shadowColor: "#3A2A22",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  float: {
+    shadowColor: "#3A2A22",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  heroLift: {
+    shadowColor: "#140A06",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.34,
+    shadowRadius: 34,
+    elevation: 14,
+  },
+  goldGlow: {
+    shadowColor: COLORS.goldPrimary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.34,
+    shadowRadius: 22,
+    elevation: 8,
+  },
+  bar: {
+    shadowColor: "#3A2A22",
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.09,
+    shadowRadius: 20,
+    elevation: 16,
   },
 };
 

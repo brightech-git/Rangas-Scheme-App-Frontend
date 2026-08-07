@@ -39,6 +39,14 @@ function buildMetal(metal: 'Gold' | 'Silver', current: number | undefined, rows:
   const history = buildEntries(rows);
   const last    = history[history.length - 1];
   const rate    = current ?? last?.rate ?? 0;
+
+  // Show today's date if last entry matches today, else show the actual date
+  let updatedAt = '—';
+  if (last?.dateRaw) {
+    const today = new Date().toISOString().slice(0, 10);
+    updatedAt = last.dateRaw === today ? `Today, ${last.date.slice(0, 6)}` : last.date;
+  }
+
   return {
     metal,
     unit:        'per gram',
@@ -46,7 +54,7 @@ function buildMetal(metal: 'Gold' | 'Silver', current: number | undefined, rows:
     currentRate: rate,
     change:      last?.change ?? 0,
     changePct:   last?.changePct ?? 0,
-    updatedAt:   'Today',
+    updatedAt,
     history,
   };
 }

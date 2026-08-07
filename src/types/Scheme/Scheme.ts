@@ -31,16 +31,20 @@ export const METAL_LABEL: Record<string, string> = {
   D: 'Diamond',
 };
 
+// Metal identity colours, aligned to the Cinnamon / Champagne palette.
+// Mirrors COLORS.metalGold / metalSilver / metalPlatinum / metalDiamond
+// in theme.js — kept here as plain constants because these are data-layer
+// display helpers consumed by screens that don't hold a theme reference.
 export const METAL_COLOR: Record<string, string> = {
-  G: '#C9A84C',
-  S: '#9E9E9E',
-  P: '#78909C',
-  D: '#00ACC1',
+  G: '#C2A06B',
+  S: '#8C9199',
+  P: '#6B7C88',
+  D: '#3EA0B5',
 };
 
 export const METAL_GRADIENT: Record<string, [string, string]> = {
-  G: ['#E8A020', '#C87010'],
-  S: ['#909090', '#606060'],
-  P: ['#607D8B', '#455A64'],
-  D: ['#00ACC1', '#00838F'],
+  G: ['#D8C3AF', '#A98C68'],
+  S: ['#A6ABB2', '#6E737A'],
+  P: ['#8494A0', '#4E5D68'],
+  D: ['#5FB8CB', '#2C7E8F'],
 };

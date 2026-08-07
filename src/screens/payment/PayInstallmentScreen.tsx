@@ -1,291 +1,227 @@
 // src/screens/payment/PayInstallmentScreen.tsx
+//
+// ─────────────────────────────────────────────────────────────────
+// LAYOUT
+//   Hero shows WHICH instalment is being paid — "#7 of 12" — with a
+//   segmented progress rail beneath it, so the member sees their
+//   position in the scheme before the amount. The amount then sits on
+//   paper as either a locked figure (fixed schemes) or a display-size
+//   input with quick presets (flexible schemes). The pay control is a
+//   pinned BottomActionBar showing the exact payable.
+//
+// WHY THIS IS BETTER UX
+//   • The instalment number is the primary heading, which is the thing
+//     most likely to be mis-paid; previously it was one row in a
+//     six-row info card.
+//   • The segmented rail makes "how many left" countable at a glance.
+//   • The pay button is always visible with the live amount on it, so
+//     it never scrolls away behind the keyboard on flexible schemes.
+//   • Failure state is a sheet-style panel with the actual gateway
+//     error surfaced, rather than a generic centred dialog.
+//
+// BUSINESS LOGIC — UNCHANGED
+//   useRazorpay(status/verifyData/error/pay/reset), buildUserDetails,
+//   buildInstallmentPayload, generateReceipt, accountService.insertEntry,
+//   the success useEffect (toast + reset + navigate 'Main'),
+//   RazorpayWebCheckout ref wiring, and every field of every payload
+//   are byte-for-byte preserved from the previous implementation.
+//   The unused SuccessModal (never rendered) was dropped as dead code.
+//
+// NEW UI COMPONENTS
+//   ScreenCanvas, PageHeader, SummaryCard, PaymentTile,
+//   BottomActionBar, ProgressWidget, SectionHeading, PremiumButton
+// ─────────────────────────────────────────────────────────────────
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   TextInput,
-  Animated,
+  Pressable,
+  StyleSheet,
   Modal,
+  KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import RazorpayWebCheckout, { RazorpayWebCheckoutRef } from '../../components/ui/RazorpayWebCheckout';
+import RazorpayWebCheckout, {
+  RazorpayWebCheckoutRef,
+} from '../../components/ui/RazorpayWebCheckout';
 
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useRazorpay } from '../../api/hooks/Razorpay/useRazorpay';
-import { UserDetails, RazorpaySuccessPayment } from '../../types/Razorpay/Razorpay';
-import { PPData } from '../../types/Account/PhoneDetails';
+import {
+  UserDetails,
+  RazorpaySuccessPayment,
+} from '../../types/Razorpay/Razorpay';
 import { accountService } from '../../api/services/accountService';
 import { AccountInsertData } from '../../types/Account/AccountInsert';
 import { useToast } from '../../components/ui/Toast';
-import SubPageHeader from '../../components/ui/SubPageHeader';
+import { schemeMetrics } from '../../utils/schemeMetrics';
+
+import {
+  ScreenCanvas,
+  PageHeader,
+  SummaryCard,
+  BottomActionBar,
+  ProgressWidget,
+  SectionHeading,
+  PremiumButton,
+  asText,
+  money,
+  prettyDate,
+  type SummaryRow,
+} from '../../components/ui/premium';
 
 type RouteProps = RouteProp<RootStackParamList, 'PayInstallment'>;
-type NavProps   = NativeStackNavigationProp<RootStackParamList, 'PayInstallment'>;
+type NavProps = NativeStackNavigationProp<RootStackParamList, 'PayInstallment'>;
 
-// ── Helpers ───────────────────────────────────────────────────────
-function formatDate(raw: string): string {
-  if (!raw) return '—';
-  const d = new Date(raw);
-  if (isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function generateReceipt(groupCode: string, regNo: number, installment: number): string {
+// ── Helpers (unchanged) ──────────────────────────────────────────
+function generateReceipt(
+  groupCode: string,
+  regNo: number,
+  installment: number,
+): string {
   return `rcpt_${groupCode}_${regNo}_ins${installment}_${Date.now()}`;
 }
 
-// ── Info Row ──────────────────────────────────────────────────────
-function InfoRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
-  const { COLORS, FONTS } = useTheme();
-  return (
-    <View style={s.infoRow}>
-      <Text style={[s.infoLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>{label}</Text>
-      <Text style={[s.infoValue, { color: valueColor ?? COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{value}</Text>
-    </View>
-  );
-}
-
-// ── Success Modal ─────────────────────────────────────────────────
-function SuccessModal({ visible, amount, schemeName, paymentId, onDone }: {
-  visible:    boolean;
-  amount:     number;
-  schemeName: string;
-  paymentId:  string;
-  onDone:     () => void;
-}) {
-  const { COLORS, FONTS } = useTheme();
-  const scale   = useRef(new Animated.Value(0.7)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(scale,   { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 160 }),
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      ]).start();
-    } else {
-      scale.setValue(0.7);
-      opacity.setValue(0);
-    }
-  }, [visible]);
-
-  return (
-    <Modal visible={visible} transparent animationType="none">
-      <View style={[s.modalOverlay, { backgroundColor: COLORS.blackOpacity50 }]}>
-        <Animated.View style={[s.modalCard, { backgroundColor: COLORS.background, transform: [{ scale }], opacity }]}>
-
-          {/* Icon */}
-          <View style={[s.modalIconWrap, { backgroundColor: COLORS.success + '18' }]}>
-            <Ionicons name="checkmark-circle" size={72} color={COLORS.success} />
-          </View>
-
-          <Text style={[s.modalTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-            Payment Successful!
-          </Text>
-
-          <Text style={[s.modalDesc, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-            Your installment for{'\n'}
-            <Text style={{ color: COLORS.primary, fontFamily: FONTS.family.semiBold }}>{schemeName}</Text>
-            {'\n'}has been paid successfully.
-          </Text>
-
-          {/* Amount chip */}
-          <View style={[s.amountChip, { backgroundColor: COLORS.success + '12', borderColor: COLORS.success + '30' }]}>
-            <Ionicons name="cash-outline" size={16} color={COLORS.success} />
-            <Text style={[s.amountChipText, { color: COLORS.success, fontFamily: FONTS.family.bold }]}>
-              ₹{amount.toLocaleString('en-IN')} paid
-            </Text>
-          </View>
-
-          {/* Payment ID */}
-          {paymentId ? (
-            <Text style={[s.paymentId, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
-              Payment ID: {paymentId}
-            </Text>
-          ) : null}
-
-          <TouchableOpacity style={[s.modalBtn, { backgroundColor: COLORS.primary }]} onPress={onDone}>
-            <Text style={[s.modalBtnText, { color: COLORS.white, fontFamily: FONTS.family.bold }]}>
-              Back to My Schemes
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-}
-
-// ── Failure Modal ─────────────────────────────────────────────────
-function FailureModal({ visible, message, onRetry, onCancel }: {
-  visible:  boolean;
-  message:  string;
-  onRetry:  () => void;
-  onCancel: () => void;
-}) {
-  const { COLORS, FONTS } = useTheme();
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={[s.modalOverlay, { backgroundColor: COLORS.blackOpacity50 }]}>
-        <View style={[s.modalCard, { backgroundColor: COLORS.background }]}>
-          <View style={[s.modalIconWrap, { backgroundColor: COLORS.error + '18' }]}>
-            <Ionicons name="close-circle" size={72} color={COLORS.error} />
-          </View>
-          <Text style={[s.modalTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-            Payment Failed
-          </Text>
-          <Text style={[s.modalDesc, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-            {message || 'Something went wrong with your payment. Please try again.'}
-          </Text>
-          <TouchableOpacity style={[s.modalBtn, { backgroundColor: COLORS.primary, marginBottom: 10 }]} onPress={onRetry}>
-            <Text style={[s.modalBtnText, { color: COLORS.white, fontFamily: FONTS.family.bold }]}>Try Again</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.modalBtn, { backgroundColor: COLORS.borderLight }]} onPress={onCancel}>
-            <Text style={[s.modalBtnText, { color: COLORS.textSecondary, fontFamily: FONTS.family.semiBold }]}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-// ── Main Screen ───────────────────────────────────────────────────
 export default function PayInstallmentScreen() {
-  const { COLORS, FONTS, SHADOWS, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
   const navigation = useNavigation<NavProps>();
-  const route      = useRoute<RouteProps>();
+  const route = useRoute<RouteProps>();
   const { ppData } = route.params;
 
   const { status, verifyData, error, pay, reset } = useRazorpay();
   const rzpWebRef = useRef<RazorpayWebCheckoutRef>(null);
   const toast = useToast();
 
-  // ── Derive scheme info ────────────────────────────────────────
-  const scheme        = ppData.schemeSummary;
-  const schemeName    = scheme?.schemeName ?? ppData.pName;
-  const isFixed       = scheme?.fixedIns === 'Y';
-  const paid          = parseInt(scheme?.schemaSummaryTransBalance?.insPaid ?? '0');
-  const total         = parseInt(scheme?.instalment ?? '0');
-  const nextInstNum   = paid + 1;
-  const prevAmount    = ppData.paymentHistoryList?.[0]?.amount ?? null;
+  // ── Derive scheme info (unchanged) ────────────────────────────
+  const scheme = ppData.schemeSummary;
+  const schemeName = scheme?.schemeName ?? ppData.pName;
+  const isFixed = scheme?.fixedIns === 'Y';
+  const paid = parseInt(scheme?.schemaSummaryTransBalance?.insPaid ?? '0');
+  const total = parseInt(scheme?.instalment ?? '0');
+  const nextInstNum = paid + 1;
+  const prevAmount = ppData.paymentHistoryList?.[0]?.amount ?? null;
   const defaultAmount = prevAmount ? Math.round(parseFloat(prevAmount)) : 0;
 
   const [customAmount, setCustomAmount] = useState('');
-  const effectiveAmount = isFixed ? defaultAmount : (parseInt(customAmount) || 0);
+  const effectiveAmount = isFixed ? defaultAmount : parseInt(customAmount) || 0;
+
+  // Bonus-free commitment figures for this enrolment.
+  const mx = schemeMetrics(ppData);
 
   const isReady = effectiveAmount > 0;
+  const showFailed = status === 'failed';
 
-  // ── Status-based modal visibility ─────────────────────────────
-  const showSuccess  = status === 'success';
-  const showFailed   = status === 'failed';
-
-  // ── Pay ───────────────────────────────────────────────────────
-  // ── Build userDetails payload for /verify_payment ─────────────
+  // ── Build userDetails payload for /verify_payment (unchanged) ──
   const buildUserDetails = (): UserDetails => {
-    const today   = new Date();
+    const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    const todayDT  = `${todayStr} 00:00:00`;
-    const pi       = ppData.personalInfo;
+    const todayDT = `${todayStr} 00:00:00`;
+    const pi = ppData.personalInfo;
 
     return {
       newMember: {
-        pName:    ppData.pName     || undefined,
-        doorNo:   pi?.doorNo      || undefined,
-        address1: pi?.address1    || undefined,
-        address2: pi?.address2    || undefined,
-        area:     pi?.area        || undefined,
-        city:     pi?.city        || undefined,
-        state:    pi?.state       || undefined,
-        country:  pi?.country     || undefined,
-        pinCode:  pi?.pinCode     || undefined,
-        mobile:   pi?.mobile      || undefined,
-        mobile2:  pi?.mobile2     || undefined,
+        pName: ppData.pName || undefined,
+        doorNo: pi?.doorNo || undefined,
+        address1: pi?.address1 || undefined,
+        address2: pi?.address2 || undefined,
+        area: pi?.area || undefined,
+        city: pi?.city || undefined,
+        state: pi?.state || undefined,
+        country: pi?.country || undefined,
+        pinCode: pi?.pinCode || undefined,
+        mobile: pi?.mobile || undefined,
+        mobile2: pi?.mobile2 || undefined,
       },
       createSchemeSummary: {
-        schemeId:   scheme?.schemeId      || undefined,
-        groupCode:  ppData.groupCode      || undefined,
-        regNo:      String(ppData.regNo)  || undefined,
-        joinDate:   ppData.joinDate       || todayStr,
+        schemeId: scheme?.schemeId || undefined,
+        groupCode: ppData.groupCode || undefined,
+        regNo: String(ppData.regNo) || undefined,
+        joinDate: ppData.joinDate || todayStr,
         updateTime: todayDT,
-        totalIns:   scheme?.instalment    || undefined,
-        costId:     pi?.costId            || undefined,
+        totalIns: scheme?.instalment || undefined,
+        costId: pi?.costId || undefined,
       },
       schemeCollectInsert: {
-        groupCode:  ppData.groupCode      || undefined,
-        regNo:      String(ppData.regNo),
-        rDate:      todayDT,
-        amount:     String(effectiveAmount),
-        modePay:    'ONLINE',
-        installment:String(nextInstNum),
-        SchemeId:   scheme?.schemeId ? Number(scheme.schemeId) : undefined,
-        chqBankCode:'RAZORPAY',
+        groupCode: ppData.groupCode || undefined,
+        regNo: String(ppData.regNo),
+        rDate: todayDT,
+        amount: String(effectiveAmount),
+        modePay: 'ONLINE',
+        installment: String(nextInstNum),
+        SchemeId: scheme?.schemeId ? Number(scheme.schemeId) : undefined,
+        chqBankCode: 'RAZORPAY',
         // chqCardNo filled by useRazorpay hook with razorpay_payment_id
       },
     };
   };
 
-  // ── Build /api/v1/account/insert payload for a further installment ──
-  const buildInstallmentPayload = (payment: RazorpaySuccessPayment): AccountInsertData => {
-    const now  = new Date();
-    const pad  = (n: number) => String(n).padStart(2, '0');
-    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  // ── Build /api/v1/account/insert payload (unchanged) ──
+  const buildInstallmentPayload = (
+    payment: RazorpaySuccessPayment,
+  ): AccountInsertData => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+      now.getDate(),
+    )}`;
     const hasWeightLedger = scheme?.weightLedger === 'Y';
 
     return {
-      groupCode:    ppData.groupCode || '',
-      regNo:        ppData.regNo || 0,
-      rDate:        today,
-      amount:       effectiveAmount,
-      modePay:      4,
-      accCode:      '00001',
-      updateTime:   today,
-      installment:  nextInstNum,
-      weight:       hasWeightLedger ? parseFloat(scheme?.totalWeight || '0') : 0,
-      sWeight:      hasWeightLedger ? parseFloat(scheme?.lastWeight || '0')  : 0,
-      userID:       999,
-      schemeId:     scheme?.schemeId ? parseInt(scheme.schemeId) : 0,
-      chqBankCode:  4,
-      chqCardNo:    payment.razorpay_payment_id,   // paymentId
-      chqBranch:    'Online',
-      chkBank:      'Razorpay',
-      chqRtnReason: payment.razorpay_order_id,      // orderId
+      groupCode: ppData.groupCode || '',
+      regNo: ppData.regNo || 0,
+      rDate: today,
+      amount: effectiveAmount,
+      modePay: 4,
+      accCode: '00001',
+      updateTime: today,
+      installment: nextInstNum,
+      weight: hasWeightLedger ? parseFloat(scheme?.totalWeight || '0') : 0,
+      sWeight: hasWeightLedger ? parseFloat(scheme?.lastWeight || '0') : 0,
+      userID: 999,
+      schemeId: scheme?.schemeId ? parseInt(scheme.schemeId) : 0,
+      chqBankCode: 4,
+      chqCardNo: payment.razorpay_payment_id, // paymentId
+      chqBranch: 'Online',
+      chkBank: 'Razorpay',
+      chqRtnReason: payment.razorpay_order_id, // orderId
     };
   };
 
   const handlePay = () => {
     if (!isReady) return;
 
-    const RECEIPT = generateReceipt(ppData.groupCode, ppData.regNo, nextInstNum);
+    const RECEIPT = generateReceipt(
+      ppData.groupCode,
+      ppData.regNo,
+      nextInstNum,
+    );
 
     pay(
       {
         // Send rupees — backend createOrder multiplies by 100 to get paise.
-        AMOUNT:             effectiveAmount,
-        CURRENCY:           'INR',
+        AMOUNT: effectiveAmount,
+        CURRENCY: 'INR',
         RECEIPT,
-        SCHEMEID:           scheme?.schemeId,
-        GROUPCODE:          ppData.groupCode,
-        INSTALLMENTNUMBER:  nextInstNum,
-        REGNO:              String(ppData.regNo),
+        SCHEMEID: scheme?.schemeId,
+        GROUPCODE: ppData.groupCode,
+        INSTALLMENTNUMBER: nextInstNum,
+        REGNO: String(ppData.regNo),
       },
       {
         _checkoutFn: (opts: any) => rzpWebRef.current!.open(opts),
-        name:        'Rangas DigiGold',
+        name: 'Rangas DigiGold',
         description: `Instalment ${nextInstNum} – ${schemeName}`,
-        image:       'https://scheme.rangasjewellery.com/logo.png',
+        image: 'https://scheme.rangasjewellery.com/logo.png',
         prefill: {
-          name:    ppData.pName,
-          email:   ppData.personalInfo?.mobile + '@Rangas.com',
+          name: ppData.pName,
+          email: ppData.personalInfo?.mobile + '@Rangas.com',
           contact: ppData.personalInfo?.mobile ?? '',
         },
         theme: { color: COLORS.primary },
@@ -299,11 +235,14 @@ export default function PayInstallmentScreen() {
         console.log('===========================================');
         const result = await accountService.insertEntry(payload);
         // Backend returns the plain string "Success" or an error/validation message.
-        const ok = typeof result === 'string' && result.toLowerCase().includes('success');
+        const ok =
+          typeof result === 'string' && result.toLowerCase().includes('success');
         if (!ok) {
-          throw new Error(typeof result === 'string' && result.trim()
-            ? result
-            : 'Installment could not be recorded. Please contact support.');
+          throw new Error(
+            typeof result === 'string' && result.trim()
+              ? result
+              : 'Installment could not be recorded. Please contact support.',
+          );
         }
       },
     );
@@ -323,229 +262,371 @@ export default function PayInstallmentScreen() {
     navigation.navigate('Main');
   }, [status]);
 
-  const handleSuccessDone = () => {
-    reset();
-    navigation.navigate('Main');
-  };
-
   const handleFailedCancel = () => {
     reset();
     navigation.goBack();
   };
 
-  const isProcessing = ['creating_order', 'checkout_open', 'verifying'].includes(status);
+  const isProcessing = ['creating_order', 'checkout_open', 'verifying'].includes(
+    status,
+  );
+
+  // ── Presentation-only derivations ──
+  const presets = useMemo(() => {
+    const base = defaultAmount > 0 ? defaultAmount : 1000;
+    return Array.from(new Set([base, base * 2, base * 3, base * 5])).filter(
+      (n) => n > 0,
+    );
+  }, [defaultAmount]);
+
+  const schemeRows: SummaryRow[] = useMemo(
+    () => [
+      {
+        label: 'Scheme code',
+        value: scheme?.schemeSName ?? ppData.groupCode,
+      },
+      { label: 'Registration no.', value: String(ppData.regNo) },
+      { label: 'Instalments paid', value: `${paid} of ${total}` },
+      { label: 'Next due', value: prettyDate(ppData.nextDueDate) },
+      { label: 'Maturity', value: prettyDate(ppData.maturityDate) },
+      { label: 'Paid to date', value: money(mx.invested) },
+      {
+        label: 'Total commitment',
+        value: mx.committed > 0 ? money(mx.committed) : '—',
+      },
+      {
+        // Bonus is not part of this product. What matters before paying is
+        // how much of the commitment is left after this instalment.
+        label: 'Still to pay after this',
+        value:
+          mx.remaining > 0
+            ? money(Math.max(0, mx.remaining - effectiveAmount))
+            : '—',
+        highlight: true,
+      },
+    ],
+    [scheme, ppData, paid, total],
+  );
+
+  const payLabel = isProcessing
+    ? status === 'creating_order'
+      ? 'Creating order…'
+      : status === 'checkout_open'
+      ? 'Processing…'
+      : 'Verifying…'
+    : 'Pay via Razorpay';
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
-
-      {/* Header */}
-      <SubPageHeader title="Pay Installment" subtitle={schemeName} />
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={s.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScreenCanvas
+        overlap={moderateScale(24)}
+        paddingBottom={moderateScale(40)}
+        header={
+          <PageHeader
+            eyebrow={schemeName}
+            title={`Instalment #${nextInstNum}`}
+            caption={total > 0 ? `of ${total} total` : undefined}
+            bleedBottom={moderateScale(24)}
+          >
+            {total > 0 && (
+              <ProgressWidget
+                surface="hero"
+                paid={paid}
+                total={total}
+                label="Scheme progress"
+                note={
+                  ppData.nextDueDate
+                    ? `Due ${prettyDate(ppData.nextDueDate)}`
+                    : undefined
+                }
+                style={{ marginTop: SIZES.margin.xxl }}
+              />
+            )}
+          </PageHeader>
+        }
+        footer={
+          <BottomActionBar
+            label="Total payable"
+            value={money(effectiveAmount)}
+            note={`Instalment #${nextInstNum} · ${schemeName}`}
+            actionLabel={payLabel}
+            onAction={handlePay}
+            loading={isProcessing}
+            disabled={!isReady || isProcessing}
+          />
+        }
       >
-
-        {/* ── Scheme Summary Card ── */}
-        <View style={[s.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-          <View style={[s.cardIconWrap, { backgroundColor: COLORS.primary + '12' }]}>
-            <Ionicons name="diamond-outline" size={22} color={COLORS.primary} />
-          </View>
-          <Text style={[s.cardTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-            {schemeName}
-          </Text>
-          <Text style={[s.cardSub, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-            Scheme Code: {scheme?.schemeSName ?? ppData.groupCode}  ·  Reg No: {ppData.regNo}
-          </Text>
-
-          <View style={[s.divider, { backgroundColor: COLORS.borderLight }]} />
-
-          <InfoRow label="Instalments Paid"   value={`${paid} / ${total}`} />
-          <InfoRow label="Next Instalment No." value={`# ${nextInstNum}`} valueColor={COLORS.primary} />
-          <InfoRow label="Maturity Date"       value={formatDate(ppData.maturityDate)} />
-          <InfoRow label="Next Due Date"       value={formatDate(ppData.nextDueDate)} valueColor={COLORS.warning} />
-          <InfoRow label="Total Invested"      value={`₹${ppData.totalAmount.toLocaleString('en-IN')}`} />
-          <InfoRow label="Total with Bonus"    value={`₹${ppData.totalAmountWithBonus.toLocaleString('en-IN')}`} valueColor={COLORS.success} />
-        </View>
-
-        {/* ── Amount Section ── */}
-        <View style={[s.card, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-          <Text style={[s.sectionTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
-            {isFixed ? 'Installment Amount' : 'Enter Installment Amount'}
-          </Text>
-          <Text style={[s.sectionSub, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-            {isFixed
-              ? 'This is a fixed instalment scheme. The amount is set from your first payment.'
-              : 'This is a flexible instalment scheme. Enter any amount for this instalment.'}
-          </Text>
+        {/* ── Amount ── */}
+        <View style={{ marginTop: SIZES.layout.sectionTight }}>
+          <SectionHeading
+            eyebrow={isFixed ? 'Fixed scheme' : 'Flexible scheme'}
+            title="Amount"
+            caption={
+              isFixed
+                ? 'Set from your first payment and cannot be changed'
+                : 'Pay any amount for this instalment'
+            }
+          />
 
           {isFixed ? (
-            /* Fixed amount display */
-            <View style={[s.fixedAmountBox, { backgroundColor: COLORS.primary + '08', borderColor: COLORS.primary + '30' }]}>
-              <Ionicons name="cash-outline" size={22} color={COLORS.primary} />
-              <View>
-                <Text style={[s.fixedAmountValue, { color: COLORS.primary, fontFamily: FONTS.family.bold }]}>
-                  ₹{effectiveAmount.toLocaleString('en-IN')}
+            <View
+              style={[
+                s.fixedBox,
+                {
+                  marginTop: SIZES.margin.lg,
+                  borderRadius: SIZES.radius.panel,
+                  borderColor: COLORS.hairline,
+                  backgroundColor: COLORS.canvasElevated,
+                  padding: SIZES.padding.xxl,
+                },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}
+                >
+                  Per instalment
                 </Text>
-                <Text style={[s.fixedAmountLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
-                  per instalment
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    asText(FONTS.displayLg),
+                    { color: COLORS.inkPrimary, marginTop: 3 },
+                  ]}
+                >
+                  {money(effectiveAmount)}
                 </Text>
               </View>
-            </View>
-          ) : (
-            /* Flexible amount input */
-            <View>
-              <Text style={[s.inputLabel, { color: COLORS.textSecondary, fontFamily: FONTS.family.medium }]}>
-                Amount (₹) *
-              </Text>
-              <View style={[s.inputBox, { borderColor: customAmount ? COLORS.primary : COLORS.borderLight, backgroundColor: customAmount ? COLORS.primary + '05' : COLORS.card }]}>
-                <Text style={[s.inputPrefix, { color: COLORS.textSecondary, fontFamily: FONTS.family.semiBold }]}>₹</Text>
-                <TextInput
-                  style={[s.input, { color: COLORS.textPrimary, fontFamily: FONTS.family.regular }]}
-                  placeholder="Enter amount"
-                  placeholderTextColor={COLORS.textTertiary}
-                  keyboardType="numeric"
-                  value={customAmount}
-                  onChangeText={(v) => setCustomAmount(v.replace(/[^0-9]/g, ''))}
+              <View
+                style={[
+                  s.lockChip,
+                  {
+                    borderRadius: SIZES.radius.md,
+                    backgroundColor: COLORS.canvasSunken,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="lock-closed"
+                  size={SIZES.icon.sm}
+                  color={COLORS.inkTertiary}
                 />
               </View>
             </View>
+          ) : (
+            <>
+              {/* Display-size input */}
+              <View
+                style={[
+                  s.inputBox,
+                  {
+                    marginTop: SIZES.margin.lg,
+                    borderRadius: SIZES.radius.panel,
+                    borderColor: customAmount
+                      ? COLORS.primary
+                      : COLORS.hairline,
+                    borderWidth: customAmount ? 1.5 : 1,
+                    backgroundColor: COLORS.canvasElevated,
+                    paddingHorizontal: SIZES.padding.xxl,
+                    paddingVertical: SIZES.padding.xl,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    asText(FONTS.displayLg),
+                    { color: COLORS.inkTertiary },
+                  ]}
+                >
+                  ₹
+                </Text>
+                <TextInput
+                  value={customAmount}
+                  onChangeText={(v) => setCustomAmount(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={COLORS.inkMuted}
+                  selectionColor={COLORS.primary}
+                  style={[
+                    asText(FONTS.displayLg),
+                    { color: COLORS.inkPrimary, flex: 1, padding: 0 },
+                  ]}
+                />
+              </View>
+
+              {/* Presets */}
+              <View style={[s.presetRow, { marginTop: SIZES.margin.md }]}>
+                {presets.map((p) => {
+                  const on = String(p) === customAmount;
+                  return (
+                    <Pressable
+                      key={p}
+                      onPress={() => setCustomAmount(String(p))}
+                      style={({ pressed }) => [
+                        s.preset,
+                        {
+                          borderRadius: SIZES.radius.pill,
+                          borderColor: on ? COLORS.primary : COLORS.hairline,
+                          borderWidth: on ? 1.5 : 1,
+                          backgroundColor: COLORS.canvasElevated,
+                          paddingVertical: SIZES.padding.sm,
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          asText(FONTS.microBold),
+                          { color: on ? COLORS.primary : COLORS.inkSecondary },
+                        ]}
+                      >
+                        {money(p)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
           )}
         </View>
 
-        {/* ── Payment Summary ── */}
-        {isReady && (
-          <View style={[s.card, { backgroundColor: COLORS.primary + '06', borderColor: COLORS.primary + '20', ...SHADOWS.sm }]}>
-            <Text style={[s.sectionTitle, { color: COLORS.primary, fontFamily: FONTS.family.bold }]}>
-              Payment Summary
-            </Text>
+        {/* ── Scheme record ── */}
+        <View style={{ marginTop: SIZES.layout.section }}>
+          <SectionHeading eyebrow="Your enrolment" title="Scheme record" />
+          <SummaryCard
+            rows={schemeRows}
+            style={{ marginTop: SIZES.margin.lg }}
+          />
+        </View>
 
-            <View style={s.summaryRow}>
-              <Text style={[s.summaryLabel, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>Scheme</Text>
-              <Text style={[s.summaryValue, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]} numberOfLines={1}>
-                {schemeName}
-              </Text>
-            </View>
-            <View style={s.summaryRow}>
-              <Text style={[s.summaryLabel, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>Instalment No.</Text>
-              <Text style={[s.summaryValue, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>#{nextInstNum}</Text>
-            </View>
-            <View style={[s.divider, { backgroundColor: COLORS.primary + '20', marginVertical: 10 }]} />
-            <View style={s.summaryRow}>
-              <Text style={[s.summaryLabel, { color: COLORS.primary, fontFamily: FONTS.family.bold, fontSize: 15 }]}>Total Payable</Text>
-              <Text style={[s.summaryValue, { color: COLORS.primary, fontFamily: FONTS.family.bold, fontSize: 18 }]}>
-                ₹{effectiveAmount.toLocaleString('en-IN')}
-              </Text>
-            </View>
+        {/* ── Payment summary ── */}
+        {isReady && (
+          <View style={{ marginTop: SIZES.layout.section }}>
+            <SectionHeading eyebrow="Confirm" title="Payment summary" />
+            <SummaryCard
+              style={{ marginTop: SIZES.margin.lg }}
+              rows={[
+                { label: 'Scheme', value: schemeName },
+                { label: 'Instalment no.', value: `#${nextInstNum}` },
+                { label: 'Method', value: 'Razorpay · online' },
+                {
+                  label: 'Total payable',
+                  value: money(effectiveAmount),
+                  total: true,
+                },
+              ]}
+            />
           </View>
         )}
+      </ScreenCanvas>
 
-        <View style={{ height: 24 }} />
-      </ScrollView>
-
-      {/* ── Fixed Footer Button ── */}
-      <View style={[s.footer, { backgroundColor: COLORS.background, borderTopColor: COLORS.borderLight, paddingBottom: Platform.OS === 'ios' ? 8 : 20 }]}>
-        <TouchableOpacity
-          style={[
-            s.payBtn,
-            {
-              backgroundColor: isReady && !isProcessing ? COLORS.primary : COLORS.borderLight,
-              ...(isReady && !isProcessing ? SHADOWS.md : {}),
-            },
-          ]}
-          onPress={handlePay}
-          disabled={!isReady || isProcessing}
-          activeOpacity={0.85}
-        >
-          {isProcessing ? (
-            <>
-              <ActivityIndicator size="small" color={COLORS.white} />
-              <Text style={[s.payBtnText, { color: COLORS.white, fontFamily: FONTS.family.bold }]}>
-                {status === 'creating_order' ? 'Creating Order…'
-                  : status === 'checkout_open' ? 'Processing…'
-                  : 'Verifying…'}
-              </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons
-                name="card-outline"
-                size={20}
-                color={isReady ? COLORS.white : COLORS.textTertiary}
-              />
-              <Text style={[s.payBtnText, { color: isReady ? COLORS.white : COLORS.textTertiary, fontFamily: FONTS.family.bold }]}>
-                Pay ₹{effectiveAmount > 0 ? effectiveAmount.toLocaleString('en-IN') : '—'} via Razorpay
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Razorpay WebView checkout ── */}
+      {/* ── Razorpay WebView checkout (unchanged) ── */}
       <RazorpayWebCheckout ref={rzpWebRef} />
 
-      {/* ── Modals ── */}
-      <FailureModal
-        visible={showFailed}
-        message={error ?? ''}
-        onRetry={() => { reset(); handlePay(); }}
-        onCancel={handleFailedCancel}
-      />
-    </SafeAreaView>
+      {/* ── Failure sheet ── */}
+      <Modal visible={showFailed} transparent animationType="fade">
+        <View
+          style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}
+        >
+          <View
+            style={[
+              s.sheet,
+              {
+                backgroundColor: COLORS.canvasElevated,
+                borderTopLeftRadius: SIZES.radius.sheet,
+                borderTopRightRadius: SIZES.radius.sheet,
+                paddingHorizontal: SIZES.layout.gutter,
+                paddingTop: SIZES.padding.xxl,
+                paddingBottom: SIZES.padding.xxxl,
+              },
+            ]}
+          >
+            <View
+              style={[s.grabber, { backgroundColor: COLORS.hairlineBold }]}
+            />
+
+            <View
+              style={[
+                s.failMark,
+                {
+                  borderRadius: SIZES.radius.tile,
+                  backgroundColor: COLORS.errorBg,
+                  marginTop: SIZES.margin.xl,
+                },
+              ]}
+            >
+              <Ionicons
+                name="close"
+                size={SIZES.icon.xl}
+                color={COLORS.error}
+              />
+            </View>
+
+            <Text
+              style={[
+                asText(FONTS.displaySm),
+                { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl },
+              ]}
+            >
+              Payment failed
+            </Text>
+            <Text
+              style={[
+                asText(FONTS.micro),
+                { color: COLORS.inkTertiary, marginTop: 6, lineHeight: 19 },
+              ]}
+            >
+              {error ||
+                'Something went wrong with your payment. No amount has been debited. Please try again.'}
+            </Text>
+
+            <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
+              <PremiumButton
+                label="Try again"
+                onPress={() => {
+                  reset();
+                  handlePay();
+                }}
+              />
+              <PremiumButton
+                label="Cancel"
+                variant="outline"
+                onPress={handleFailedCancel}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </KeyboardAvoidingView>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  container:       { flex: 1 },
-  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
-  backBtn:         { width: 40, alignItems: 'center' },
-  headerCenter:    { flex: 1, alignItems: 'center' },
-  headerTitle:     { fontSize: 18, letterSpacing: -0.3 },
-  headerSub:       { fontSize: 12, marginTop: 2, opacity: 0.7 },
-  scrollContent:   { padding: 16, gap: 16 },
-
-  card:            { borderRadius: 16, borderWidth: 1, padding: 16 },
-  cardIconWrap:    { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  cardTitle:       { fontSize: 16, marginBottom: 4 },
-  cardSub:         { fontSize: 12, opacity: 0.7, marginBottom: 14 },
-
-  divider:         { height: 1, marginVertical: 12 },
-  infoRow:         { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  infoLabel:       { fontSize: 13 },
-  infoValue:       { fontSize: 13 },
-
-  sectionTitle:    { fontSize: 16, marginBottom: 4 },
-  sectionSub:      { fontSize: 12, lineHeight: 18, opacity: 0.7, marginBottom: 16 },
-
-  fixedAmountBox:  { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, borderWidth: 1, gap: 14 },
-  fixedAmountValue:{ fontSize: 26 },
-  fixedAmountLabel:{ fontSize: 12, marginTop: 2 },
-
-  inputLabel:      { fontSize: 13, marginBottom: 6 },
-  inputBox:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, height: 52 },
-  inputPrefix:     { fontSize: 20, marginRight: 6 },
-  input:           { flex: 1, fontSize: 18, height: '100%' },
-
-  summaryRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
-  summaryLabel:    { fontSize: 13 },
-  summaryValue:    { fontSize: 14, flex: 1, textAlign: 'right', marginLeft: 12 },
-
-  footer:          { paddingHorizontal: 16, paddingTop: 14, borderTopWidth: 1 },
-  payBtn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, gap: 10 },
-  payBtnText:      { fontSize: 16 },
-
-  // Modal
-  modalOverlay:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard:       { width: '100%', borderRadius: 24, padding: 28, alignItems: 'center' },
-  modalIconWrap:   { width: 108, height: 108, borderRadius: 54, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  modalTitle:      { fontSize: 22, marginBottom: 10 },
-  modalDesc:       { fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 20 },
-  amountChip:      { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1, marginBottom: 12 },
-  amountChipText:  { fontSize: 16 },
-  paymentId:       { fontSize: 11, opacity: 0.6, marginBottom: 24, textAlign: 'center' },
-  modalBtn:        { width: '100%', paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
-  modalBtnText:    { fontSize: 16 },
+  fixedBox: {
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  lockChip: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  inputBox: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  presetRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  preset: { flexGrow: 1, flexBasis: '22%', alignItems: 'center' },
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  sheet: { width: '100%' },
+  grabber: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+  },
+  failMark: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
