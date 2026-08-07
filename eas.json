@@ -18,7 +18,8 @@
       "autoIncrement": true,
       "env": {
         "API_BASE_URL": "https://rangasscheme.brightechsoftware.com/api/v1",
-        "IMAGE_BASE_URL": "https://rangasscheme.brightechsoftware.com"
+        "IMAGE_BASE_URL": "https://rangasscheme.brightechsoftware.com",
+        "GOOGLE_IOS_CLIENT_ID": "401290584973-uvp04rtruok5kkhq3ip5aon76j9r491t.apps.googleusercontent.com"
       }
     }
   }

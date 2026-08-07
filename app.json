@@ -9,7 +9,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.brightechsoftware.rangasthangamaligai",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.brightechsoftware.rangasthangamaligai",
@@ -29,9 +32,12 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
-      ["@react-native-google-signin/google-signin", {
-        "iosUrlScheme": "com.googleusercontent.apps.401290584973-uvp04rtruok5kkhq3ip5aon76j9r491t"
-      }],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.401290584973-uvp04rtruok5kkhq3ip5aon76j9r491t"
+        }
+      ],
       [
         "expo-local-authentication",
         {
