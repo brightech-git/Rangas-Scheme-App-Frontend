@@ -30,4 +30,5 @@ export interface Company {
   INSTALINK?:          string;
   YOUTUBELINK?:        string;
   GOOGLEBUSINESSLINK?: string;
+  TIMINGS?:            string;
 }

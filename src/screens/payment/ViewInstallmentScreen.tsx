@@ -1,12 +1,16 @@
 // src/screens/payment/ViewInstallmentScreen.tsx
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../theme';
+import { useCompanies } from '../../api/hooks/Company/useCompanies';
+import { downloadPaymentReceipt } from '../../utils/PaymentReceiptPDF';
+import { PaymentHistory } from '../../types/Account/PhoneDetails';
 import { schemeMetrics } from '../../utils/schemeMetrics';
 import {
   ScreenCanvas,
@@ -55,6 +59,19 @@ export default function ViewInstallmentScreen() {
   const { COLORS, SIZES } = useTheme();
   const navigation = useNavigation<NavProps>();
   const { ppData } = useRoute<RouteProps>().params;
+  const { companies } = useCompanies();
+  const company = companies?.[0] ?? null;
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = useCallback(
+    async (p: PaymentHistory, id: string) => {
+      if (downloadingId) return;
+      setDownloadingId(id);
+      await downloadPaymentReceipt({ ppData, payment: p }, company ?? undefined);
+      setDownloadingId(null);
+    },
+    [downloadingId, ppData, company],
+  );
 
   const [tab, setTab] = useState<TabKey>('overview');
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -146,8 +163,11 @@ export default function ViewInstallmentScreen() {
         timestamp: p.updateTime ? prettyDate(p.updateTime) : '',
         tone: 'success' as const,
         icon: 'checkmark-circle-outline',
+        onPress: () => navigation.navigate('PaymentReceipt', { ppData, payment: p }),
+        onDownload: () => handleDownload(p, p.receiptNo ?? `receipt-${i}`),
+        downloadLoading: downloadingId === (p.receiptNo ?? `receipt-${i}`),
       })),
-    [ppData.paymentHistoryList],
+    [ppData, navigation, handleDownload, downloadingId],
   );
 
   const visibleEntries = showAllHistory
@@ -257,6 +277,16 @@ export default function ViewInstallmentScreen() {
           <View style={{ marginTop: SIZES.margin.lg, marginBottom: SIZES.margin.xl }}>
             {visibleEntries.length > 0 ? (
               <>
+                <View style={[s.hintRow, { marginBottom: SIZES.margin.md }]}>
+                  <Ionicons
+                    name="download-outline"
+                    size={SIZES.icon.sm}
+                    color={COLORS.inkTertiary}
+                  />
+                  <Text style={[s.hintText, { color: COLORS.inkTertiary }]}>
+                    Tap any payment to view, download or share its receipt
+                  </Text>
+                </View>
                 <TimelineCard entries={visibleEntries} />
                 {hiddenCount > 0 && (
                   <Pressable
@@ -295,6 +325,8 @@ export default function ViewInstallmentScreen() {
 }
 
 const s = StyleSheet.create({
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hintText: { fontSize: 10, flex: 1 },
   container: {
     flex: 1,
   },

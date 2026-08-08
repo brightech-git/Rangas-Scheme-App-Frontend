@@ -23,16 +23,20 @@ import { useCompanies } from '../../api/hooks/Company/useCompanies';
 import { Company } from '../../types/Company/Company';
 
 // ── Company helpers ───────────────────────────────────────────────
-const companyAddress = (c: Company): string => {
-  const lines = [c.ADDRESS1, c.ADDRESS2, c.ADDRESS3, c.ADDRESS4]
-    .map(x => (x ?? '').trim())
-    .filter(Boolean);
-  const base = lines.join(', ');
-  return c.AREACODE ? `${base}${base ? ' - ' : ''}${c.AREACODE}` : base;
+type Branch = { label: string; address: string; mapsQuery: string };
+
+const buildBranches = (c: Company): Branch[] => {
+  const branches: Branch[] = [];
+  const b1 = [c.ADDRESS1, c.ADDRESS2].map(x => (x ?? '').trim()).filter(Boolean).join(', ');
+  const b2 = [c.ADDRESS3, c.ADDRESS4].map(x => (x ?? '').trim()).filter(Boolean).join(', ');
+  if (b1) branches.push({ label: 'Branch 1', address: b1, mapsQuery: `${c.COMPANYNAME} ${b1}` });
+  if (b2) branches.push({ label: 'Branch 2', address: b2, mapsQuery: `${c.COMPANYNAME} ${b2}` });
+  return branches;
 };
+
 const telHref  = (phone: string) => `tel:${phone.replace(/[^0-9+]/g, '')}`;
-const mapsHref = (c: Company) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.COMPANYNAME} ${companyAddress(c)}`)}`;
+const mapsHref = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
 // Build the list of social / store links that actually have a value.
 type LinkItem = { key: string; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; url: string };
@@ -162,52 +166,56 @@ export default function ContactScreen() {
               </View>
             ) : (
               companies.map((c) => {
-                const addr = companyAddress(c);
+                const branches = buildBranches(c);
                 return (
-                  <View key={c.COMPANYID} style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-                    {/* Name */}
-                    <View style={s.branchHead}>
-                      <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                        <Ionicons name="business-outline" size={20} color={COLORS.primary} />
-                      </View>
-                      <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]} numberOfLines={2}>
-                        {c.COMPANYNAME}
-                      </Text>
-                    </View>
-
-                    {/* Address */}
-                    {addr ? (
-                      <View style={s.branchRow}>
-                        <Ionicons name="location-outline" size={16} color={COLORS.textTertiary} style={s.branchRowIcon} />
-                        <Text style={[s.branchRowTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                          {addr}
+                  <View key={c.COMPANYID}>
+                    {/* Company name header */}
+                    <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+                      <View style={s.branchHead}>
+                        <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                          <Ionicons name="business-outline" size={20} color={COLORS.primary} />
+                        </View>
+                        <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]} numberOfLines={2}>
+                          {c.COMPANYNAME}
                         </Text>
                       </View>
-                    ) : null}
 
-                    {/* Phone */}
-                    {c.PHONE ? (
-                      <TouchableOpacity style={s.branchRow} onPress={() => Linking.openURL(telHref(c.PHONE!))} activeOpacity={0.7}>
-                        <Ionicons name="call-outline" size={16} color={COLORS.primary} style={s.branchRowIcon} />
-                        <Text style={[s.branchRowTxt, { color: COLORS.primary, fontFamily: FONTS.family.medium }]}>{c.PHONE}</Text>
-                      </TouchableOpacity>
-                    ) : null}
+                      {/* Phone */}
+                      {c.PHONE ? (
+                        <TouchableOpacity style={s.branchRow} onPress={() => Linking.openURL(telHref(c.PHONE!))} activeOpacity={0.7}>
+                          <Ionicons name="call-outline" size={16} color={COLORS.primary} style={s.branchRowIcon} />
+                          <Text style={[s.branchRowTxt, { color: COLORS.primary, fontFamily: FONTS.family.medium }]}>{c.PHONE}</Text>
+                        </TouchableOpacity>
+                      ) : null}
 
-                    {/* Email */}
-                    {c.EMAIL ? (
-                      <TouchableOpacity style={s.branchRow} onPress={() => Linking.openURL(`mailto:${c.EMAIL}`)} activeOpacity={0.7}>
-                        <Ionicons name="mail-outline" size={16} color={COLORS.primary} style={s.branchRowIcon} />
-                        <Text style={[s.branchRowTxt, { color: COLORS.primary, fontFamily: FONTS.family.medium }]} numberOfLines={1}>{c.EMAIL}</Text>
-                      </TouchableOpacity>
-                    ) : null}
+                      {/* Email */}
+                      {c.EMAIL ? (
+                        <TouchableOpacity style={s.branchRow} onPress={() => Linking.openURL(`mailto:${c.EMAIL}`)} activeOpacity={0.7}>
+                          <Ionicons name="mail-outline" size={16} color={COLORS.primary} style={s.branchRowIcon} />
+                          <Text style={[s.branchRowTxt, { color: COLORS.primary, fontFamily: FONTS.family.medium }]} numberOfLines={1}>{c.EMAIL}</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
 
-                    {/* Directions */}
-                    {addr ? (
-                      <TouchableOpacity style={[s.branchBtn, { backgroundColor: COLORS.primaryFill }]} onPress={() => Linking.openURL(mapsHref(c))} activeOpacity={0.85}>
-                        <Ionicons name="navigate-outline" size={14} color={COLORS.textOnPrimary} />
-                        <Text style={[s.branchBtnTxt, { color: COLORS.textOnPrimary, fontFamily: FONTS.family.semiBold }]}>Get Directions</Text>
-                      </TouchableOpacity>
-                    ) : null}
+                    {/* Branch address cards */}
+                    {branches.map((b, i) => (
+                      <View key={i} style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+                        <View style={s.branchHead}>
+                          <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                            <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+                          </View>
+                          <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{b.label}</Text>
+                        </View>
+                        <View style={s.branchRow}>
+                          <Ionicons name="location-outline" size={16} color={COLORS.textTertiary} style={s.branchRowIcon} />
+                          <Text style={[s.branchRowTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>{b.address}</Text>
+                        </View>
+                        <TouchableOpacity style={[s.branchBtn, { backgroundColor: COLORS.primaryFill }]} onPress={() => Linking.openURL(mapsHref(b.mapsQuery))} activeOpacity={0.85}>
+                          <Ionicons name="navigate-outline" size={14} color={COLORS.textOnPrimary} />
+                          <Text style={[s.branchBtnTxt, { color: COLORS.textOnPrimary, fontFamily: FONTS.family.semiBold }]}>Get Directions</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                   </View>
                 );
               })
@@ -215,17 +223,21 @@ export default function ContactScreen() {
           </View>
 
           {/* Working hours */}
-          <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-            <View style={s.branchHead}>
-              <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                <Ionicons name="time-outline" size={20} color={COLORS.primary} />
+          {companies.some(c => c.TIMINGS?.trim()) && (
+            <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
+              <View style={s.branchHead}>
+                <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                  <Ionicons name="time-outline" size={20} color={COLORS.primary} />
+                </View>
+                <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>Working Hours</Text>
               </View>
-              <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>Working Hours</Text>
+              {companies.filter(c => c.TIMINGS?.trim()).map(c => (
+                <Text key={c.COMPANYID} style={[s.cardValue, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
+                  {c.TIMINGS}
+                </Text>
+              ))}
             </View>
-            <Text style={[s.cardValue, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-              Mon – Sat: 9 AM – 9 PM{'\n'}
-            </Text>
-          </View>
+          )}
 
           {/* Social / store links (only those present in the API) */}
           {socialLinks.length > 0 && (

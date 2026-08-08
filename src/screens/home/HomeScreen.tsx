@@ -261,7 +261,7 @@ export default function HomeScreen() {
               changePct={gold?.changePct ?? 0}
               updatedAt={gold?.updatedAt}
               history={gold?.history?.map((h) => h.rate) ?? []}
-              sparkWidth={moderateScale(52)}
+             
               onPress={() => navigation.navigate('Rates', { metal: 'Gold' })}
             />
             <GoldRateWidget
@@ -274,7 +274,6 @@ export default function HomeScreen() {
               changePct={silver?.changePct ?? 0}
               updatedAt={silver?.updatedAt}
               history={silver?.history?.map((h) => h.rate) ?? []}
-              sparkWidth={moderateScale(52)}
               onPress={() => navigation.navigate('Rates', { metal: 'Silver' })}
             />
           </View>

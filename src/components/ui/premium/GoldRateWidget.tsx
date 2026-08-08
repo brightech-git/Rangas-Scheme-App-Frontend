@@ -9,7 +9,6 @@ import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../../theme';
 import { asText } from './tokens';
-import Sparkline from './Sparkline';
 
 type Props = {
   metal: 'Gold' | 'Silver' | string;
@@ -23,8 +22,6 @@ type Props = {
   history?: number[];
   onPress?: () => void;
   surface?: 'light' | 'hero';
-  /** Width available to the sparkline */
-  sparkWidth?: number;
   style?: ViewStyle;
 };
 
@@ -38,7 +35,6 @@ function GoldRateWidget({
   history = [],
   onPress,
   surface = 'light',
-  sparkWidth = 92,
   style,
 }: Props) {
   const { COLORS, FONTS, SIZES, moderateScale, SHADOWS} = useTheme();
@@ -72,7 +68,7 @@ function GoldRateWidget({
           borderRadius: SIZES.radius.tile,
           backgroundColor: bg,
           borderColor: border,
-          padding: SIZES.padding.xl,
+          padding: SIZES.padding.lg,
         },
         !onHero && (SHADOWS.hairline as ViewStyle),
         style,
@@ -88,47 +84,34 @@ function GoldRateWidget({
 
       <View style={s.body}>
         {/* Left: identity + numeral */}
-        <View style={{ flex: 1 }}>
+        <View style={s.leftCol}>
           <View style={s.metalRow}>
-            <Text style={[asText(FONTS.microBold), { color: dim, fontSize: 10 }]}>
-              {String(metal).toUpperCase()}
+            <Text
+              numberOfLines={1}
+              style={[asText(FONTS.microBold), { color: dim, fontSize: 10 }]}
+            >
+              {String(metal).toUpperCase()}{!!purity ? ` · ${purity}` : ''}
             </Text>
-            {!!purity && (
-              <Text style={[asText(FONTS.microBold), { color: dim, fontSize: 10 }]}>
-                · {purity}
-              </Text>
-            )}
           </View>
 
           <Text
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
             style={[asText(FONTS.displaySm), { color: fg, marginTop: 4 }]}
           >
             {rate}
           </Text>
 
-          
           {!!updatedAt && (
             <Text
               numberOfLines={1}
               style={[asText(FONTS.microBold), { color: dim, fontSize: 10, marginTop: 2 }]}
             >
-              Updated {updatedAt}
+              {updatedAt}
             </Text>
           )}
         </View>
-
-        {/* Right: trend */}
-        {/* {history.length > 1 && (
-          <View style={{ justifyContent: 'center' }}>
-            <Sparkline
-              data={history}
-              width={sparkWidth}
-              height={moderateScale(46)}
-              color={metalColor}
-            />
-          </View>
-        )} */}
       </View>
     </Wrapper>
   );
@@ -137,7 +120,8 @@ function GoldRateWidget({
 const s = StyleSheet.create({
   card: { borderWidth: 1, overflow: 'hidden' },
   rule: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
-  body: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 6 },
+  body: { flexDirection: 'row', alignItems: 'center', paddingLeft: 6 },
+  leftCol: { flex: 1, minWidth: 0 },
   metalRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   footRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
 });

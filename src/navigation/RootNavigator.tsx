@@ -13,9 +13,10 @@ import {
   handleBackgroundOpenedApp,
 } from '../utils/NotificationHandler';
 import { ApiScheme } from '../types/Scheme/Scheme';
-import { PPData } from '../types/Account/PhoneDetails';
+import { PPData, PaymentHistory } from '../types/Account/PhoneDetails';
 import SplashScreen from '../screens/splash/SplashScreen';
 import WalletScreen from '../screens/wallet/WalletScreen';
+import PaymentReceiptScreen from '../screens/PaymentReceipt/PaymentReceipt';
 import LOGO from '../assets/company/logo.png';
 import CustomAlert from '../components/ui/CustomAlert';
 import { useAppVersion } from '../utils/useAppVersion';
@@ -51,6 +52,7 @@ export type RootStackParamList = {
   Portfolio:               undefined;
   Transactions:            undefined;
   Wallet:                  undefined;
+  PaymentReceipt:          { ppData: PPData; payment: PaymentHistory };
   DeleteAccount:           undefined;
 };
 
@@ -165,6 +167,7 @@ export default function RootNavigator() {
         <Stack.Screen name="Portfolio"       component={Screens.PortfolioScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Transactions"    component={Screens.TransactionsScreen}    options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Wallet"          component={WalletScreen}                  options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="PaymentReceipt"  component={PaymentReceiptScreen}          options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="DeleteAccount"   component={Screens.DeleteAccountScreen}   options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>

@@ -26,6 +26,9 @@ export type TimelineEntry = {
   tone?: TimelineTone;
   icon?: string;
   onPress?: () => void;
+  /** Download receipt directly from the timeline row */
+  onDownload?: () => void;
+  downloadLoading?: boolean;
 };
 
 type Props = {
@@ -149,25 +152,41 @@ function TimelineCard({
                   )}
                 </View>
 
-                <View style={{ alignItems: 'flex-end' }}>
-                  {!!e.value && (
-                    <Text
-                      numberOfLines={1}
-                      style={[asText(FONTS.numeralSm), { color: fg }]}
+                <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    {!!e.value && (
+                      <Text
+                        numberOfLines={1}
+                        style={[asText(FONTS.numeralSm), { color: fg }]}
+                      >
+                        {e.value}
+                      </Text>
+                    )}
+                    {!!e.subValue && (
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          asText(FONTS.micro),
+                          { color: accent, fontSize: 10, marginTop: 1 },
+                        ]}
+                      >
+                        {e.subValue}
+                      </Text>
+                    )}
+                  </View>
+                  {!!e.onDownload && (
+                    <Pressable
+                      onPress={e.onDownload}
+                      disabled={e.downloadLoading}
+                      hitSlop={8}
+                      style={{ justifyContent: 'center', opacity: e.downloadLoading ? 0.4 : 1 }}
                     >
-                      {e.value}
-                    </Text>
-                  )}
-                  {!!e.subValue && (
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        asText(FONTS.micro),
-                        { color: accent, fontSize: 10, marginTop: 1 },
-                      ]}
-                    >
-                      {e.subValue}
-                    </Text>
+                      <Ionicons
+                        name={e.downloadLoading ? 'hourglass-outline' : 'download-outline'}
+                        size={SIZES.icon.sm}
+                        color={accent}
+                      />
+                    </Pressable>
                   )}
                 </View>
               </View>
