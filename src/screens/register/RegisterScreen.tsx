@@ -18,7 +18,7 @@ import { GOOGLE_IOS_CLIENT_ID } from '@env';
 import { Platform } from 'react-native';
 
 import {
-  AuthShell,
+  WaveAuthShell,
   FormField,
   PremiumButton,
   asText,
@@ -39,9 +39,10 @@ export default function RegisterScreen() {
     contactNumber: '',
     password:      '',
   });
-  const [errors, setErrors]           = useState<Record<string, string>>({});
+
   const [hashKey, setHashKey]         = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -63,23 +64,27 @@ export default function RegisterScreen() {
   const set = (key: string, val: string) => {
     const value = key === 'contactNumber' ? val.replace(/\D/g, '').slice(0, 10) : val;
     setForm((p) => ({ ...p, [key]: value }));
-    setErrors((p) => ({ ...p, [key]: '' }));
+
   };
 
   const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.username.trim())                              e.username        = 'Username is required';
-    if (!form.email.trim())                                 e.email           = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email))             e.email           = 'Invalid email';
-    if (!form.contactNumber.trim())                         e.contactNumber   = 'Mobile number is required';
-    else if (!/^[0-9]{10}$/.test(form.contactNumber))      e.contactNumber   = 'Enter valid 10-digit number';
-    if (!form.password)                                     e.password        = 'Password is required';
-    else if (form.password.length < 6)                      e.password        = 'Minimum 6 characters';
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    if (!form.username.trim())                         { toast.error('Validation Error', { message: 'Username is required' }); return false; }
+    if (!form.email.trim())                            { toast.error('Validation Error', { message: 'Email is required' }); return false; }
+    if (!/\S+@\S+\.\S+/.test(form.email))             { toast.error('Validation Error', { message: 'Invalid email' }); return false; }
+    if (!form.contactNumber.trim())                    { toast.error('Validation Error', { message: 'Mobile number is required' }); return false; }
+    if (!/^[0-9]{10}$/.test(form.contactNumber))      { toast.error('Validation Error', { message: 'Enter valid 10-digit number' }); return false; }
+    if (!form.password)                                { toast.error('Validation Error', { message: 'Password is required' }); return false; }
+    if (form.password.length < 6)                      { toast.error('Validation Error', { message: 'Minimum 6 characters' }); return false; }
+    return true;
   };
 
   const handleRegister = async () => {
+    if (!agreedToTerms) {
+      toast.warning('Terms Required', {
+        message: 'Please agree to the Terms & Conditions to continue',
+      });
+      return;
+    }
     if (!validate()) return;
     const res = await dispatch(registerUser({
       username:      form.username.trim(),
@@ -98,7 +103,13 @@ export default function RegisterScreen() {
         toast.warning('Registration Issue', { message: user.message });
       } else {
         toast.success('OTP Sent!', { message: 'Enter the OTP sent to your mobile' });
-        navigation.navigate('RegisterOTPVerify', { contactNumber: form.contactNumber.trim() });
+        navigation.navigate('RegisterOTPVerify', {
+          contactNumber: form.contactNumber.trim(),
+          username:      form.username.trim(),
+          email:         form.email.trim(),
+          password:      form.password,
+          hashKey,
+        });
       }
     } else {
       toast.error('Registration Failed', { message: res.payload as string });
@@ -162,11 +173,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <AuthShell
-      eyebrow="Rangas DigiGold"
-      title="Create account"
-      caption="Join thousands building their gold savings."
-      step={{ current: 1, total: 3 }}
+    <WaveAuthShell
+      activeTab="signup"
+      onTabChange={(tab) => {
+        if (tab === 'signin') navigation.navigate('Login');
+      }}
       footer={
         <Pressable
           onPress={() => navigation.navigate('Login')}
@@ -181,7 +192,7 @@ export default function RegisterScreen() {
         </Pressable>
       }
     >
-      <View style={{ gap: 22 }}>
+      <View style={{ gap: 18 }}>
         <FormField
           label="Username"
           indicator="required"
@@ -190,7 +201,6 @@ export default function RegisterScreen() {
           placeholder="Choose a username"
           autoCapitalize="none"
           onChangeText={(v) => set('username', v)}
-          error={errors.username}
         />
 
         <FormField
@@ -202,7 +212,6 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           onChangeText={(v) => set('email', v)}
-          error={errors.email}
         />
 
         <FormField
@@ -214,7 +223,6 @@ export default function RegisterScreen() {
           keyboardType="phone-pad"
           maxLength={10}
           onChangeText={(v) => set('contactNumber', v)}
-          error={errors.contactNumber}
         />
 
         <FormField
@@ -226,10 +234,39 @@ export default function RegisterScreen() {
           placeholder="Minimum 6 characters"
           autoCapitalize="none"
           onChangeText={(v) => set('password', v)}
-          error={errors.password}
         />
 
       </View>
+
+      {/* Terms & Conditions agreement */}
+      <Pressable
+        onPress={() => setAgreedToTerms((p) => !p)}
+        style={({ pressed }) => [
+          s.termsRow,
+          { marginTop: SIZES.margin.xl, opacity: pressed ? 0.7 : 1 },
+        ]}
+        hitSlop={6}
+      >
+        <View
+          style={[
+            s.checkbox,
+            {
+              borderColor: agreedToTerms ? COLORS.primary : COLORS.hairlineBold,
+              backgroundColor: agreedToTerms ? COLORS.primary : 'transparent',
+            },
+          ]}
+        >
+          {agreedToTerms && (
+            <Ionicons name="checkmark" size={14} color={COLORS.textOnPrimary} />
+          )}
+        </View>
+        <Text style={[asText(FONTS.micro), { color: COLORS.inkSecondary, flex: 1 }]}>
+          Agree with{' '}
+          <Text style={{ color: COLORS.primaryInk, fontFamily: FONTS.family.semiBold }}>
+            Terms &amp; Conditions
+          </Text>
+        </Text>
+      </Pressable>
 
       <PremiumButton
         label="Create account"
@@ -259,7 +296,7 @@ export default function RegisterScreen() {
         loading={googleLoading}
         style={{ marginTop: SIZES.margin.xl }}
       />
-    </AuthShell>
+    </WaveAuthShell>
   );
 }
 
@@ -272,5 +309,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap:            6,
     paddingVertical: 12,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

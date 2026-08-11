@@ -22,35 +22,35 @@ const fontScale = (size) => {
 
 // ============================================
 // 🎨 COLOR PALETTE — Rangas DigiGold
-// Primary   Cinnamon Brown  #C17436   Primary Dark  Burnt Brown  #A95F28
-// Secondary Champagne Gold  #D8C3AF   Accent        Deep Maroon  #8F1D24
+// Primary   Brand Red       #AA0404   Primary Dark  Deep Red     #7A0303
+// Secondary Golden Yellow   #F5B800   Accent        Ember Red    #8A0303
 // Background Warm Ivory     #F6E9DD   Surface       White Cream  #FFF8F2
 // Text      Dark Brown      #3A2A22   Border        Soft Beige   #E7D4C4
 // ============================================
 export const COLORS = {
-  // ===== PRIMARY BRAND COLORS (CINNAMON BROWN) =====
-  primary: "#C17436",
-  primaryLight: "#D18F5A",
-  primaryDark: "#A95F28",
-  primaryLighter: "#DDA878",
-  primaryPale: "#FBF1E8",
-  // Cinnamon at full strength is only 3.03:1 on Warm Ivory, so it fails
-  // WCAG AA for small text. These two are the accessible substitutes:
-  //   primaryInk   — brand colour for LABELS / LINKS on a light surface (4.72:1)
-  //   primaryFill  — brand colour for SOLID BUTTONS with a white label (4.82:1)
+  // ===== PRIMARY BRAND COLORS (RED) =====
+  primary: "#AA0404",
+  primaryLight: "#C41E1E",
+  primaryDark: "#7A0303",
+  primaryLighter: "#D94A4A",
+  primaryPale: "#FBE8E8",
+  // #AA0404 is dark enough to clear WCAG AA (4.5:1+) on Warm Ivory even
+  // at full strength, so primaryInk/primaryFill can stay close to primary.
+  //   primaryInk   — brand colour for LABELS / LINKS on a light surface
+  //   primaryFill  — brand colour for SOLID BUTTONS with a white label
   // Use `primary` for large display type, icons, rules and fills only.
-  primaryInk: "#9C5522",
-  primaryFill: "#A95F28",
+  primaryInk: "#8A0303",
+  primaryFill: "#AA0404",
 
-  secondary: "#D8C3AF",
-  secondaryLight: "#E4D3C3",
-  secondaryDark: "#C2A98D",
-  secondaryLighter: "#EEE1D4",
+  secondary: "#F5B800",
+  secondaryLight: "#F7C933",
+  secondaryDark: "#C99400",
+  secondaryLighter: "#F9D666",
 
-  accent: "#8F1D24",
-  accentLight: "#A83840",
-  accentDark: "#6B1519",
-  bottomGlow: "rgb(143, 29, 36)",
+  accent: "#7A0303",
+  accentLight: "#953030",
+  accentDark: "#5C0202",
+  bottomGlow: "rgb(170, 4, 4)",
 
   // ===== NEUTRAL COLORS =====
   white: "#FFFFFF",
@@ -64,10 +64,10 @@ export const COLORS = {
   surface: "#FFF8F2",
   card: "#FFF8F2",
   softCard: "#F6E9DD",
-  overlay: "rgba(143, 29, 36, 0.7)",
+  overlay: "rgba(170, 4, 4, 0.7)",
   overlayDark: "rgba(0, 0, 0, 0.7)",
-  overlayGold: "rgba(216, 195, 175, 0.1)",
-  overlayOrange: "rgba(193, 116, 54, 0.1)",
+  overlayGold: "rgba(245, 184, 0, 0.1)",
+  overlayOrange: "rgba(170, 4, 4, 0.1)",
 
   // ============================================================
   // ===== TEXT *ON* COLOURED SURFACES ==========================
@@ -78,20 +78,20 @@ export const COLORS = {
   //
   //   fill you're drawing on          ->  text token
   //   primary / primaryFill / Dark    ->  textOnPrimary
-  //   accent (Deep Maroon)            ->  textOnAccent
-  //   gold foil / champagne           ->  textOnGold
+  //   accent (Ember Red)              ->  textOnAccent
+  //   secondary / golden yellow       ->  textOnGold
   //   success / error / info fills    ->  textOnStatus
   //   any dark surface or photo       ->  textOnDark  (+ Muted)
   // ============================================================
   textOnPrimary:     "#FFFFFF",
   /** Secondary text on a brand fill. Pure-white alpha, NOT warm ivory —
-   *  cinnamon is a mid-tone, so a warm tint loses too much contrast. */
+   *  red is a mid-dark tone, so a warm tint loses too much contrast. */
   textOnPrimaryMuted: "rgba(255, 255, 255, 0.82)",
   textOnAccent:      "#FFFFFF",
   textOnGold:        "#3A2A22",
   textOnStatus:      "#FFFFFF",
   /** ONLY for genuinely dark surfaces (espresso, photo overlays).
-   *  Do not use on cinnamon/primary fills — those need textOnPrimary. */
+   *  Do not use on red/primary fills — those need textOnPrimary. */
   textOnDark:        "#F6E9DD",
   textOnDarkMuted:   "rgba(246, 233, 221, 0.72)",
   textOnDarkFaint:   "rgba(246, 233, 221, 0.45)",
@@ -102,10 +102,10 @@ export const COLORS = {
   textTertiary: "#8A6F5D",
   textDisabled: "#D9C6B8",
   textInverse: "#FFFFFF",
-  textOrange: "#C17436",
-  textOrangeDark: "#A95F28",
-  textGold: "#A98C68",
-  textGoldDark: "#8A7052",
+  textOrange: "#AA0404",
+  textOrangeDark: "#7A0303",
+  textGold: "#C99400",
+  textGoldDark: "#9C7400",
 
   // ===== GRAY SCALE (neutral, warm-tinted) =====
   gray50: "#FAF7F5",
@@ -119,30 +119,30 @@ export const COLORS = {
   gray800: "#362619",
   gray900: "#241209",
 
-  // ===== CINNAMON VARIATIONS (replaces "orange") =====
+  // ===== RED VARIATIONS (replaces "orange") =====
   orangeLight: "#F6E9DD",
-  orangeMedium: "#DDA878",
-  orangeDark: "#A95F28",
-  orangeVivid: "#C17436",
+  orangeMedium: "#D94A4A",
+  orangeDark: "#7A0303",
+  orangeVivid: "#AA0404",
   orangeIce: "#F1DFCF",
-  orangeSoft: "#E4B992",
-  orangeDeep: "#6B4520",
+  orangeSoft: "#E48A8A",
+  orangeDeep: "#5C0202",
 
   // ===== BORDER & DIVIDER =====
   border: "#E7D4C4",
   borderLight: "#F1E4D6",
   borderMedium: "#D9C2AC",
-  borderDark: "#A95F28",
-  borderOrange: "#C17436",
-  borderGold: "#D8C3AF",
+  borderDark: "#7A0303",
+  borderOrange: "#AA0404",
+  borderGold: "#F5B800",
   divider: "#E7D4C4",
 
   // ===== INPUT COLORS =====
   inputBackground: "#FFF8F2",
   inputBorder: "#E7D4C4",
-  inputPlaceholder: "rgba(193, 116, 54, 0.35)",
-  inputFocused: "#C17436",
-  inputFocusedAlt: "#D8C3AF",
+  inputPlaceholder: "rgba(170, 4, 4, 0.35)",
+  inputFocused: "#AA0404",
+  inputFocusedAlt: "#F5B800",
 
   // ===== STATUS COLORS =====
   // Subtle status backgrounds (for chips, badges, banners) — pair with the solid color for text/icon
@@ -155,39 +155,41 @@ export const COLORS = {
   success: "#356B42",
   successLight: "#57A169",
   successDark: "#2C5A38",
+  // Error/danger kept as its own distinct red-family shade so status
+  // messages stay visually distinguishable from brand-red primary UI.
   error: "#8F1D24",
   errorLight: "#A83840",
   errorDark: "#6B1519",
-  warning: "#B8935F",
-  warningLight: "#D8C3AF",
-  warningDark: "#8A6F42",
+  warning: "#C99400",
+  warningLight: "#F5B800",
+  warningDark: "#9C7400",
   info: "#1a5fa4",
   infoLight: "#2e86de",
   infoDark: "#0e3d6e",
   disabled: "#F3ECE6",
 
-  // ===== CHAMPAGNE / GOLD VARIATIONS =====
-  goldPrimary: "#D8C3AF",
-  goldSecondary: "#E4D3C3",
-  goldTertiary: "#EEE1D4",
-  goldBronze: "#A98C68",
-  goldRose: "#C79572",
+  // ===== GOLDEN YELLOW VARIATIONS =====
+  goldPrimary: "#F5B800",
+  goldSecondary: "#F7C933",
+  goldTertiary: "#F9D666",
+  goldBronze: "#C99400",
+  goldRose: "#E0A020",
   goldLight: "#FBF3E8",
-  goldMedium: "#D8C3AF",
-  goldDark: "#B8935F",
+  goldMedium: "#F5B800",
+  goldDark: "#C99400",
 
   // ===== TRANSPARENT COLORS =====
   transparent: "transparent",
-  // Cinnamon (primary) opacity
-  orangeOpacity10: "rgba(193, 116, 54, 0.1)",
-  orangeOpacity20: "rgba(193, 116, 54, 0.2)",
-  orangeOpacity30: "rgba(193, 116, 54, 0.3)",
-  orangeOpacity40: "rgba(193, 116, 54, 0.4)",
-  orangeOpacity50: "rgba(193, 116, 54, 0.5)",
-  orangeOpacity60: "rgba(193, 116, 54, 0.6)",
-  orangeOpacity70: "rgba(193, 116, 54, 0.7)",
-  orangeOpacity80: "rgba(193, 116, 54, 0.8)",
-  orangeOpacity90: "rgba(193, 116, 54, 0.9)",
+  // Brand red (primary) opacity
+  orangeOpacity10: "rgba(170, 4, 4, 0.1)",
+  orangeOpacity20: "rgba(170, 4, 4, 0.2)",
+  orangeOpacity30: "rgba(170, 4, 4, 0.3)",
+  orangeOpacity40: "rgba(170, 4, 4, 0.4)",
+  orangeOpacity50: "rgba(170, 4, 4, 0.5)",
+  orangeOpacity60: "rgba(170, 4, 4, 0.6)",
+  orangeOpacity70: "rgba(170, 4, 4, 0.7)",
+  orangeOpacity80: "rgba(170, 4, 4, 0.8)",
+  orangeOpacity90: "rgba(170, 4, 4, 0.9)",
   // Black opacity
   blackOpacity10: "rgba(0, 0, 0, 0.1)",
   blackOpacity20: "rgba(0, 0, 0, 0.2)",
@@ -206,18 +208,18 @@ export const COLORS = {
   whiteOpacity70: "rgba(255, 255, 255, 0.7)",
   whiteOpacity80: "rgba(255, 255, 255, 0.8)",
   whiteOpacity90: "rgba(255, 255, 255, 0.9)",
-  // Champagne gold opacity
-  goldOpacity10: "rgba(216, 195, 175, 0.1)",
-  goldOpacity20: "rgba(216, 195, 175, 0.2)",
-  goldOpacity30: "rgba(216, 195, 175, 0.3)",
-  goldOpacity50: "rgba(216, 195, 175, 0.5)",
+  // Golden yellow opacity
+  goldOpacity10: "rgba(245, 184, 0, 0.1)",
+  goldOpacity20: "rgba(245, 184, 0, 0.2)",
+  goldOpacity30: "rgba(245, 184, 0, 0.3)",
+  goldOpacity50: "rgba(245, 184, 0, 0.5)",
 
   // ===== SHADOW & EFFECTS =====
-  shadow: "rgba(193, 116, 54, 0.07)",
-  shadowMedium: "rgba(193, 116, 54, 0.14)",
-  shadowStrong: "rgba(193, 116, 54, 0.24)",
-  shadowOrange: "rgba(193, 116, 54, 0.2)",
-  shadowGold: "rgba(216, 195, 175, 0.25)",
+  shadow: "rgba(170, 4, 4, 0.07)",
+  shadowMedium: "rgba(170, 4, 4, 0.14)",
+  shadowStrong: "rgba(170, 4, 4, 0.24)",
+  shadowOrange: "rgba(170, 4, 4, 0.2)",
+  shadowGold: "rgba(245, 184, 0, 0.25)",
 
   // ============================================================
   // ===== V2 — "WARM HERO / IVORY BODY" DESIGN LANGUAGE =========
@@ -226,49 +228,45 @@ export const COLORS = {
   // ============================================================
 
   // ----- Hero zone -------------------------------------------------
-  // A RICH CINNAMON band — the Burnt Brown family pushed one step
-  // deeper. This is a saturated brand colour, not a neutral: it sits
-  // 6.4:1 away from the Warm Ivory body, so the header and the page
-  // read as genuinely different zones. (A sand-toned header measured
-  // only 1.13:1 against the body — effectively invisible.)
+  // A RICH BRAND RED band. This is a saturated brand colour, not a
+  // neutral: it sits well clear of the Warm Ivory body, so the header
+  // and the page read as genuinely different zones.
   //
-  // The depth is chosen so that BOTH pure white AND Champagne Gold
-  // clear 4.5:1 on the lightest gradient stop. Lighten `heroCanvas`
-  // past #7F4416 and the champagne accent starts failing.
-  heroCanvas:        "#7F4416",
-  heroCanvasAlt:     "#753E14",
+  // The depth is chosen so that BOTH pure white AND Golden Yellow
+  // clear 4.5:1 on the lightest gradient stop.
+  heroCanvas:        "#8A0303",
+  heroCanvasAlt:     "#7A0303",
   // Panels sitting ON the header are inset (darker), so they read as
   // recessed rather than floating.
-  heroElevated:      "#6B3712",
-  heroElevatedAlt:   "#5C2F10",
+  heroElevated:      "#6B0202",
+  heroElevatedAlt:   "#5C0202",
   // Back to white-on-colour alpha now the hero carries a brand fill.
   heroHairline:      "rgba(255, 255, 255, 0.16)",
   heroHairlineBold:  "rgba(255, 255, 255, 0.30)",
   heroGlass:         "rgba(255, 255, 255, 0.10)",
   heroGlassBold:     "rgba(255, 255, 255, 0.18)",
-  heroGoldVeil:      "rgba(216, 195, 175, 0.16)",
-  heroRedVeil:       "rgba(143, 29, 36, 0.22)",
+  heroGoldVeil:      "rgba(245, 184, 0, 0.16)",
+  heroRedVeil:       "rgba(122, 3, 3, 0.22)",
   heroTextPrimary:   "#FFFFFF",
   heroTextSecondary: "rgba(255, 255, 255, 0.86)",
   heroTextTertiary:  "rgba(255, 255, 255, 0.70)",
   heroTextMuted:     "rgba(255, 255, 255, 0.52)",
-  // Champagne Gold finally gets to be the accent — it reads beautifully
-  // on cinnamon and clears AA (4.50:1 at the lightest stop).
-  heroAccent:        "#D8C3AF",
-  heroAccentSoft:    "rgba(216, 195, 175, 0.20)",
+  // Golden Yellow is the accent — it reads beautifully on brand red
+  // and clears AA at the lightest gradient stop.
+  heroAccent:        "#F5B800",
+  heroAccentSoft:    "rgba(245, 184, 0, 0.20)",
   /** Outline for unfilled PIN dots / empty control boundaries (3.5:1). */
   heroDotIdle:       "rgba(255, 255, 255, 0.55)",
   /** Label colour to sit ON heroAccent (badges, filled markers). */
   heroOnAccent:      "#3A2A22",
 
   // ----- Semantic colours FOR the hero zone -------------------------
-  // Lifted variants, because the hero is now a deep cinnamon fill.
+  // Lifted variants, because the hero is now a deep brand-red fill.
   // dark.js keeps the same lifted set, so components can just use
   // heroSuccess/heroWarning/… without an isDark branch.
   heroSuccess:       "#7FCB94",
-  heroWarning:       "#DDB77F",
-  // Light enough to clear 4.5:1 on the cinnamon hero (#EC8F96 was
-  // tuned for espresso and only reached 3.26 there).
+  heroWarning:       "#F5D666",
+  // Light enough to clear 4.5:1 on the brand-red hero.
   heroDanger:        "#F7BEC2",
   heroInfo:          "#84B7E5",
 
@@ -299,40 +297,40 @@ export const COLORS = {
 
   // ===== GRADIENT COLORS =====
   gradient: {
-    // ----- V2 hero gradients — rich cinnamon brand band -----
+    // ----- V2 hero gradients — rich brand-red band -----
     // `heroNoir` keeps its name so no component import has to change.
-    // Every stop stays at or below #7F4416 so white AND champagne both
+    // Every stop stays dark enough that white AND golden yellow both
     // clear AA anywhere in the sweep.
-    heroNoir:     ["#d68547", "#753E14", "#663610"],
-    heroOxblood:  ["#8A4A18", "#6B3712"],
-    heroEmber:    ["#7F4416", "#6B3712", "#5C2F10"],
-    heroGoldWash: ["rgba(216,195,175,0.28)", "rgba(216,195,175,0)"],
-    heroFade:     ["rgba(127,68,22,0)", "rgba(127,68,22,0.95)"],
-    goldFoil:     ["#EAD9B8", "#C2A06B", "#F2E6C8"],
-    goldEdge:     ["rgba(193,116,54,0.45)", "rgba(193,116,54,0)"],
+    heroNoir:     ["#D94A4A", "#7A0303", "#5C0202"],
+    heroOxblood:  ["#953030", "#6B0202"],
+    heroEmber:    ["#8A0303", "#6B0202", "#5C0202"],
+    heroGoldWash: ["rgba(245,184,0,0.28)", "rgba(245,184,0,0)"],
+    heroFade:     ["rgba(138,3,3,0)", "rgba(138,3,3,0.95)"],
+    goldFoil:     ["#F9D666", "#F5B800", "#FBE38C"],
+    goldEdge:     ["rgba(170,4,4,0.45)", "rgba(170,4,4,0)"],
     paperLift:    ["#FFFFFF", "#F6E9DD"],
     glassSheen:   ["rgba(255,255,255,0.16)", "rgba(255,255,255,0.02)"],
 
-    // Primary cinnamon gradients
-    orangePrimary: ["#C17436", "#D18F5A"],
-    orangeDeep: ["#A95F28", "#C17436"],
-    orangeLight: ["#D18F5A", "#E4A876"],
-    orangeVivid: ["#6B4520", "#C17436"],
-    orangeToWhite: ["#C17436", "#FFF8F2"],
-    orangeToRed: ["#A95F28", "#C17436"],
+    // Primary red gradients
+    orangePrimary: ["#AA0404", "#C41E1E"],
+    orangeDeep: ["#7A0303", "#AA0404"],
+    orangeLight: ["#C41E1E", "#D94A4A"],
+    orangeVivid: ["#5C0202", "#AA0404"],
+    orangeToWhite: ["#AA0404", "#FFF8F2"],
+    orangeToRed: ["#7A0303", "#AA0404"],
 
-    // Champagne gold gradients
-    goldLight: ["#D8C3AF", "#E4D3C3"],
-    goldDark: ["#C2A98D", "#D8C3AF"],
-    luxuryGold: ["#D8C3AF", "#E4D3C3", "#EEE1D4"],
-    shimmer: ["#D8C3AF", "#EEE1D4", "#D8C3AF"],
+    // Golden yellow gradients
+    goldLight: ["#F5B800", "#F7C933"],
+    goldDark: ["#C99400", "#F5B800"],
+    luxuryGold: ["#F5B800", "#F7C933", "#F9D666"],
+    shimmer: ["#F5B800", "#F9D666", "#F5B800"],
 
-    // Cinnamon & Champagne combinations
-    orangeToGold: ["#C17436", "#D8C3AF"],
-    goldToOrange: ["#D8C3AF", "#C17436"],
-    elegance: ["#A95F28", "#D8C3AF"],
-    luxury: ["#C17436", "#D18F5A", "#D8C3AF"],
-    premium: ["#6B4520", "#C17436", "#D8C3AF"],
+    // Red & Yellow combinations
+    orangeToGold: ["#AA0404", "#F5B800"],
+    goldToOrange: ["#F5B800", "#AA0404"],
+    elegance: ["#7A0303", "#F5B800"],
+    luxury: ["#AA0404", "#C41E1E", "#F5B800"],
+    premium: ["#5C0202", "#AA0404", "#F5B800"],
 
     // Neutral surfaces
     surface: ["#F6E9DD", "#FFF8F2"],

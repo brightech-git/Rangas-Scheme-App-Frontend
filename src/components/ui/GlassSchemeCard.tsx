@@ -28,8 +28,8 @@ export const GLASS_CARD_WIDTH = SCREEN_W - 32;
 
 const STATUS_CLR: Record<string, string> = {
   active:    '#57A169',
-  pending:   '#D8C3AF',
-  completed: '#EEE1D4',
+  pending:   '#F5B800',
+  completed: '#F9D666',
 };
 
 function formatDate(raw: string): string {
@@ -52,9 +52,9 @@ export default function GlassSchemeCard({ item, width }: { item: PPData; index?:
   const [showHistory, setShowHistory] = useState(false);
 
   // Header gradient colours — deep red palette
-  const hg: string[] = (COLORS as any)?.gradient?.orangeDeep ?? ['#A95F28', '#C17436'];
+  const hg: string[] = (COLORS as any)?.gradient?.orangeDeep ?? ['#7A0303', '#AA0404'];
   const deep = (COLORS as any)?.orangeDeep ?? '#6B4520';
-  const gradColors: [string, string, string] = [hg[1] ?? '#C17436', hg[0] ?? '#A95F28', deep];
+  const gradColors: [string, string, string] = [hg[1] ?? '#AA0404', hg[0] ?? '#7A0303', deep];
 
   const paid    = parseInt(item.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0');
   const total   = parseInt(item.schemeSummary?.instalment ?? '1');

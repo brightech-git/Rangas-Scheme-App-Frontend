@@ -73,18 +73,13 @@ type TypeCfg = { icon: string; bg: string; accent: string; textColor: string };
 
 function useTypeConfig(): Record<ToastType, TypeCfg> {
   const { COLORS } = useTheme();
-  // Toasts float above whatever is on screen, so they stay DARK in both
-  // light and dark mode — that is what keeps them readable over a Warm
-  // Ivory page and over an espresso one. The semantic *_Bg tokens cannot
-  // be used here because they invert with the theme; these are the warm
-  // dark equivalents drawn from the same brown ramp as dark.js.
   return {
-    success: { icon: 'checkmark-circle',     bg: '#152B1E', accent: COLORS.successLight,   textColor: '#9FD9AE' },
-    error:   { icon: 'close-circle',         bg: '#331419', accent: COLORS.errorLight,     textColor: '#EFB3B7' },
-    warning: { icon: 'warning',              bg: '#2E2617', accent: COLORS.warningLight,   textColor: '#E8CFA4' },
-    info:    { icon: 'information-circle',   bg: '#14232F', accent: COLORS.infoLight,      textColor: '#AFC9E0' },
-    gold:    { icon: 'star',                 bg: '#2B2418', accent: COLORS.secondary, textColor: COLORS.secondaryLighter },
-    loading: { icon: 'sync-circle',          bg: '#181009', accent: COLORS.primaryLight,   textColor: COLORS.primaryLighter },
+    success: { icon: 'checkmark-circle',   bg: COLORS.successBg,  accent: COLORS.success,      textColor: COLORS.success },
+    error:   { icon: 'close-circle',       bg: COLORS.errorBg,    accent: COLORS.error,        textColor: COLORS.error },
+    warning: { icon: 'warning',            bg: COLORS.warningBg,  accent: COLORS.warning,      textColor: COLORS.warningDark },
+    info:    { icon: 'information-circle', bg: COLORS.infoBg,     accent: COLORS.info,         textColor: COLORS.info },
+    gold:    { icon: 'star',               bg: COLORS.goldLight,  accent: COLORS.secondary,    textColor: COLORS.goldBronze },
+    loading: { icon: 'sync-circle',        bg: COLORS.primaryPale,accent: COLORS.primary,      textColor: COLORS.primaryInk },
   };
 }
 

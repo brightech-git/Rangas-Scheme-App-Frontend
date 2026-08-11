@@ -43,7 +43,7 @@ export const METAL_COLOR: Record<string, string> = {
 };
 
 export const METAL_GRADIENT: Record<string, [string, string]> = {
-  G: ['#D8C3AF', '#A98C68'],
+  G: ['#F5B800', '#A98C68'],
   S: ['#A6ABB2', '#6E737A'],
   P: ['#8494A0', '#4E5D68'],
   D: ['#5FB8CB', '#2C7E8F'],

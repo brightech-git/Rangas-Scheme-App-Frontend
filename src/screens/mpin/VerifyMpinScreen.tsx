@@ -484,21 +484,6 @@ export default function VerifyMpinScreen() {
           <View
             style={[s.vRule, { backgroundColor: COLORS.hairlineBold }]}
           />
-
-          <Pressable
-            onPress={() => navigation.replace('Login')}
-            hitSlop={10}
-            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Text
-              style={[
-                asText(FONTS.micro),
-                { color: COLORS.inkTertiary },
-              ]}
-            >
-              Use password
-            </Text>
-          </Pressable>
         </View>
 
         </View>{/* end center wrapper */}

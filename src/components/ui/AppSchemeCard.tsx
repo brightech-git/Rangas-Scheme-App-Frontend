@@ -84,9 +84,9 @@ export type AppSchemeCardProps = {
 const STATUS_CONFIG: Record<SchemeStatus, { label: string; color: string; bg: string }> = {
   active:   { label: 'Active',    color: '#FFFFFF', bg: '#356B42' },
   expired:  { label: 'Closed',    color: '#FFFFFF', bg: '#74563C' },
-  closing:  { label: 'Closing',   color: '#FFFFFF', bg: '#8F1D24' },
-  new:      { label: 'New',       color: '#FFFFFF', bg: '#C17436' },
-  trending: { label: 'Trending',  color: '#FFFFFF', bg: '#C17436' },
+  closing:  { label: 'Closing',   color: '#FFFFFF', bg: '#7A0303' },
+  new:      { label: 'New',       color: '#FFFFFF', bg: '#AA0404' },
+  trending: { label: 'Trending',  color: '#FFFFFF', bg: '#AA0404' },
 };
 
 function resolveImageSource(
@@ -223,7 +223,7 @@ function WishlistBtn({
         <Ionicons
           name={active ? 'heart' : 'heart-outline'}
           size={18}
-          color={active ? '#8F1D24' : '#B99878'}
+          color={active ? '#7A0303' : '#B99878'}
         />
       </Animated.View>
     </TouchableOpacity>

@@ -7,6 +7,7 @@
 // ── Scaffolding ────────────────────────────────────────────────
 export { default as ScreenCanvas } from './ScreenCanvas';
 export { default as AuthShell } from './AuthShell';
+export { default as WaveAuthShell } from './WaveAuthShell';
 export { default as DashboardHeader } from './DashboardHeader';
 export { default as PageHeader } from './PageHeader';
 export { default as SectionHeading } from './SectionHeading';

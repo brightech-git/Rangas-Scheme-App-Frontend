@@ -44,8 +44,8 @@
 //       logoHeight:      40,
 //       headerBgBase64:  bgB64,         // optional header bg image
 //       headerBgMimeType:'image/png',
-//       primaryColor:    '#C17436',     // accent / table header color
-//       secondaryColor:  '#D8C3AF',
+//       primaryColor:    '#AA0404',     // accent / table header color
+//       secondaryColor:  '#F5B800',
 //       companyName:     'DigiGold',
 //       watermarkText:   'CONFIDENTIAL',// optional diagonal watermark
 //     },
@@ -151,8 +151,8 @@ function today() {
 // ─────────────────────────────────────────────────────────────────
 function buildPDFHtml(data: ExportData): string {
   const br       = data.branding ?? {};
-  const primary  = br.primaryColor  ?? '#C17436';
-  const secondary= br.secondaryColor ?? '#D8C3AF';
+  const primary  = br.primaryColor  ?? '#AA0404';
+  const secondary= br.secondaryColor ?? '#F5B800';
   const company  = br.companyName   ?? 'DigiGold';
   const dateStr  = today();
 
@@ -315,7 +315,7 @@ async function exportExcel(data: ExportData, filename: string) {
   catch { Alert.alert('Missing package', 'Run: npm install xlsx'); return; }
 
   const br      = data.branding ?? {};
-  const primary = (br.primaryColor ?? '#C17436').replace('#', '');
+  const primary = (br.primaryColor ?? '#AA0404').replace('#', '');
   const wb      = XLSX.utils.book_new();
 
   // ── Title block rows ──
@@ -415,7 +415,7 @@ async function exportWord(data: ExportData, filename: string) {
   } = docx;
 
   const br        = data.branding ?? {};
-  const primary   = br.primaryColor  ?? '#C17436';
+  const primary   = br.primaryColor  ?? '#AA0404';
   const pHex      = primary.replace('#', '');
   const company   = br.companyName   ?? 'DigiGold';
   const dateStr   = today();
@@ -621,7 +621,7 @@ type FormatCfg = { key: ExportFormat; label: string; ext: string; icon: string; 
 // options stay instantly recognisable. PDF uses the brand maroon.
 function useFormats(): FormatCfg[] {
   return [
-    { key: 'pdf',   label: 'PDF',   ext: 'pdf',  icon: 'document-text', desc: 'Branded report with logo & bg',    iconColor: '#8F1D24', iconBg: 'rgba(143,29,36,0.1)'  },
+    { key: 'pdf',   label: 'PDF',   ext: 'pdf',  icon: 'document-text', desc: 'Branded report with logo & bg',    iconColor: '#7A0303', iconBg: 'rgba(122,3,3,0.1)'  },
     { key: 'excel', label: 'Excel', ext: 'xlsx', icon: 'grid',          desc: 'Spreadsheet with styled header',   iconColor: '#16A34A', iconBg: 'rgba(53,107,66,0.1)'   },
     { key: 'word',  label: 'Word',  ext: 'docx', icon: 'document',      desc: 'Document with logo & watermark',   iconColor: '#2563EB', iconBg: 'rgba(37,99,235,0.1)'   },
   ];

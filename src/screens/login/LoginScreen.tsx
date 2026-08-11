@@ -21,7 +21,7 @@
 //   log in the Google flow, and all validation are preserved exactly.
 //
 // NEW UI COMPONENTS
-//   AuthShell, FormField, PremiumButton
+//   WaveAuthShell, FormField, PremiumButton
 // ─────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -43,7 +43,7 @@ import { useToast } from '../../components/ui/Toast';
 import { GOOGLE_IOS_CLIENT_ID } from '@env';
 
 import {
-  AuthShell,
+  WaveAuthShell,
   FormField,
   PremiumButton,
   asText,
@@ -224,13 +224,11 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthShell
-      eyebrow="Rangas DigiGold"
-      title="Welcome back"
-      caption="Sign in to continue building your gold savings."
-      align="top"
-      style={{ paddingTop: moderateScale(24) }}
-      
+    <WaveAuthShell
+      activeTab="signin"
+      onTabChange={(tab) => {
+        if (tab === 'signup') navigation.navigate('Register');
+      }}
     >
       <View style={{ gap: 22 }}>
         <FormField
@@ -330,7 +328,7 @@ export default function LoginScreen() {
             Create an account
           </Text>
         </Pressable>
-    </AuthShell>
+    </WaveAuthShell>
   );
 }
 

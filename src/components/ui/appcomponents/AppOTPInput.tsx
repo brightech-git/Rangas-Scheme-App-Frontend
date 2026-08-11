@@ -267,7 +267,7 @@ const AppOTPInput = forwardRef<AppOTPInputRef, AppOTPInputProps>(
 
     const boxColor = (index: number) => {
       if (disabled) return COLORS.gray100;
-      if (error) return COLORS.errorLight;
+      if (error) return COLORS.error;
       if (success && otp[index]) return COLORS.success + '22';
       if (otp[index] && focusedIndex === index) return COLORS.primaryPale;
       if (focusedIndex === index) return COLORS.primaryPale;
@@ -329,7 +329,7 @@ const AppOTPInput = forwardRef<AppOTPInputRef, AppOTPInputProps>(
         marginTop: 16,
         gap: 4,
       },
-      resendLabel: { ...FONTS.bodyMedium, color: COLORS.textOnPrimary },
+      resendLabel: { ...FONTS.bodyMedium, color: COLORS.inkSecondary },
       resendBtn: { ...FONTS.bodyMedium, color: COLORS.secondary, textDecorationLine: "underline" },
       resendDisabled: { ...FONTS.bodySmall, color: COLORS.textTertiary },
     });
@@ -394,7 +394,7 @@ const AppOTPInput = forwardRef<AppOTPInputRef, AppOTPInputProps>(
                           styles.digit,
                           {
                             color: error
-                              ? COLORS.error
+                              ? COLORS.textOnPrimary
                               : success
                               ? COLORS.success
                               : COLORS.textPrimary,

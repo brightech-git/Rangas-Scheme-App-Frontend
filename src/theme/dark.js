@@ -1,13 +1,13 @@
 import baseTheme from "./theme";
 
 // ============================================================
-// DARK MODE — warm espresso, derived from the cinnamon palette
+// DARK MODE — warm espresso surfaces, brand accents in red / yellow
 //
 // Every surface is a desaturated step down the same brown ramp as
 // the light theme (Warm Ivory #F6E9DD → Dark Brown #3A2A22), so dark
-// mode reads as the SAME brand at low light rather than a different
-// one. Text steps back up that ramp toward Warm Ivory instead of
-// pure white, which keeps the warmth on large text blocks.
+// mode reads as the SAME neutral base at low light. Brand colour
+// (red primary / golden yellow secondary) is layered on top and
+// lifted so it stays legible against the dark surfaces.
 // ============================================================
 const darkTheme = {
   ...baseTheme,
@@ -25,12 +25,12 @@ const darkTheme = {
     softCard: "#302017",
     surface: "#302017",
 
-    // Cinnamon reads too hot at full strength on dark — lift it so it
-    // stays legible as an interactive colour against espresso.
-    primary: "#D9884A",
-    primaryLight: "#E5A06B",
-    primaryDark: "#C17436",
-    primaryLighter: "#EDB98B",
+    // Brand red reads too dark/muddy at full strength on dark surfaces —
+    // lift it so it stays legible as an interactive colour against espresso.
+    primary: "#E24B4B",
+    primaryLight: "#EA7070",
+    primaryDark: "#C41E1E",
+    primaryLighter: "#F09999",
 
     // Tinted surfaces that were near-white in the base palette
     primaryPale: "#302017",
@@ -43,23 +43,23 @@ const darkTheme = {
     textSecondary: "#D9C2AC",
     textTertiary: "#A38C79",
     textDisabled: "#6B564A",
-    textOrange: "#D9884A",
-    textOrangeDark: "#C17436",
-    textGold: "#D8C3AF",
-    textGoldDark: "#B8A38C",
+    textOrange: "#E24B4B",
+    textOrangeDark: "#C41E1E",
+    textGold: "#F5B800",
+    textGoldDark: "#C99400",
 
     // ── Borders ──
     border: "#3D2A1E",
     borderLight: "#302017",
     borderMedium: "#4A3427",
-    borderDark: "#C17436",
+    borderDark: "#C41E1E",
     divider: "#3D2A1E",
 
     // ── Inputs ──
     inputBackground: "#241811",
     inputBorder: "#3D2A1E",
     inputPlaceholder: "rgba(217, 194, 172, 0.45)",
-    inputFocused: "#D9884A",
+    inputFocused: "#E24B4B",
 
     // ── Gray scale inverted along the warm ramp ──
     gray50: "#241811",
@@ -80,13 +80,13 @@ const darkTheme = {
     warningBg: "#2E2617",
     errorBg: "#331419",
     infoBg: "#14232F",
-    // Deep Maroon is too dark to read on espresso — lift the error ramp
+    // Deep red is too dark to read on espresso — lift the error ramp
     error: "#E0737B",
     errorLight: "#EC8F96",
     errorDark: "#8F1D24",
 
     // ── V2 hero zone, inverted for dark mode ──
-    // In light mode the hero is a warm SAND band. That would glare
+    // In light mode the hero is a rich BRAND RED band. That would glare
     // inside a dark UI, so here it becomes the espresso equivalent —
     // still one step apart from the body, just in the other direction.
     heroCanvas: "#241811",
@@ -97,20 +97,20 @@ const darkTheme = {
     heroHairlineBold: "rgba(246, 233, 221, 0.20)",
     heroGlass: "rgba(246, 233, 221, 0.07)",
     heroGlassBold: "rgba(246, 233, 221, 0.14)",
-    heroGoldVeil: "rgba(216, 195, 175, 0.12)",
+    heroGoldVeil: "rgba(245, 184, 0, 0.12)",
     heroTextPrimary: "#F6E9DD",
     heroTextSecondary: "#D9C2AC",
     heroTextTertiary: "#A38C79",
     heroTextMuted: "#7D685A",
-    // Champagne reads beautifully on espresso, so the accent flips back
-    heroAccent: "#D8C3AF",
-    heroAccentSoft: "rgba(216, 195, 175, 0.16)",
+    // Golden yellow reads beautifully on espresso, so the accent flips back
+    heroAccent: "#F5B800",
+    heroAccentSoft: "rgba(245, 184, 0, 0.16)",
     heroDotIdle: "rgba(246, 233, 221, 0.45)",
     // …which means anything sitting ON the accent must go dark again
     heroOnAccent: "#241811",
     // Hero semantics lift for espresso (they are darkened for sand)
     heroSuccess: "#7FCB94",
-    heroWarning: "#DDB77F",
+    heroWarning: "#F5D666",
     heroDanger: "#EC8F96",
     heroInfo: "#84B7E5",
 
@@ -133,13 +133,13 @@ const darkTheme = {
     metalPlatinumSoft: "#182025",
     metalDiamondSoft: "#0E2B31",
 
-    // ── Hero gradients, espresso variants of the light sand washes ──
+    // ── Hero gradients, espresso variants of the light brand-red washes ──
     gradient: {
       ...baseTheme.COLORS.gradient,
       heroNoir: ["#4A3427", "#3D2A1E", "#332218"],
       heroOxblood: ["#453026", "#33221A"],
       heroEmber: ["#54402F", "#453026", "#372519"],
-      heroGoldWash: ["rgba(216,195,175,0.14)", "rgba(216,195,175,0)"],
+      heroGoldWash: ["rgba(245,184,0,0.14)", "rgba(245,184,0,0)"],
       heroFade: ["rgba(51,34,24,0)", "rgba(51,34,24,0.95)"],
       glassSheen: ["rgba(246,233,221,0.10)", "rgba(246,233,221,0.02)"],
       paperLift: ["#302017", "#241811"],

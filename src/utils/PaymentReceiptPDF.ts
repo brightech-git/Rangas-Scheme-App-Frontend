@@ -13,8 +13,8 @@ import { Company } from '../types/Company/Company';
 
 // ── Brand palette — Rangas DigiGold (mirrors src/theme/theme.js) ──
 const BRAND = {
-  primary:      '#C17436',
-  primaryDark:  '#A95F28',
+  primary:      '#AA0404',
+  primaryDark:  '#7A0303',
   primaryPale:  '#FBF1E8',
   accentTint:   '#F6E9DD',
   border:       '#E7D4C4',

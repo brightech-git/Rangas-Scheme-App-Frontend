@@ -47,7 +47,7 @@ export default function WebViewComponent() {
 
       {loading && !error && (
         <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#D8C3AF" />
+          <ActivityIndicator size="large" color="#F5B800" />
           <Text style={{ color: COLORS.textSecondary, marginTop: 8, fontSize: 12 }}>
             {Math.round(progress * 100)}%
           </Text>

@@ -136,10 +136,10 @@ export default function ComponentsUsage() {
     logoMimeType:   'image/png',
     logoWidth:      110,
     logoHeight:     36,
-    primaryColor:   '#C17436',
-    secondaryColor: '#D8C3AF',
+    primaryColor:   '#AA0404',
+    secondaryColor: '#F5B800',
     companyName:    'Rangas DigiGold',
-    headerBgColor:  '#C17436',
+    headerBgColor:  '#AA0404',
     footerText:     'Rangas Jewels · Trusted since 1985',
   };
 
@@ -202,9 +202,9 @@ export default function ComponentsUsage() {
         branding: {
           ...baseBranding,
           logoBase64:     iconb64,
-          primaryColor:   '#D8C3AF',
-          secondaryColor: '#C17436',
-          headerBgColor:  '#D8C3AF',
+          primaryColor:   '#F5B800',
+          secondaryColor: '#AA0404',
+          headerBgColor:  '#F5B800',
           watermarkText:  'PORTFOLIO',
           watermarkOpacity: 0.05,
         },

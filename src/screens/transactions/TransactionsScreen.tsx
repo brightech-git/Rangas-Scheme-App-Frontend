@@ -326,7 +326,7 @@ export default function TransactionsScreen() {
     <Modal
       visible={dropdownOpen}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={() => setDropdownOpen(false)}
     >
       <TouchableOpacity
@@ -340,15 +340,13 @@ export default function TransactionsScreen() {
             s.sheet,
             {
               backgroundColor: COLORS.canvasElevated,
-              borderTopLeftRadius: SIZES.radius.sheet,
-              borderTopRightRadius: SIZES.radius.sheet,
-              paddingBottom: SIZES.padding.xxxl,
+              borderRadius: SIZES.radius.sheet,
+              paddingBottom: SIZES.padding.xl,
+              marginHorizontal: SIZES.layout.gutter,
             },
           ]}
         >
-          <View style={[s.handle, { backgroundColor: COLORS.hairlineBold }]} />
-
-          <Text
+<Text
             style={[
               asText(FONTS.displaySm),
               {
@@ -413,7 +411,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
   },
-  overlay: { flex: 1, justifyContent: 'flex-end' },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   sheet: { width: '100%' },
   handle: {
     width: 40,

@@ -27,10 +27,10 @@ export type SchemeItem = ApiScheme;
 export type RootStackParamList = {
   Onboarding:              undefined;
   Register:                undefined;
-  RegisterOTPVerify:       { contactNumber: string };
+  RegisterOTPVerify:       { contactNumber: string; username: string; email: string; password: string; hashKey: string };
   Login:                   undefined;
   ForgotPassword:          undefined;
-  ForgotVerifyOTP:         { contactNumber: string };
+  ForgotVerifyOTP:         { contactNumber: string; hashKey: string };
   GoogleContactUpdate:     { userId: number; picture?: string };
   GoogleContactVerifyOTP:  { newContactNumber: string; picture?: string; userId: number };
   CreateMpin:              undefined;

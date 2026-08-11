@@ -12,7 +12,7 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 import AppOTPInput, { AppOTPInputRef } from '../../components/ui/appcomponents/AppOTPInput';
 import AppPinInput, { AppPinInputRef } from '../../components/ui/appcomponents/AppPinInput';
 import { useToast } from '../../components/ui/Toast';
-import { AuthShell, PremiumButton, asText } from '../../components/ui/premium';
+import { WaveAuthShell, PremiumButton, asText } from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -77,26 +77,30 @@ export default function ForgotAndVerifyMpinScreen() {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     otpRef.current?.clear();
     setOtpCode('');
     setOtpError(false);
     setOtpErrMsg('');
     setAutoDetecting(Platform.OS === 'android');
-    handleSendOtp();
+    const res = await dispatch(forgotMpinSendOtp());
+    if (forgotMpinSendOtp.fulfilled.match(res)) {
+      toast.success('OTP Resent!', { message: 'New code sent to your registered mobile' });
+    } else {
+      toast.error('Resend Failed', { message: res.payload as string });
+    }
   };
 
   return (
-    <AuthShell
-      eyebrow="Rangas DigiGold"
-      title={step === 'send' ? 'Reset Your MPIN' : 'Verify & Set New MPIN'}
-      caption={
+    <WaveAuthShell
+      title={step === 'send' ? 'Reset your MPIN' : 'Verify & set new MPIN'}
+      subtitle={
         step === 'send'
           ? "We'll send an OTP to your registered mobile number."
           : 'Enter the OTP and set your new MPIN.'
       }
       onBack={() => navigation.goBack()}
-      align="top"
+      step={{ current: step === 'send' ? 1 : 2, total: 2 }}
     >
       <View style={{ gap: 24 }}>
         {step === 'send' ? (
@@ -155,6 +159,6 @@ export default function ForgotAndVerifyMpinScreen() {
           </>
         )}
       </View>
-    </AuthShell>
+    </WaveAuthShell>
   );
 }

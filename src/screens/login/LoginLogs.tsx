@@ -42,7 +42,7 @@ function timeAgo(raw: string | null): string {
 
 // Warm-palette avatar set — cinnamon, champagne, maroon and muted
 // earth tones that sit on Warm Ivory without clashing with the brand.
-const AVATAR_COLORS = ['#C17436', '#A98C68', '#8F1D24', '#6B7C88', '#8A6F42', '#A95F28'];
+const AVATAR_COLORS = ['#AA0404', '#A98C68', '#7A0303', '#6B7C88', '#8A6F42', '#7A0303'];
 
 // ── Single log card ───────────────────────────────────────────────
 function LogCard({ item, index }: { item: LoginLog; index: number }) {

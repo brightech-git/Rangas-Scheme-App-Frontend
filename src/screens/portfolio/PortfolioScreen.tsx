@@ -381,6 +381,32 @@ export default function PortfolioScreen() {
                   const isFullyPaid = done || (totalCount > 0 && paidCount >= totalCount);
                   const mx = schemeMetrics(item);
 
+                  const hasWeight = item.schemeSummary?.weightLedger === 'Y';
+                  const bonusAmt  = num(item.bonusAmount);
+
+                  const cardStats: { label: string; value: string }[] = [
+                    {
+                      label: 'Paid',
+                      value: money(mx.invested),
+                    },
+                    hasWeight
+                      ? { label: 'Weight', value: grams(mx.weight, 3) }
+                      : {
+                          label: 'Instalments',
+                          value: mx.total > 0
+                            ? `${mx.paid} / ${mx.total}`
+                            : String(mx.paid),
+                        },
+                    bonusAmt > 0
+                      ? { label: 'Bonus', value: money(bonusAmt) }
+                      : {
+                          label: isFullyPaid ? 'Closed on' : 'Next due',
+                          value: isFullyPaid
+                            ? item.maturityDate ? shortDate(item.maturityDate) : '—'
+                            : item.nextDueDate  ? shortDate(item.nextDueDate)  : '—',
+                        },
+                  ];
+
                   return (
                     <SchemeCardV2
                       key={String(item.regNo)}
@@ -399,27 +425,7 @@ export default function PortfolioScreen() {
                         label: isFullyPaid ? 'Closed' : 'Active',
                         tone: isFullyPaid ? 'info' : 'success',
                       }}
-                      stats={[
-                        {
-                          label: 'Paid',
-                          value: money(mx.invested),
-                        },
-                        {
-                          label: 'Weight',
-                          value: mx.weight > 0 ? grams(mx.weight, 3) : '—',
-                        },
-                        {
-                          // No bonus in this product — a completed scheme
-                          // shows its instalment count, an open one its
-                          // next due date.
-                          label: isFullyPaid ? 'Instalments' : 'Next due',
-                          value: isFullyPaid
-                            ? `${mx.paid}${mx.total ? ` of ${mx.total}` : ''}`
-                            : item.nextDueDate
-                            ? shortDate(item.nextDueDate)
-                            : '—',
-                        },
-                      ]}
+                      stats={cardStats}
                       paid={paidCount}
                       total={isFullyPaid ? 0 : totalCount}
                       actionLabel="View instalments"

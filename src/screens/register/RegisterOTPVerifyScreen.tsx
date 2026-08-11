@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOtpVerify, removeListener } from 'react-native-otp-verify';
 import { useTheme } from '../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { verifyOtp } from '../../store/authSlice';
+import { verifyOtp, registerUser } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import AppOTPInput, { AppOTPInputRef } from '../../components/ui/appcomponents/AppOTPInput';
@@ -25,7 +25,7 @@ export default function RegisterOTPVerifyScreen() {
   const toast = useToast();
   const { COLORS, FONTS, SIZES } = useTheme();
 
-  const { contactNumber } = route.params;
+  const { contactNumber, username, email, password, hashKey } = route.params;
   const otpRef          = useRef<AppOTPInputRef>(null);
   const verifyCalledRef = useRef(false);
 
@@ -69,13 +69,18 @@ export default function RegisterOTPVerifyScreen() {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     otpRef.current?.clear();
     setOtpError(false);
     setOtpErrMsg('');
     setAutoDetecting(Platform.OS === 'android');
     verifyCalledRef.current = false;
-    toast.info('OTP Resent', { message: `Code sent to ${contactNumber}` });
+    const res = await dispatch(registerUser({ username, email, contactNumber, password, hashKey }));
+    if (registerUser.fulfilled.match(res)) {
+      toast.success('OTP Resent!', { message: `New code sent to ${contactNumber}` });
+    } else {
+      toast.error('Resend Failed', { message: res.payload as string });
+    }
   };
 
   return (

@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   title:     { textAlign: 'center' },
   subtitle:  { textAlign: 'center', marginTop: 1 },
   iconCircle:{ width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  badgeDot:  { position: 'absolute', top: 2, right: 2, minWidth: 15, height: 15, borderRadius: 8, backgroundColor: '#8F1D24', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5 },
+  badgeDot:  { position: 'absolute', top: 2, right: 2, minWidth: 15, height: 15, borderRadius: 8, backgroundColor: '#7A0303', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5 },
   badgeText: { color: '#FFFFFF', fontSize: 8, fontWeight: '800' },
   dc1:       { position: 'absolute', width: 130, height: 130, borderRadius: 65, top: -50, right: -20 },
   dc2:       { position: 'absolute', width: 80,  height: 80,  borderRadius: 40, top: 10,  right: 90 },
