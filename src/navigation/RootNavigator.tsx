@@ -38,7 +38,6 @@ export type RootStackParamList = {
   ForgotMpin:              undefined;
   ResetMpin:               undefined;
   LoginLog:undefined;
-  ComponentsUsage:         undefined;
   Main:                    undefined;
   WebView:                 { url: string; title?: string };
   Notifications:           undefined;
@@ -150,9 +149,6 @@ export default function RootNavigator() {
         <Stack.Screen name="MpinLogin"               component={Screens.VerifyMpinScreen} />
         <Stack.Screen name="ForgotMpin"              component={Screens.ForgotAndVerifyMpinScreen} />
         <Stack.Screen name="ResetMpin"               component={Screens.ResetMpinScreen} />
-        {__DEV__ && (
-          <Stack.Screen name="ComponentsUsage"         component={Screens.ComponentsUsageScreen} />
-        )}
         <Stack.Screen name="Main"                    component={Screens.BottomTabNavigator} />
         <Stack.Screen name="WebView"                 component={Screens.WebViewComponent} />
         <Stack.Screen name="Notifications"            component={Screens.NotificationScreen} />

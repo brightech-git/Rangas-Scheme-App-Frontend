@@ -10,7 +10,6 @@ export { default as CreateMpinScreen }             from '../screens/mpin/CreateM
 export { default as VerifyMpinScreen }             from '../screens/mpin/VerifyMpinScreen';
 export { default as ForgotAndVerifyMpinScreen }    from '../screens/mpin/ForgotAndVerifyMpinScreen';
 export { default as ResetMpinScreen }              from '../screens/mpin/ResetMpinScreen';
-export { default as ComponentsUsageScreen }        from '../screens/ComponentsUsage/ComponentsUsageScreen';
 export { default as BottomTabNavigator }           from './BottomTabNavigator';
 export { default as WebViewComponent }             from '../components/WebViewComponent';
 export { default as NotificationScreen }           from '../screens/notification/NotificationScreen';
