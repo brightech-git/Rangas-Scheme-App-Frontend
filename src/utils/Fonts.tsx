@@ -27,6 +27,10 @@ const useFonts = () => {
     // ── Brand fonts ───────────────────────────────
     'TrajanPro-Regular':      require('../assets/fonts/TrajanPro-Regular.ttf'),
     'TrajanPro-Bold':         require('../assets/fonts/TrajanPro-Bold.otf'),
+    // Referenced by theme.js (FONTS.family.playfair) but was never
+    // registered -- used by the Premium Luxury onboarding headline.
+    // Loading it here keeps FONTS.family in sync with expo-font.
+    'PlayfairDisplay-Medium': require('../assets/fonts/PlayfairDisplay-Medium.ttf'),
   });
 
   return fontsLoaded || !!error;

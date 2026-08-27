@@ -1,8 +1,22 @@
+// src/screens/onboarding/OnboardingScreen.tsx
+//
+// "Premium Luxury" onboarding -- deep red canvas, serif headline,
+// gold-thread progress and a die-cut gold arrow-disc CTA.
+//
+// The slide ARTWORK still comes from the live banner API exactly as
+// before (useOnboardingBanners) -- nothing about the data source
+// changed. What changed is the chrome around it: a brand-red gradient
+// scrim + gold vignette sit over the photo so text stays legible on
+// any banner image, a serif eyebrow/title/caption panel replaces the
+// old caption-less slide, and navigation is a hairline gold thread
+// instead of dots. Copy per slide is written locally (banners are
+// photography, not copy, in this API) and cycles/pads to whatever
+// number of banners the API returns.
+
 import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Dimensions,
   FlatList,
@@ -10,64 +24,84 @@ import {
   Animated,
   ActivityIndicator,
   Image,
+  Pressable,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboardingBanners } from '../../api/hooks/Onboard/useOnboardingBanners';
 import { Banner } from '../../types/onboarding';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
-import { FONTS, SIZES, COLORS } from '../../theme/theme';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
+import { asText, GoldArrowButton } from '../../components/ui/premium';
 
 const { width, height } = Dimensions.get('window');
 
-function Dots({ count, current }: { count: number; current: number }) {
+// Local slide copy -- the API supplies banner photography, this is the
+// editorial voice around it. Cycles by index so any banner count works.
+const SLIDE_COPY = [
+  { eyebrow: 'The Vault', title: 'Save gold.\nBuild your future.', body: 'Every rupee you set aside becomes real 24K gold, held securely in your name -- from as little as ₹100.' },
+  { eyebrow: 'DigiGold', title: 'Invest in gold,\ndigitally.', body: 'Buy, accumulate and track gold in real time, at live market rates -- no locker, no waiting.' },
+  { eyebrow: 'Assurance', title: 'Secure. Simple.\nTrusted.', body: 'Bank-grade encryption and BIS-certified purity, backed by a jeweller with decades of trust.' },
+  { eyebrow: 'Begin', title: 'Start your\ngold journey.', body: 'Join thousands already building their wealth, one gram at a time.' },
+];
+
+function GoldThread({ count, current }: { count: number; current: number }) {
   return (
-    <View style={dot.row}>
-      {Array.from({ length: count }).map((_, i) => (
-        <View key={i} style={[dot.base, i === current ? dot.active : dot.inactive]} />
+    <View style={thread.row}>
+      {Array.from({ length: count }).map((_, idx) => (
+        <View key={idx} style={[thread.seg, idx <= current && thread.segOn]} />
       ))}
     </View>
   );
 }
-const dot = StyleSheet.create({
-  row:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 24 },
-  base:     { height: 8, borderRadius: 4 },
-  active:   { width: 28, backgroundColor: COLORS.primary },
-  inactive: { width: 8,  backgroundColor: COLORS.secondary },
+const thread = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 5, marginBottom: 18 },
+  seg: { flex: 1, height: 2.5, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)' },
+  segOn: { backgroundColor: '#F5B800' },
 });
 
 const OnboardingScreen = ({ navigation }: any) => {
+  const { COLORS, FONTS, SIZES } = useTheme();
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const { banners, loading, getImageUrl } = useOnboardingBanners();
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const slides = banners.map((item: Banner) => ({
-    id:  String(item.BannerId),
+  const slides = banners.map((item: Banner, idx: number) => ({
+    id: String(item.BannerId),
     uri: getImageUrl(item.image_path),
+    copy: SLIDE_COPY[idx % SLIDE_COPY.length],
   }));
 
-  const isLast = currentIndex === slides.length - 1;
+  const count = slides.length;
+  // count === 0 is a transient/empty-API edge case -- treat it as "last"
+  // so the CTA reads "Get Started" and the tap-right zone doesn't render
+  // over an empty red screen with nothing to advance to.
+  const isLast = count === 0 || currentIndex === count - 1;
 
   const goTo = (index: number) => {
     Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 0.6, duration: 100, useNativeDriver: true }),
-      Animated.timing(fadeAnim, { toValue: 1,   duration: 200, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0.5, duration: 120, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
     ]).start();
     flatListRef.current?.scrollToIndex({ index, animated: true });
+    setCurrentIndex(index);
   };
 
-  const handleNext    = () => {
-    if (currentIndex < slides.length - 1) goTo(currentIndex + 1);
-    else { AsyncStorageHelper.setOnboarded(); navigation.replace('Register'); }
+  const finishOnboarding = () => AsyncStorageHelper.setOnboarded();
+
+  const handleNext = () => {
+    if (currentIndex < count - 1) goTo(currentIndex + 1);
+    else { finishOnboarding(); navigation.replace('Register'); }
   };
-  const handleSkip    = () => { AsyncStorageHelper.setOnboarded(); navigation.replace('Register'); };
-  const handleSignIn  = () => { AsyncStorageHelper.setOnboarded(); navigation.replace('Login'); };
+  const handleSkip = () => { finishOnboarding(); navigation.replace('Register'); };
+  const handleSignIn = () => { finishOnboarding(); navigation.replace('Login'); };
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.loader, { backgroundColor: COLORS.primaryDark }]}>
+        <ActivityIndicator size="large" color={COLORS.secondary} />
       </View>
     );
   }
@@ -79,10 +113,15 @@ const OnboardingScreen = ({ navigation }: any) => {
       <FlatList
         ref={flatListRef}
         data={slides}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.slide}>
             <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {/* Brand-red scrim so headline/body stay legible over any banner photo,
+                plus a soft gold vignette at the top for the "subtle gold glow" the
+                brief called for. */}
+            
+            
           </View>
         )}
         horizontal
@@ -91,41 +130,63 @@ const OnboardingScreen = ({ navigation }: any) => {
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={16}
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-        onMomentumScrollEnd={e => {
+        onMomentumScrollEnd={(e) => {
           setCurrentIndex(Math.round(e.nativeEvent.contentOffset.x / width));
         }}
       />
 
-      <Animated.View style={[styles.bottomContent, { opacity: fadeAnim, paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
-        <Dots count={slides.length} current={currentIndex} />
-        <View style={styles.buttonGroup}>
-          {isLast ? (
-            <View style={styles.row}>
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleSignIn} activeOpacity={0.88}>
-                <Text style={styles.primaryBtnText}>Sign In</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.88}>
-                <Text style={styles.primaryBtnText}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.row}>
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleSkip} activeOpacity={0.88}>
-                <Text style={styles.primaryBtnText}>Skip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.88}>
-                <Text style={styles.primaryBtnText}>Next  →</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+      {/* Top bar: brand mark + Skip, sitting in the 10% top safe zone */}
+      <View style={[styles.topBar, { top: insets.top + 12 }]}>
+        <Text style={[asText(FONTS.eyebrow), styles.brandMark]}>
+          RANGAS <Text style={styles.brandMarkAccent}>DigiGold</Text>
+        </Text>
+        {!isLast && (
+          <Pressable onPress={handleSkip} hitSlop={10} style={styles.skipBtn}>
+            <Text style={styles.skipText}>Skip</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Caption + CTA panel, animated on slide change, sitting in the
+          bottom safe zone with room to breathe above the home indicator. */}
+      <Animated.View
+        style={[
+          styles.bottomPanel,
+          { opacity: fadeAnim, paddingBottom: Math.max(insets.bottom + 20, 32) },
+        ]}
+      >
+        {/* {count > 0 && (
+          <>
+            <Text style={styles.eyebrow}>
+              {String(currentIndex + 1).padStart(2, '0')} — {slides[currentIndex].copy.eyebrow.toUpperCase()}
+            </Text>
+            <Text style={styles.title}>{slides[currentIndex].copy.title}</Text>
+            <View style={styles.rule} />
+            <Text style={styles.body}>{slides[currentIndex].copy.body}</Text>
+          </>
+        )} */}
+
+        <GoldThread count={count} current={currentIndex} /> 
+
+        <GoldArrowButton
+          label={isLast ? 'Get Started' : 'Continue'}
+          onPress={handleNext}
+        />
+
+        {isLast && (
+          <Pressable onPress={handleSignIn} hitSlop={8} style={styles.signInBtn}>
+            <Text style={styles.signInText}>
+              Already a member? <Text style={styles.signInTextAccent}>Sign In</Text>
+            </Text>
+          </Pressable>
+        )}
       </Animated.View>
 
       {currentIndex > 0 && (
-        <TouchableOpacity style={styles.tapLeft} activeOpacity={1} onPress={() => goTo(currentIndex - 1)} />
+        <Pressable style={styles.tapLeft} onPress={() => goTo(currentIndex - 1)} />
       )}
-      {!isLast && (
-        <TouchableOpacity style={styles.tapRight} activeOpacity={1} onPress={() => goTo(currentIndex + 1)} />
+      {!isLast && count > 0 && (
+        <Pressable style={styles.tapRight} onPress={() => goTo(Math.min(currentIndex + 1, count - 1))} />
       )}
     </SafeAreaView>
   );
@@ -134,53 +195,80 @@ const OnboardingScreen = ({ navigation }: any) => {
 export default OnboardingScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.backgroundDark },
-  loader:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.backgroundDark },
-  slide:     { width, height },
+  container: { flex: 1, backgroundColor: '#3d0101' },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  slide: { width, height },
+  goldVeil: { position: 'absolute', top: 0, left: 0, right: 0, height: '30%' },
 
-  bottomContent: {
+  topBar: {
     position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 24,
+    left: '10%',
+    right: '10%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  brandMark: { color: 'rgba(255,255,255,0.78)', letterSpacing: 1.4 },
+  brandMarkAccent: { color: '#F5D666' },
+  skipBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.32)',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  skipText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+
+  bottomPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    // ~10% side safe space, ~20% bottom safe space per the brand brief
+    paddingHorizontal: '10%',
+  },
+  eyebrow: {
+    color: '#F5D666',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    marginBottom: 10,
+  },
+  title: {
+    fontFamily: 'PlayfairDisplay-Medium',
+    fontSize: 27,
+    lineHeight: 34,
+    color: '#FFFFFF',
+    marginBottom: 14,
+  },
+  rule: {
+    width: 46,
+    height: 2,
+    backgroundColor: '#F5B800',
+    opacity: 0.9,
+    marginBottom: 14,
+    borderRadius: 2,
+  },
+  body: {
+    fontSize: 13.5,
+    lineHeight: 21,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '300',
+    marginBottom: 22,
+    maxWidth: '92%',
   },
 
-  buttonGroup: { gap: 14 },
-  row:         { flexDirection: 'row', gap: 12 },
-  primaryBtn: {
-    flex:            1,
-    backgroundColor: COLORS.secondary,
-    height:          56,
-    borderRadius:    14,
-    alignItems:      'center',
-    justifyContent:  'center',
-    shadowColor:     COLORS.secondary,
-    shadowOffset:    { width: 0, height: 6 },
-    shadowOpacity:   0.5,
-    shadowRadius:    14,
-    elevation:       8,
+  signInBtn: { marginTop: 16, alignSelf: 'center' },
+  signInText: {
+    color: 'rgba(255,255,255,0.68)',
+    fontSize: 13.5,
+    fontWeight: '500',
   },
-  primaryBtnText: {
-    fontFamily:    FONTS.family.bold,
-    fontSize:      SIZES.font.lg,
-    color:         COLORS.backgroundDark,
-    letterSpacing: 0.3,
-  },
-  outlineBtn: {
-    flex:         1,
-    height:       56,
-    borderRadius: 14,
-    alignItems:   'center',
-    justifyContent: 'center',
-    borderWidth:  1.5,
-    borderColor:  COLORS.whiteOpacity30,
-  },
-  outlineBtnText: {
-    fontFamily:    FONTS.family.bold,
-    fontSize:      SIZES.font.lg,
-    color:         COLORS.white,
-    letterSpacing: 0.3,
+  signInTextAccent: {
+    color: '#F5D666',
+    fontWeight: '600',
   },
 
-  tapLeft:  { position: 'absolute', top: 0, bottom: 120, left: 0,  width: width * 0.25 },
-  tapRight: { position: 'absolute', top: 0, bottom: 120, right: 0, width: width * 0.25 },
+  tapLeft: { position: 'absolute', top: 0, bottom: 160, left: 0, width: width * 0.22 },
+  tapRight: { position: 'absolute', top: 0, bottom: 160, right: 0, width: width * 0.22 },
 });

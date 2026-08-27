@@ -27,6 +27,7 @@ export { default as DashboardGrid } from './DashboardGrid';
 
 // ── Controls & atoms ───────────────────────────────────────────
 export { default as PremiumButton } from './PremiumButton';
+export { default as GoldArrowButton } from './GoldArrowButton';
 export { default as FormField } from './FormField';
 export { default as PinPad } from './PinPad';
 export { default as PaymentTile } from './PaymentTile';

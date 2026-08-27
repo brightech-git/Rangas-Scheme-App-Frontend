@@ -331,6 +331,7 @@ export const COLORS = {
     elegance: ["#7A0303", "#F5B800"],
     luxury: ["#AA0404", "#C41E1E", "#F5B800"],
     premium: ["#5C0202", "#AA0404", "#F5B800"],
+    premium1: ["#97760a", "#F5B800"],
 
     // Neutral surfaces
     surface: ["#F6E9DD", "#FFF8F2"],
