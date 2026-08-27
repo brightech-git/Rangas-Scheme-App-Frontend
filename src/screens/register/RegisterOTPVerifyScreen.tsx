@@ -124,8 +124,7 @@ export default function RegisterOTPVerifyScreen() {
             submitOtp(code);
           }}
           loading={loading}
-          iconRight="arrow-forward"
-          style={{ marginTop: SIZES.margin.md }}
+          style={{ marginTop: SIZES.margin.md, borderRadius: SIZES.radius.pill }}
         />
       </View>
     </AuthShell>

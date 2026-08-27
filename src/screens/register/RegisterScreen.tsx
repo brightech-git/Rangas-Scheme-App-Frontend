@@ -1,7 +1,7 @@
 // src/screens/register/RegisterScreen.tsx
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { getHash } from 'react-native-otp-verify';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,7 +19,7 @@ import { Platform } from 'react-native';
 
 import {
   WaveAuthShell,
-  FormField,
+  PillField,
   PremiumButton,
   asText,
 } from '../../components/ui/premium';
@@ -43,6 +43,10 @@ export default function RegisterScreen() {
   const [hashKey, setHashKey]         = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const emailRef    = useRef<TextInput>(null);
+  const mobileRef   = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -192,50 +196,56 @@ export default function RegisterScreen() {
         </Pressable>
       }
     >
-      <View style={{ gap: 18 }}>
-        <FormField
-          label="Username"
-          indicator="required"
-          icon="person-outline"
+      <View style={{ gap: 14 }}>
+        <PillField
           value={form.username}
-          placeholder="Choose a username"
+          placeholder="Username"
           autoCapitalize="none"
           onChangeText={(v) => set('username', v)}
+          returnKeyType="next"
+          onSubmitEditing={() => emailRef.current?.focus()}
+          autoComplete="username"
+          textContentType="username"
         />
 
-        <FormField
-          label="Email"
-          indicator="required"
-          icon="mail-outline"
+        <PillField
+          ref={emailRef}
           value={form.email}
-          placeholder="your@email.com"
+          placeholder="Email address"
           keyboardType="email-address"
           autoCapitalize="none"
           onChangeText={(v) => set('email', v)}
+          returnKeyType="next"
+          onSubmitEditing={() => mobileRef.current?.focus()}
+          autoComplete="email"
+          textContentType="emailAddress"
         />
 
-        <FormField
-          label="Mobile number"
-          indicator="required"
-          icon="call-outline"
+        <PillField
+          ref={mobileRef}
           value={form.contactNumber}
-          placeholder="10-digit mobile"
+          placeholder="Mobile number"
           keyboardType="phone-pad"
           maxLength={10}
           onChangeText={(v) => set('contactNumber', v)}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+          autoComplete="tel"
+          textContentType="telephoneNumber"
         />
 
-        <FormField
-          label="Password"
-          indicator="required"
-          icon="lock-closed-outline"
-          isPassword
+        <PillField
+          ref={passwordRef}
           value={form.password}
-          placeholder="Minimum 6 characters"
+          placeholder="Password (minimum 6 characters)"
+          isPassword
           autoCapitalize="none"
           onChangeText={(v) => set('password', v)}
+          returnKeyType="done"
+          onSubmitEditing={handleRegister}
+          autoComplete="new-password"
+          textContentType="newPassword"
         />
-
       </View>
 
       {/* Terms & Conditions agreement */}
@@ -273,8 +283,7 @@ export default function RegisterScreen() {
         size="lg"
         onPress={handleRegister}
         loading={loading}
-        iconRight="arrow-forward"
-        style={{ marginTop: SIZES.margin.xxl }}
+        style={{ marginTop: SIZES.margin.xxl, borderRadius: SIZES.radius.pill }}
       />
 
       {/* Divider */}
@@ -294,7 +303,7 @@ export default function RegisterScreen() {
         onPress={handleGoogleSignIn}
         disabled={googleLoading}
         loading={googleLoading}
-        style={{ marginTop: SIZES.margin.xl }}
+        style={{ marginTop: SIZES.margin.xl, borderRadius: SIZES.radius.pill }}
       />
     </WaveAuthShell>
   );

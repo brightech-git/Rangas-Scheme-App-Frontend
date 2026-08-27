@@ -10,7 +10,7 @@ import { forgotPassword } from '../../store/authSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useToast } from '../../components/ui/Toast';
 import { getHash } from 'react-native-otp-verify';
-import { AuthShell, FormField, PremiumButton } from '../../components/ui/premium';
+import { AuthShell, PillField, PremiumButton } from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -59,18 +59,19 @@ export default function EnterMobileScreen() {
       onBack={() => navigation.goBack()}
       align="top"
     >
-      <View style={{ gap: 24 }}>
-        <FormField
-          label="Mobile Number"
-          indicator="required"
-          icon="call-outline"
+      <View style={{ gap: 14 }}>
+        <PillField
           keyboardType="phone-pad"
           maxLength={10}
           value={mobile}
-          placeholder="Enter 10-digit mobile"
+          placeholder="Mobile number"
           autoFocus
           onChangeText={(v) => { setMobile(v.replace(/[^0-9]/g, '')); setError(''); }}
           error={error}
+          returnKeyType="done"
+          onSubmitEditing={handleSendOtp}
+          autoComplete="tel"
+          textContentType="telephoneNumber"
         />
 
         <PremiumButton
@@ -78,8 +79,7 @@ export default function EnterMobileScreen() {
           size="lg"
           onPress={handleSendOtp}
           loading={loading}
-          iconRight="arrow-forward"
-          style={{ marginTop: SIZES.margin.md }}
+          style={{ marginTop: SIZES.margin.md, borderRadius: SIZES.radius.pill }}
         />
       </View>
     </AuthShell>

@@ -1,7 +1,7 @@
 // src/screens/ForgotPassword/VerifyOTPScreen.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text, TextInput, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOtpVerify, removeListener } from 'react-native-otp-verify';
@@ -11,7 +11,7 @@ import { resetPassword, forgotPassword } from '../../store/authSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import AppOTPInput, { AppOTPInputRef } from '../../components/ui/appcomponents/AppOTPInput';
 import { useToast } from '../../components/ui/Toast';
-import { AuthShell, FormField, PremiumButton, asText } from '../../components/ui/premium';
+import { AuthShell, PillField, PremiumButton, asText } from '../../components/ui/premium';
 
 type Nav   = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ForgotVerifyOTP'>;
@@ -27,6 +27,7 @@ export default function VerifyOTPScreen() {
   const { contactNumber, hashKey } = route.params;
   const otpRef          = useRef<AppOTPInputRef>(null);
   const verifyCalledRef = useRef(false);
+  const confirmRef      = useRef<TextInput>(null);
 
   const [otpError, setOtpError]     = useState(false);
   const [otpErrMsg, setOtpErrMsg]   = useState('');
@@ -134,28 +135,31 @@ export default function VerifyOTPScreen() {
           resendCountdown={30}
         />
 
-        <FormField
-          label="New Password"
-          indicator="required"
-          icon="lock-closed-outline"
+        <PillField
           isPassword
           value={newPassword}
-          placeholder="Enter new password"
+          placeholder="New password"
           autoCapitalize="none"
           onChangeText={(v) => { setNewPassword(v); setPassErrors((p) => ({ ...p, newPassword: '' })); }}
           error={passErrors.newPassword}
+          returnKeyType="next"
+          onSubmitEditing={() => confirmRef.current?.focus()}
+          autoComplete="new-password"
+          textContentType="newPassword"
         />
 
-        <FormField
-          label="Confirm Password"
-          indicator="required"
-          icon="lock-closed-outline"
+        <PillField
+          ref={confirmRef}
           isPassword
           value={confirmPassword}
-          placeholder="Re-enter new password"
+          placeholder="Confirm new password"
           autoCapitalize="none"
           onChangeText={(v) => { setConfirmPassword(v); setPassErrors((p) => ({ ...p, confirmPassword: '' })); }}
           error={passErrors.confirmPassword}
+          returnKeyType="done"
+          onSubmitEditing={handleReset}
+          autoComplete="new-password"
+          textContentType="newPassword"
         />
 
         <PremiumButton
@@ -163,8 +167,7 @@ export default function VerifyOTPScreen() {
           size="lg"
           onPress={handleReset}
           loading={loading}
-          iconRight="arrow-forward"
-          style={{ marginTop: SIZES.margin.md }}
+          style={{ marginTop: SIZES.margin.md, borderRadius: SIZES.radius.pill }}
         />
       </View>
     </AuthShell>

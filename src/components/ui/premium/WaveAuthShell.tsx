@@ -83,7 +83,7 @@ function WaveAuthShell({
 
   return (
     <View style={[s.root, { backgroundColor: COLORS.canvas }, style]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
