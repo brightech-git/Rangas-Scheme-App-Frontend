@@ -21,6 +21,7 @@ import {
   Pressable,
   Dimensions,
   ViewStyle,
+  TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -44,6 +45,8 @@ type Props = {
   title?: string;
   /** Small line under the headline */
   subtitle?: string;
+  /** Style override for the subtitle text (e.g. to size up an identity name) */
+  subtitleStyle?: TextStyle;
   /** Shows a translucent back button top-left in the wave */
   onBack?: () => void;
   /** Step indicator, e.g. { current: 1, total: 2 } — renders as dots under the headline */
@@ -61,6 +64,7 @@ function WaveAuthShell({
   brandTitle = 'Rangas DigiGold',
   title,
   subtitle,
+  subtitleStyle,
   onBack,
   step,
   footer,
@@ -151,6 +155,7 @@ function WaveAuthShell({
                     style={[
                       asText(FONTS.micro),
                       { color: COLORS.textOnPrimaryMuted, marginTop: 6, lineHeight: 18 },
+                      subtitleStyle,
                     ]}
                   >
                     {subtitle}

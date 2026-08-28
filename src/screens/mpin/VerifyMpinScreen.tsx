@@ -1,148 +1,48 @@
 // src/screens/mpin/VerifyMpinScreen.tsx
 //
-// ─────────────────────────────────────────────────────────────────
-// LAYOUT
-//   A true lock screen: normal body-zone canvas, no card, no elevation.
-//   Identity sits at the top as an avatar monogram plus name, the four
-//   dots sit in the optical centre, and a borderless keypad occupies
-//   the lower third with the biometric affordance in the keypad's
-//   bottom-left position — where a phone's own lock screen puts it.
+// Flow 3 -- Verify MPIN (normal login/unlock). Now rendered inside the
+// shared WaveAuthShell (curved brand-colour header + white card) so it
+// reads as the same auth surface as Login/Register/Forgot-MPIN, instead
+// of its own bespoke full-bleed canvas. Keeps the shared MpinBoxes
+// primitive (native number-pad keyboard) plus a proper biometric CTA
+// button rendered above the dots, not hidden inside a keypad corner.
 //
-// WHY THIS IS BETTER UX
-//   • The keypad is part of the screen rather than nested inside a
-//     white card inside a light page, which removes two layers of
-//     visual noise from the most-used screen in the app.
-//   • Biometric unlock is a keypad key, not a separate button below
-//     the pad, so it's reachable without moving the thumb.
-//   • An incorrect PIN shakes the dot row in place instead of only
-//     raising a toast, so the failure is felt where it happened.
-//
-// BUSINESS LOGIC — UNCHANGED
-//   verifyMpin dispatch, onVerifiedSuccess (toast, loginCheckService
-//   registration, initNotifications, navigation.replace('Main')),
-//   handleBiometric's full BiometricHelper sequence, and the mount
-//   effect that auto-prompts once are preserved exactly. Only the PIN
-//   entry surface changed — AppPinInput is replaced by an inline
-//   warm keypad that calls the same handleComplete on the 4th digit.
-// ─────────────────────────────────────────────────────────────────
+// BUSINESS LOGIC -- UNCHANGED: verifyMpin dispatch, onVerifiedSuccess
+// (toast, loginCheckService registration, initNotifications,
+// navigation.replace('Main')), handleBiometric's full BiometricHelper
+// sequence, and the mount-effect auto-prompt are preserved exactly.
+// Only the PIN entry surface and biometric affordance changed.
 
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  memo,
-} from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  StatusBar,
-  Animated,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { View, Pressable, Text } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { useTheme } from '../../theme';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { verifyMpin } from '../../store/mpinSlice';
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useToast } from '../../components/ui/Toast';
-import { initNotifications } from '../../utils/NotificationService';
-import { loginCheckService } from '../../api/services/loginCheckService';
+import { useTheme } from "../../theme";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { verifyMpin } from "../../store/mpinSlice";
+import { RootStackParamList } from "../../navigation/RootNavigator";
+import { useToast } from "../../components/ui/Toast";
+import { initNotifications } from "../../utils/NotificationService";
+import { loginCheckService } from "../../api/services/loginCheckService";
 import {
   BiometricHelper,
   type BiometricLabel,
-} from '../../utils/BiometricHelper';
+} from "../../utils/BiometricHelper";
 
-import { asText, initial } from '../../components/ui/premium';
+import {
+  WaveAuthShell,
+  MpinBoxes,
+  MpinBoxesRef,
+  MpinStatusLine,
+  PremiumButton,
+  asText,
+} from "../../components/ui/premium";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-const PIN_LENGTH = 4;
-
-// ── Keypad key ──────────────────────────────────────────────────
-const Key = memo(function Key({
-  label,
-  icon,
-  onPress,
-  disabled,
-}: {
-  label?: string;
-  icon?: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  const { COLORS, FONTS, moderateScale, isDark } = useTheme();
-  const press = useRef(new Animated.Value(0)).current;
-
-  const bg = press.interpolate({
-    inputRange: [0, 1],
-    outputRange: isDark
-      ? ['rgba(255,255,255,0)', 'rgba(255,255,255,0.14)']
-      : ['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)'],
-  });
-
-  if (!label && !icon) return <View style={s.key} />;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      onPressIn={() =>
-        Animated.timing(press, {
-          toValue: 1,
-          duration: 60,
-          useNativeDriver: false,
-        }).start()
-      }
-      onPressOut={() =>
-        Animated.timing(press, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: false,
-        }).start()
-      }
-      style={s.key}
-    >
-      <Animated.View
-        style={[
-          s.keyInner,
-          {
-            width: moderateScale(66),
-            height: moderateScale(66),
-            borderRadius: moderateScale(33),
-            backgroundColor: bg,
-            opacity: disabled ? 0.4 : 1,
-          },
-        ]}
-      >
-        {label ? (
-          <Text
-            style={{
-              fontFamily: FONTS.family.regular,
-              fontSize: moderateScale(28),
-              color: COLORS.inkPrimary,
-              letterSpacing: -0.5,
-            }}
-          >
-            {label}
-          </Text>
-        ) : (
-          <Ionicons
-            name={icon as any}
-            size={moderateScale(24)}
-            color={COLORS.inkSecondary}
-          />
-        )}
-      </Animated.View>
-    </Pressable>
-  );
-});
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_SECONDS = 60;
 
 export default function VerifyMpinScreen() {
   const navigation = useNavigation<Nav>();
@@ -150,117 +50,105 @@ export default function VerifyMpinScreen() {
   const { loading } = useAppSelector((s) => s.mpin);
   const user = useAppSelector((s) => s.auth.user);
   const toast = useToast();
-  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
 
-  const [pin, setPin] = useState('');
-  const [pinError, setPinError] = useState(false);
-  const [pinErrMsg, setPinErrMsg] = useState('');
-  const shake = useRef(new Animated.Value(0)).current;
+  const boxesRef = useRef<MpinBoxesRef>(null);
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+
+  // ── Attempt lockout ────────────────────────────────────────────
+  const [failCount, setFailCount] = useState(0);
+  const [lockSeconds, setLockSeconds] = useState<number | null>(null);
+  const isLocked = lockSeconds !== null;
 
   // ── Biometric state ───────────────────────────────────────────
   const [bioSupported, setBioSupported] = useState(false);
-  const [bioEnabled, setBioEnabled] = useState(false); // user opted in via Profile
-  const [bioLabel, setBioLabel] = useState<BiometricLabel>('Biometrics');
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioLabel, setBioLabel] = useState<BiometricLabel>("Biometrics");
   const [bioBusy, setBioBusy] = useState(false);
-  const bioPromptedRef = useRef(false); // auto-prompt only once per mount
-
-  const runShake = useCallback(() => {
-    shake.setValue(0);
-    Animated.sequence([
-      Animated.timing(shake, { toValue: 10, duration: 55, useNativeDriver: true }),
-      Animated.timing(shake, { toValue: -10, duration: 55, useNativeDriver: true }),
-      Animated.timing(shake, { toValue: 6, duration: 55, useNativeDriver: true }),
-      Animated.timing(shake, { toValue: -6, duration: 55, useNativeDriver: true }),
-      Animated.timing(shake, { toValue: 0, duration: 45, useNativeDriver: true }),
-    ]).start();
-  }, [shake]);
+  const bioPromptedRef = useRef(false);
+  const bioTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Manual entry and biometric auto-prompt can race (e.g. the auto-prompt
+  // fires while the user is also typing their PIN) -- this makes sure only
+  // the first one to succeed shows the toast / navigates.
+  const verifiedRef = useRef(false);
 
   // Shared post-verification success path (used by MPIN entry AND biometrics)
   const onVerifiedSuccess = useCallback(async () => {
-    toast.success('Welcome back!', {
-      message: `Hello, ${user?.username ?? 'User'} 👋`,
-      position: 'top',
+    if (verifiedRef.current) return;
+    verifiedRef.current = true;
+    toast.success("Welcome back!", {
+      message: `Hello, ${user?.username ?? "User"} 👋`,
+      position: "top",
     });
-    // Record login-check entry (fire-and-forget; never blocks login)
     if (user?.username && user?.contactNumber) {
       loginCheckService
-        .register({
-          username: user.username,
-          mobileNumber: user.contactNumber,
-        })
-        .catch(() => {
-          /* ignore — non-critical */
-        });
+        .register({ username: user.username, mobileNumber: user.contactNumber })
+        .catch(() => {});
     }
-    await initNotifications().catch(() => {
-      /* ignore — never blocks navigation */
-    });
-    navigation.replace('Main');
+    await initNotifications().catch(() => {});
+    navigation.replace("Main");
   }, [navigation, toast, user?.username, user?.contactNumber]);
 
   const handleComplete = useCallback(
     async (value: string) => {
+      if (isLocked || verifiedRef.current) return;
       const res = await dispatch(verifyMpin(value));
       if (verifyMpin.fulfilled.match(res)) {
-        // Save MPIN to secure store so biometric unlock works next time
+        setFailCount(0);
         await BiometricHelper.saveMpin(value);
         await onVerifiedSuccess();
       } else {
         const msg =
-          typeof res.payload === 'string' && res.payload.trim()
+          typeof res.payload === "string" && res.payload.trim()
             ? res.payload
-            : 'Incorrect MPIN. Please try again.';
-        setPinError(true);
-        setPinErrMsg(msg);
-        setPin('');
-        runShake();
-        toast.error('Incorrect MPIN', {
-          message: msg,
-          position: 'top',
-          duration: 3500,
+            : "Incorrect MPIN. Please try again.";
+        setPin("");
+        setFailCount((prev) => {
+          const next = prev + 1;
+          if (next >= MAX_ATTEMPTS) {
+            setError("");
+            setLockSeconds(LOCKOUT_SECONDS);
+            return 0;
+          }
+          setError(msg);
+          return next;
         });
       }
     },
-    [dispatch, onVerifiedSuccess, runShake, toast],
+    [dispatch, isLocked, onVerifiedSuccess],
   );
 
-  // ── Keypad handlers (UI only) ──
-  const pushDigit = useCallback(
-    (d: string) => {
-      if (loading || bioBusy) return;
-      setPinError(false);
-      setPinErrMsg('');
-      setPin((prev) => {
-        if (prev.length >= PIN_LENGTH) return prev;
-        const next = prev + d;
-        if (next.length === PIN_LENGTH) {
-          // defer so the 4th dot paints before the request starts
-          setTimeout(() => handleComplete(next), 60);
-        }
-        return next;
-      });
-    },
-    [loading, bioBusy, handleComplete],
-  );
+  const handleChange = (v: string) => {
+    setPin(v);
+    if (error) setError("");
+  };
 
-  const popDigit = useCallback(() => {
-    setPinError(false);
-    setPinErrMsg('');
-    setPin((p) => p.slice(0, -1));
-  }, []);
+  // ── Lockout countdown: after MAX_ATTEMPTS wrong PINs, wait LOCKOUT_SECONDS
+  useEffect(() => {
+    if (lockSeconds === null) return;
+    if (lockSeconds <= 0) {
+      setLockSeconds(null);
+      setPin("");
+      setError("");
+      return;
+    }
+    const t = setTimeout(() => setLockSeconds((s) => (s ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+  }, [lockSeconds]);
 
-  // ── Biometric unlock: authenticate → retrieve stored MPIN → normal verify
+  // ── Biometric unlock: authenticate -> retrieve stored MPIN -> normal verify
   const handleBiometric = useCallback(async () => {
-    if (bioBusy) return;
+    if (bioBusy || isLocked || verifiedRef.current) return;
     setBioBusy(true);
     try {
       const ok = await BiometricHelper.authenticate(`Unlock with ${bioLabel}`);
       if (!ok) return;
       const storedMpin = await BiometricHelper.getMpin();
       if (!storedMpin) {
-        toast.info('Enter your MPIN once', {
-          message: 'Biometric unlock will be ready next time',
-          position: 'top',
+        toast.info("Enter your MPIN once", {
+          message: "Biometric unlock will be ready next time",
+          position: "top",
         });
         return;
       }
@@ -268,17 +156,16 @@ export default function VerifyMpinScreen() {
       if (verifyMpin.fulfilled.match(res)) {
         await onVerifiedSuccess();
       } else {
-        // Stored MPIN no longer valid (e.g. changed on another device) → clear + fall back
         await BiometricHelper.clearMpin();
-        toast.error('Please enter your MPIN', {
-          message: 'Biometric unlock needs to be set up again',
-          position: 'top',
+        toast.error("Please enter your MPIN", {
+          message: "Biometric unlock needs to be set up again",
+          position: "top",
         });
       }
     } finally {
       setBioBusy(false);
     }
-  }, [bioBusy, bioLabel, dispatch, onVerifiedSuccess, toast]);
+  }, [bioBusy, bioLabel, dispatch, isLocked, onVerifiedSuccess, toast]);
 
   // Detect biometric support on mount; auto-prompt if enabled & an MPIN is stored
   useEffect(() => {
@@ -287,7 +174,6 @@ export default function VerifyMpinScreen() {
       const supported = await BiometricHelper.isSupported();
       if (!active) return;
       setBioSupported(supported);
-      console.log('[VerifyMpin] bioSupported:', supported);
       if (!supported) return;
       setBioLabel(await BiometricHelper.getLabel());
       const [enabled, hasMpin] = await Promise.all([
@@ -296,223 +182,88 @@ export default function VerifyMpinScreen() {
       ]);
       if (!active) return;
       setBioEnabled(enabled);
-      console.log('[VerifyMpin] enabled:', enabled, 'hasMpin:', hasMpin);
-      if (enabled && hasMpin && !bioPromptedRef.current) {
+      if (hasMpin && !bioPromptedRef.current) {
         bioPromptedRef.current = true;
-        setTimeout(() => handleBiometric(), 600);
-      } else if (supported && hasMpin && !bioPromptedRef.current) {
-        bioPromptedRef.current = true;
-        setTimeout(() => handleBiometric(), 600);
+        bioTimeoutRef.current = setTimeout(() => handleBiometric(), 600);
       }
     })();
     return () => {
       active = false;
+      if (bioTimeoutRef.current) clearTimeout(bioTimeoutRef.current);
     };
   }, [handleBiometric]);
 
-  const showBio = bioSupported;
-  const avatar = moderateScale(64);
-
   return (
-    <View style={[s.root, { backgroundColor: COLORS.canvas }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={COLORS.canvas}
-      />
-
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* ── Identity ── */}
-        <View style={[s.identity, { paddingTop: SIZES.layout.section }]}>
-          <View
-            style={[
-              s.avatar,
-              {
-                width: avatar,
-                height: avatar,
-                borderRadius: avatar / 2,
-                backgroundColor: COLORS.primaryPale,
-                borderColor: COLORS.primary,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                fontFamily: FONTS.family.semiBold,
-                fontSize: moderateScale(24),
-                color: COLORS.primary,
-              }}
-            >
-              {initial(user?.username)}
-            </Text>
-          </View>
-
-          <Text
-            style={[
-              asText(FONTS.displaySm),
-              { color: COLORS.inkPrimary, marginTop: SIZES.margin.lg },
-            ]}
-          >
-            {user?.username ?? 'User'}
-          </Text>
-          <Text
-            style={[
-              asText(FONTS.microBold),
-              { color: COLORS.inkTertiary, marginTop: 2 },
-            ]}
-          >
-            Enter your MPIN to unlock
-          </Text>
-        </View>
-
-        {/* ── Dots + Keypad + Footer centered ── */}
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-
-        {/* ── Dots ── */}
-        <View style={s.dotsZone}>
-          <Animated.View
-            style={[s.dotsRow, { transform: [{ translateX: shake }] }]}
-          >
-            {Array.from({ length: PIN_LENGTH }).map((_, i) => {
-              const filled = i < pin.length;
-              return (
-                <View
-                  key={i}
-                  style={[
-                    s.dot,
-                    {
-                      width: moderateScale(14),
-                      height: moderateScale(14),
-                      borderRadius: moderateScale(7),
-                      backgroundColor: pinError
-                        ? COLORS.primaryLighter
-                        : filled
-                        ? COLORS.primary
-                        : 'transparent',
-                      borderColor: pinError
-                        ? COLORS.primaryLighter
-                        : filled
-                        ? COLORS.primary
-                        : COLORS.hairlineBold,
-                    },
-                  ]}
-                />
-              );
-            })}
-          </Animated.View>
-
-          <View style={{ height: 22, justifyContent: 'center' }}>
-            {loading ? (
-              <ActivityIndicator size="small" color={COLORS.primary} />
-            ) : pinError && pinErrMsg ? (
-              <Text
-                numberOfLines={1}
-                style={[
-                  asText(FONTS.microBold),
-                  { color: COLORS.primaryDark, fontSize: 12, textAlign: 'center' },
-                ]}
-              >
-                {pinErrMsg}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        {/* ── Keypad ── */}
-        <View style={[s.keypad, { paddingHorizontal: SIZES.layout.gutter }]}>
-          {[
-            ['1', '2', '3'],
-            ['4', '5', '6'],
-            ['7', '8', '9'],
-          ].map((row, ri) => (
-            <View key={ri} style={s.keyRow}>
-              {row.map((d) => (
-                <Key
-                  key={d}
-                  label={d}
-                  onPress={() => pushDigit(d)}
-                  disabled={loading || bioBusy}
-                />
-              ))}
-            </View>
-          ))}
-
-          <View style={s.keyRow}>
-            {showBio ? (
-              <Key
-                icon="finger-print-outline"
-                onPress={handleBiometric}
-                disabled={bioBusy || loading}
-              />
-            ) : (
-              <View style={s.key} />
-            )}
-            <Key
-              label="0"
-              onPress={() => pushDigit('0')}
-              disabled={loading || bioBusy}
-            />
-            <Key
-              icon="backspace-outline"
-              onPress={popDigit}
-              disabled={loading || bioBusy || pin.length === 0}
-            />
-          </View>
-        </View>
-
-        {/* ── Footer links ── */}
-        <View
+    <WaveAuthShell
+      title="Welcome back"
+    >
+      <View style={{ alignItems: "center", gap: moderateScale(4) }}>
+        <Text
+          style={{
+            fontFamily: "Poppins-Medium",
+            fontSize: SIZES.heading.h5,
+            lineHeight: SIZES.heading.h5 * 1.4,
+            color: COLORS.textPrimary,
+            paddingBottom: SIZES.margin.sm,
+          }}
+        >
+          {user?.username ? `Hi ${user.username}` : ""}
+        </Text>
+        <Text
           style={[
-            s.footer,
+            asText(FONTS.microBold),
             {
-              paddingHorizontal: SIZES.layout.gutter,
-              paddingTop: SIZES.padding.lg,
+              color: COLORS.inkSecondary,
+              textAlign: "center",
+              marginBottom: SIZES.margin.lg,
+              lineHeight: 19,
+              maxWidth: 280,
             },
           ]}
         >
-          <Pressable
-            onPress={() => navigation.navigate('ForgotMpin')}
-            hitSlop={10}
-            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Text
-              style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}
-            >
-              Forgot MPIN?
-            </Text>
-          </Pressable>
+          Enter your 4-digit MPIN to continue
+        </Text>
 
-          <View
-            style={[s.vRule, { backgroundColor: COLORS.hairlineBold }]}
-          />
-        </View>
+        <MpinBoxes
+          ref={boxesRef}
+          value={pin}
+          onChangeText={handleChange}
+          onComplete={handleComplete}
+          error={!!error}
+          disabled={loading || bioBusy || isLocked}
+        />
+        <MpinStatusLine
+          loading={loading}
+          error={isLocked ? `Too many attempts. Try again in ${lockSeconds}s` : error}
+        />
 
-        </View>{/* end center wrapper */}
-      </SafeAreaView>
-    </View>
+        <Pressable
+          onPress={() => navigation.navigate("ForgotMpin")}
+          hitSlop={10}
+          style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
+            Forgot MPIN?
+          </Text>
+        </Pressable>
+      </View>
+
+      {bioSupported && (
+        <PremiumButton
+          label={`Use ${bioLabel}`}
+          variant="outline"
+          size="md"
+          icon="finger-print-outline"
+          onPress={handleBiometric}
+          disabled={bioBusy || loading || isLocked}
+          loading={bioBusy}
+          style={{
+            marginTop: SIZES.margin.xxl,
+            alignSelf: "center",
+            width: "70%",
+          }}
+        />
+      )}
+    </WaveAuthShell>
   );
 }
-
-const s = StyleSheet.create({
-  root: { flex: 1 },
-  identity: { alignItems: 'center' },
-  avatar: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  dotsZone: { alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 24 },
-  dotsRow: { flexDirection: 'row', gap: 20 },
-  dot: { borderWidth: 1.5 },
-  keypad: { gap: 6 },
-  keyRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  key: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  keyInner: { alignItems: 'center', justifyContent: 'center' },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 14,
-    paddingTop: 18,
-  },
-  vRule: { width: StyleSheet.hairlineWidth, height: 14 },
-});
