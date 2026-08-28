@@ -62,13 +62,19 @@ export default function ViewInstallmentScreen() {
   const { companies } = useCompanies();
   const company = companies?.[0] ?? null;
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadedId, setDownloadedId] = useState<string | null>(null);
 
   const handleDownload = useCallback(
     async (p: PaymentHistory, id: string) => {
       if (downloadingId) return;
       setDownloadingId(id);
-      await downloadPaymentReceipt({ ppData, payment: p }, company ?? undefined);
+      setDownloadedId(null);
+      const result = await downloadPaymentReceipt({ ppData, payment: p }, company ?? undefined);
       setDownloadingId(null);
+      if (result.success) {
+        setDownloadedId(id);
+        setTimeout(() => setDownloadedId((cur) => (cur === id ? null : cur)), 2200);
+      }
     },
     [downloadingId, ppData, company],
   );
@@ -154,20 +160,24 @@ export default function ViewInstallmentScreen() {
 
   const timelineEntries: TimelineEntry[] = useMemo(
     () =>
-      (ppData.paymentHistoryList ?? []).map((p, i) => ({
-        id: p.receiptNo ?? `receipt-${i}`,
-        title: `Instalment #${p.installment}`,
-        meta: `Receipt ${text(p.receiptNo)}${p.chqBank ? ` · ${p.chqBank}` : ''}`,
-        value: money(toNum(p.amount)),
-        subValue: p.weight ? `${p.weight} g` : undefined,
-        timestamp: p.updateTime ? prettyDate(p.updateTime) : '',
-        tone: 'success' as const,
-        icon: 'checkmark-circle-outline',
-        onPress: () => navigation.navigate('PaymentReceipt', { ppData, payment: p }),
-        onDownload: () => handleDownload(p, p.receiptNo ?? `receipt-${i}`),
-        downloadLoading: downloadingId === (p.receiptNo ?? `receipt-${i}`),
-      })),
-    [ppData, navigation, handleDownload, downloadingId],
+      (ppData.paymentHistoryList ?? []).map((p, i) => {
+        const id = p.receiptNo ?? `receipt-${i}`;
+        return {
+          id,
+          title: `Instalment #${p.installment}`,
+          meta: `Receipt ${text(p.receiptNo)}${p.chqBank ? ` · ${p.chqBank}` : ''}`,
+          value: money(toNum(p.amount)),
+          subValue: p.weight ? `${p.weight} g` : undefined,
+          timestamp: p.updateTime ? prettyDate(p.updateTime) : '',
+          tone: 'success' as const,
+          icon: 'checkmark-circle-outline',
+          onView: () => navigation.navigate('PaymentReceipt', { ppData, payment: p }),
+          onDownload: () => handleDownload(p, id),
+          downloadLoading: downloadingId === id,
+          downloadDone: downloadedId === id,
+        };
+      }),
+    [ppData, navigation, handleDownload, downloadingId, downloadedId],
   );
 
   const visibleEntries = showAllHistory
@@ -279,12 +289,12 @@ export default function ViewInstallmentScreen() {
               <>
                 <View style={[s.hintRow, { marginBottom: SIZES.margin.md }]}>
                   <Ionicons
-                    name="download-outline"
+                    name="information-circle-outline"
                     size={SIZES.icon.sm}
                     color={COLORS.inkTertiary}
                   />
                   <Text style={[s.hintText, { color: COLORS.inkTertiary }]}>
-                    Tap any payment to view, download or share its receipt
+                    Use View to open a receipt, or Download to save it as a PDF
                   </Text>
                 </View>
                 <TimelineCard entries={visibleEntries} />

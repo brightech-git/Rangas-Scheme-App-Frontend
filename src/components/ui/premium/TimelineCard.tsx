@@ -5,7 +5,7 @@
 // amount right-aligned in numerals. Reads as a statement, not a list.
 
 import React, { memo } from 'react';
-import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../../theme';
 import { asText } from './tokens';
@@ -26,9 +26,13 @@ export type TimelineEntry = {
   tone?: TimelineTone;
   icon?: string;
   onPress?: () => void;
+  /** View the full receipt — renders an explicit "eye" action button */
+  onView?: () => void;
   /** Download receipt directly from the timeline row */
   onDownload?: () => void;
   downloadLoading?: boolean;
+  /** Briefly swaps the download icon for a checkmark to confirm success */
+  downloadDone?: boolean;
 };
 
 type Props = {
@@ -152,55 +156,97 @@ function TimelineCard({
                   )}
                 </View>
 
-                <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    {!!e.value && (
-                      <Text
-                        numberOfLines={1}
-                        style={[asText(FONTS.numeralSm), { color: fg }]}
-                      >
-                        {e.value}
-                      </Text>
-                    )}
-                    {!!e.subValue && (
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          asText(FONTS.micro),
-                          { color: accent, fontSize: 10, marginTop: 1 },
-                        ]}
-                      >
-                        {e.subValue}
-                      </Text>
-                    )}
-                  </View>
-                  {!!e.onDownload && (
-                    <Pressable
-                      onPress={e.onDownload}
-                      disabled={e.downloadLoading}
-                      hitSlop={8}
-                      style={{ justifyContent: 'center', opacity: e.downloadLoading ? 0.4 : 1 }}
+                <View style={{ alignItems: 'flex-end' }}>
+                  {!!e.value && (
+                    <Text
+                      numberOfLines={1}
+                      style={[asText(FONTS.numeralSm), { color: fg }]}
                     >
-                      <Ionicons
-                        name={e.downloadLoading ? 'hourglass-outline' : 'download-outline'}
-                        size={SIZES.icon.sm}
-                        color={accent}
-                      />
-                    </Pressable>
+                      {e.value}
+                    </Text>
+                  )}
+                  {!!e.subValue && (
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        asText(FONTS.micro),
+                        { color: accent, fontSize: 10, marginTop: 1 },
+                      ]}
+                    >
+                      {e.subValue}
+                    </Text>
                   )}
                 </View>
               </View>
 
-              {!!e.timestamp && (
-                <Text
-                  style={[
-                    asText(FONTS.micro),
-                    { color: dim, fontSize: 10, marginTop: 4 },
-                  ]}
-                >
-                  {e.timestamp}
-                </Text>
-              )}
+              <View style={s.footerRow}>
+                {!!e.timestamp && (
+                  <Text
+                    style={[
+                      asText(FONTS.micro),
+                      { color: dim, fontSize: 10 },
+                    ]}
+                  >
+                    {e.timestamp}
+                  </Text>
+                )}
+
+                {(!!e.onView || !!e.onDownload) && (
+                  <View style={s.actionsRow}>
+                    {!!e.onView && (
+                      <Pressable
+                        onPress={e.onView}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel="View receipt"
+                        style={({ pressed }: { pressed?: boolean }) => [
+                          s.actionPill,
+                          {
+                            borderColor: border,
+                            backgroundColor: onHero ? COLORS.heroElevated : COLORS.canvasElevated,
+                            opacity: pressed ? 0.6 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons name="eye-outline" size={13} color={fg} />
+                        <Text style={[asText(FONTS.microBold), s.actionLabel, { color: fg }]}>
+                          View
+                        </Text>
+                      </Pressable>
+                    )}
+                    {!!e.onDownload && (
+                      <Pressable
+                        onPress={e.onDownload}
+                        disabled={e.downloadLoading}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel="Download receipt"
+                        style={({ pressed }: { pressed?: boolean }) => [
+                          s.actionPill,
+                          {
+                            borderColor: accent,
+                            backgroundColor: onHero ? COLORS.heroElevated : COLORS.canvasElevated,
+                            opacity: e.downloadLoading ? 0.6 : pressed ? 0.6 : 1,
+                          },
+                        ]}
+                      >
+                        {e.downloadLoading ? (
+                          <ActivityIndicator size="small" color={accent} />
+                        ) : (
+                          <Ionicons
+                            name={e.downloadDone ? 'checkmark-circle' : 'download-outline'}
+                            size={13}
+                            color={accent}
+                          />
+                        )}
+                        <Text style={[asText(FONTS.microBold), s.actionLabel, { color: accent }]}>
+                          {e.downloadLoading ? 'Saving' : e.downloadDone ? 'Saved' : 'Download'}
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
           </RowWrapper>
         );
@@ -219,6 +265,23 @@ const s = StyleSheet.create({
   spine: { flex: 1, width: StyleSheet.hairlineWidth, marginVertical: 4 },
   content: { flex: 1, paddingTop: 3 },
   contentRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  actionsRow: { flexDirection: 'row', gap: 8, marginLeft: 'auto' },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    gap: 4,
+  },
+  actionLabel: { fontSize: 11, letterSpacing: 0.2 },
 });
 
 export default memo(TimelineCard);
