@@ -19,7 +19,6 @@ export { default as SummaryCard } from './SummaryCard';
 export { default as MetricCard } from './MetricCard';
 export { default as WalletCard } from './WalletCard';
 export { default as SchemeCardV2 } from './SchemeCardV2';
-export { default as FeatureCard } from './FeatureCard';
 export { default as AnalyticsCard } from './AnalyticsCard';
 export { default as GoldRateWidget } from './GoldRateWidget';
 export { default as TimelineCard } from './TimelineCard';
@@ -30,18 +29,13 @@ export { default as PremiumButton } from './PremiumButton';
 export { default as GoldArrowButton } from './GoldArrowButton';
 export { default as FormField } from './FormField';
 export { default as PillField } from './PillField';
-export { default as PinPad } from './PinPad';
-export { default as MpinDots } from './MpinDots';
 export { default as MpinBoxes } from './MpinBoxes';
-export { default as MpinHeader } from './MpinHeader';
 export { default as MpinStatusLine } from './MpinStatusLine';
 export { default as MpinSecurityHint } from './MpinSecurityHint';
 export { default as MpinSuccessState } from './MpinSuccessState';
-export { default as MpinRecoveryCard } from './MpinRecoveryCard';
 export { default as PaymentTile } from './PaymentTile';
 export { default as StatusChip } from './StatusChip';
 export { default as ProgressWidget } from './ProgressWidget';
-export { default as FloatingWidget } from './FloatingWidget';
 export { default as Sparkline } from './Sparkline';
 
 // ── States ─────────────────────────────────────────────────────
@@ -80,7 +74,6 @@ export type { TimelineEntry, TimelineTone } from './TimelineCard';
 export type { ChipTone, ChipSurface } from './StatusChip';
 export type { RangeOption } from './AnalyticsCard';
 export type { PageHeaderAction } from './PageHeader';
-export type { MpinDotsRef } from './MpinDots';
 export type { MpinBoxesRef } from './MpinBoxes';
 export type {
   PremiumButtonVariant,
