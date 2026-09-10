@@ -15,13 +15,6 @@ export const useSchemeSliders = () => {
     schemeSliderService
       .getSliders()
       .then((res) => {
-        res.sliders.forEach((slider) =>
-          console.log(
-            '[Scheme Slider URL]',
-            getImageUrl(slider.image_path),
-          ),
-        );
-
         setSliders(res.sliders);
       })
       .catch((err) => setError(err.message))

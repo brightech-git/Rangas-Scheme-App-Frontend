@@ -40,7 +40,6 @@ export const verifyMpin = createAsyncThunk(
   async (enteredMpin: string, { rejectWithValue }: any) => {
     try {
     const res= await mpinService.verify(enteredMpin);
-    console.log("DataFromMpin",res,"DataFromMpinEnd")
       await BiometricHelper.saveMpin(enteredMpin); // refresh secure copy on each successful verify
       return res
 

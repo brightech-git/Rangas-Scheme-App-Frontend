@@ -43,7 +43,6 @@ export function registerForegroundHandlers(navigationRef: NavRef) {
   const messaging = getMessaging();
 
   const unsubscribeFCM = onMessage(messaging, async (remoteMessage) => {
-    console.log('[FCM] Foreground message received:', JSON.stringify(remoteMessage));
     const { notification, data } = remoteMessage;
     if (notification) {
       await displayNotification(

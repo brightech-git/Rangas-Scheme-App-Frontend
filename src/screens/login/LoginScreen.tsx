@@ -212,43 +212,13 @@ export default function LoginScreen() {
     try {
       setGoogleLoading(true);
 
-      // Step 1: Check Play Services
-      console.log(
-        '[Google Login] Step 1: Checking Play Services...',
-      );
-
       await GoogleSignin.hasPlayServices();
-
-      console.log(
-        '[Google Login] Step 1: Play Services OK',
-      );
-
-      // Step 2: Google Sign-In popup
-      console.log(
-        '[Google Login] Step 2: Opening Google Sign-In...',
-      );
 
       const userInfo = await GoogleSignin.signIn();
 
-      console.log(
-        '[Google Login] Step 2: Google userInfo received:',
-        JSON.stringify(userInfo, null, 2),
-      );
-
       const idToken = userInfo.data?.idToken;
 
-      console.log(
-        '[Google Login] Step 3: idToken:',
-        idToken
-          ? `${idToken.substring(0, 30)}...`
-          : 'NULL - NO TOKEN',
-      );
-
       if (!idToken) {
-        console.error(
-          '[Google Login] ERROR: No idToken in userInfo.data',
-        );
-
         toast.error('Google Sign-In Failed', {
           message: 'No ID token received',
         });
@@ -256,42 +226,18 @@ export default function LoginScreen() {
         return;
       }
 
-      // Step 4: Send idToken to backend
-      console.log(
-        '[Google Login] Step 4: Sending idToken to backend POST /google-login...',
-      );
-
       const res = await dispatch(
         googleLogin({
           idToken,
         }),
       );
 
-      console.log(
-        '[Google Login] Step 4: Backend response action:',
-        res.type,
-      );
-
-      console.log(
-        '[Google Login] Step 4: Backend response payload:',
-        JSON.stringify(res.payload, null, 2),
-      );
-
       if (googleLogin.fulfilled.match(res)) {
         const user = res.payload;
-
-        console.log(
-          '[Google Login] Step 5: Login SUCCESS. User:',
-          JSON.stringify(user, null, 2),
-        );
 
         await AsyncStorageHelper.saveUserSession(user);
 
         if (!user.contactNumber && user.id) {
-          console.log(
-            '[Google Login] Step 6: No contactNumber found → navigating to GoogleContactUpdate',
-          );
-
           toast.info('One more step!', {
             message: 'Please add your mobile number',
           });
@@ -301,10 +247,6 @@ export default function LoginScreen() {
             picture: user.picture,
           });
         } else {
-          console.log(
-            '[Google Login] Step 6: contactNumber exists → checking MPIN...',
-          );
-
           toast.success('Welcome back!', {
             message: `Signed in as ${
               user.username ?? user.email
@@ -314,11 +256,6 @@ export default function LoginScreen() {
           const mpinSet =
             await AsyncStorageHelper.isMpinSet();
 
-          console.log(
-            '[Google Login] Step 6: mpinSet =',
-            mpinSet,
-          );
-
           navigation.replace(
             mpinSet
               ? 'MpinLogin'
@@ -326,39 +263,15 @@ export default function LoginScreen() {
           );
         }
       } else {
-        console.error(
-          '[Google Login] Step 5: Backend REJECTED. Error:',
-          res.payload,
-        );
-
         toast.error('Google Sign-In Failed', {
           message: res.payload as string,
         });
       }
     } catch (error: any) {
-      console.error(
-        '[Google Login] CATCH ERROR:',
-        error,
-      );
-
-      console.error(
-        '[Google Login] Error code:',
-        error.code,
-      );
-
-      console.error(
-        '[Google Login] Error message:',
-        error.message,
-      );
-
       if (
         error.code ===
         statusCodes.SIGN_IN_CANCELLED
       ) {
-        console.log(
-          '[Google Login] User cancelled sign-in',
-        );
-
         return;
       }
 
@@ -366,10 +279,6 @@ export default function LoginScreen() {
         error.code ===
         statusCodes.IN_PROGRESS
       ) {
-        console.log(
-          '[Google Login] Sign-in already in progress',
-        );
-
         return;
       }
 

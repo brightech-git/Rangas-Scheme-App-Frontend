@@ -31,11 +31,9 @@ export function useUserProfile() {
     setError(null);
     try {
       const updated = await userProfileService.updateUser(userId, data);
-      console.log('Updated user:', updated);
       setUser(prev => ({ ...prev, ...updated }));
       return updated;
     } catch (e: any) {
-      console.error('Error updating profile:', e);
       const msg = e?.response?.data?.message ?? e?.message ?? 'Failed to update profile';
       setError(msg);
       throw e;

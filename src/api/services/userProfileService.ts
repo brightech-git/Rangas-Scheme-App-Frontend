@@ -24,7 +24,6 @@ const getUser = async (userId: number): Promise<UserData> => {
 };
 
 const updateUser = async (userId: number, data: UpdateProfileRequest): Promise<UserData> => {
-  console.log('[updateUser] Updating user with data:', data, 'to endpoint:', USER_PROFILE.UPDATE(userId));
   const res = await axiosInstance.patch(USER_PROFILE.UPDATE(userId), data);
   return res.data;
 };
@@ -37,11 +36,9 @@ const updatePhoto = async (userId: string, photoFile: {
   const formData = new FormData();
   formData.append('photo', photoFile as any);
   const url = USER_PROFILE.UPDATE_PHOTO(userId);
-  console.log('[updatePhoto] URL:', url);
   const res = await axiosInstance.put(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  console.log('[updatePhoto] API response:', JSON.stringify(res.data));
   return res.data?.photoPath ?? res.data?.photo ?? res.data?.url ?? res.data?.picture ?? res.data;
 };
 

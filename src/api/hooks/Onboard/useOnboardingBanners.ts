@@ -14,7 +14,6 @@ export const useOnboardingBanners = () => {
     onboardingService
       .getBanners()
       .then((res) => {
-        res.banners.forEach((b) => console.log('[Onboarding Banner URL]', getImageUrl(b.image_path)));
         setBanners(res.banners);
       })
       .catch((err) => setError(err.message))

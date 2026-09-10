@@ -20,12 +20,8 @@ const isSupported = async (): Promise<boolean> => {
       LocalAuthentication.hasHardwareAsync(),
       LocalAuthentication.isEnrolledAsync(),
     ]);
-    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    const level = await LocalAuthentication.getEnrolledLevelAsync();
-    console.log('[Biometric] hasHardware:', hasHardware, 'enrolled:', enrolled, 'types:', types, 'level:', level);
     return hasHardware && enrolled;
   } catch (e) {
-    console.log('[Biometric] isSupported error:', e);
     return false;
   }
 };
@@ -34,11 +30,9 @@ const isSupported = async (): Promise<boolean> => {
 const getLabel = async (): Promise<BiometricLabel> => {
   try {
     const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    console.log('[Biometric] supported types:', types);
     if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) return 'Fingerprint';
     return 'Biometrics';
   } catch (e) {
-    console.log('[Biometric] getLabel error:', e);
     return 'Biometrics';
   }
 };
@@ -52,10 +46,8 @@ const authenticate = async (promptMessage: string): Promise<boolean> => {
       disableDeviceFallback: true,
       requireConfirmation: false,
     });
-    console.log('[Biometric] authenticate result:', res);
     return res.success === true;
   } catch (e) {
-    console.log('[Biometric] authenticate error:', e);
     return false;
   }
 };

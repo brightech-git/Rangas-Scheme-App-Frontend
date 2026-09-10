@@ -41,15 +41,7 @@ export function usePayment(): UsePaymentReturn {
       setStatus('initiating');
       setError(null);
 
-      console.log('=== POST /api/v1/payments/initiate REQUEST ===');
-      console.log(JSON.stringify(body, null, 2));
-      console.log('=============================================');
-
       const res = await paymentService.initiate(body);
-
-      console.log('=== POST /api/v1/payments/initiate RESPONSE ===');
-      console.log(JSON.stringify(res, null, 2));
-      console.log('===============================================');
 
       setInitiateData(res);
       setStatus('pending');
@@ -64,13 +56,7 @@ export function usePayment(): UsePaymentReturn {
 
   const checkStatus = async (orderId: string) => {
     try {
-      console.log(`=== GET /api/v1/payments/status/${orderId} REQUEST ===`);
-
       const res = await paymentService.getStatus(orderId);
-
-      console.log(`=== GET /api/v1/payments/status/${orderId} RESPONSE ===`);
-      console.log(JSON.stringify(res, null, 2));
-      console.log('======================================================');
 
       setStatusData(res);
 

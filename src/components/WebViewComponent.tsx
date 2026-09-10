@@ -24,11 +24,9 @@ export default function WebViewComponent() {
 
   const handleNavigationChange = (navState: { url: string }) => {
     const url = navState.url ?? '';
-    console.log('=== WebView URL change ===', url);
 
     if (url.includes('/api/v1/payments/callback') && !didGoBack.current) {
       didGoBack.current = true;
-      console.log('=== CCAvenue callback detected, navigating back ===');
       navigation.goBack();
     }
   };

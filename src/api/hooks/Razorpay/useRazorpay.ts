@@ -122,11 +122,6 @@ export function useRazorpay(): UseRazorpayReturn {
         razorpay_signature:  paymentData.razorpay_signature,
       };
 
-      // ── Log outgoing verify-payment body ──────────────────────
-      console.log('=== /verify-payment REQUEST BODY ===');
-      console.log(JSON.stringify(verifyPayload, null, 2));
-      console.log('====================================');
-
       const verifyRes = await razorpayService.verifyPayment(verifyPayload);
 
       setVerifyData(verifyRes.data ?? null);
