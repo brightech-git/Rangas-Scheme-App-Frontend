@@ -22,6 +22,7 @@ import {
   StatusChip,
   BottomActionBar,
   EmptyState,
+  asText,
   money,
   prettyDate,
   type SummaryRow,
@@ -32,6 +33,9 @@ type RouteProps = RouteProp<RootStackParamList, 'ViewInstallment'>;
 type NavProps = NativeStackNavigationProp<RootStackParamList, 'ViewInstallment'>;
 
 type TabKey = 'overview' | 'details' | 'history';
+
+/** DigiGold — bought in multiple ad-hoc payments, not a fixed instalment count. */
+const DIGI_GOLD_SCHEME_ID = 6;
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -56,7 +60,7 @@ const text = (value: unknown, suffix = ''): string => {
 };
 
 export default function ViewInstallmentScreen() {
-  const { COLORS, SIZES } = useTheme();
+  const { COLORS, FONTS, SIZES } = useTheme();
   const navigation = useNavigation<NavProps>();
   const { ppData } = useRoute<RouteProps>().params;
   const { companies } = useCompanies();
@@ -84,10 +88,11 @@ export default function ViewInstallmentScreen() {
 
   const scheme = ppData.schemeSummary;
   const paid = toNum(scheme?.schemaSummaryTransBalance?.insPaid);
-  const total = toNum(scheme?.instalment);
+  const isMultiPay = Number(scheme?.schemeId) === DIGI_GOLD_SCHEME_ID;
+  const total = isMultiPay ? 0 : toNum(scheme?.instalment);
   const mx = schemeMetrics(ppData);
 
-  const canPay = !mx.closed && (mx.remaining > 0 || (total > 0 && paid < total));
+  const canPay = !mx.closed && (isMultiPay || mx.remaining > 0 || (total > 0 && paid < total));
   const hasGold = scheme?.weightLedger === 'Y';
 
   const status = useMemo(() => {
@@ -109,7 +114,9 @@ export default function ViewInstallmentScreen() {
 
   const moneyRows: SummaryRow[] = useMemo(() => {
     const rows: SummaryRow[] = [
-      { label: 'Instalments paid', value: `${paid} of ${total || '—'}` },
+      ...(isMultiPay
+        ? []
+        : [{ label: 'Instalments paid', value: `${paid} of ${total || '—'}` }]),
       { label: 'Per instalment', value: money(mx.perInstalment) },
       { label: 'Amount received', value: money(mx.invested) },
       {
@@ -122,7 +129,7 @@ export default function ViewInstallmentScreen() {
       rows.push({ label: 'Total commitment', value: money(mx.committed) });
     }
     return rows;
-  }, [paid, total, mx]);
+  }, [paid, total, mx, isMultiPay]);
 
   /* ---------------- Details ---------------- */
 
@@ -201,21 +208,38 @@ export default function ViewInstallmentScreen() {
               <StatusChip label={status.label} tone={status.tone} surface="hero" dot />
             </View>
 
-            {total > 0 && (
-              <ProgressWidget
-                surface="hero"
-                paid={paid}
-                total={total}
-                label="Scheme progress"
-                note={
-                  ppData.nextDueDate
-                    ? `Next due ${prettyDate(ppData.nextDueDate)}`
-                    : ppData.lastPaidDate
-                      ? `Last paid ${prettyDate(ppData.lastPaidDate)}`
-                      : undefined
-                }
-                style={{ marginTop: SIZES.margin.lg }}
-              />
+            {isMultiPay ? (
+              <View style={{ marginTop: SIZES.margin.lg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>Gold held</Text>
+                  <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, fontSize: 10 }]}>
+                    Flexible · buy anytime
+                  </Text>
+                </View>
+                <Text style={[asText(FONTS.numeral), { color: COLORS.heroAccent, marginTop: 4 }]}>
+                  {mx.weight > 0 ? `${mx.weight.toFixed(4)} g` : '0.0000 g'}
+                </Text>
+                <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 2, fontSize: 10 }]}>
+                  {ppData.lastPaidDate ? `Last bought ${prettyDate(ppData.lastPaidDate)}` : 'No purchases yet'}
+                </Text>
+              </View>
+            ) : (
+              total > 0 && (
+                <ProgressWidget
+                  surface="hero"
+                  paid={paid}
+                  total={total}
+                  label="Scheme progress"
+                  note={
+                    ppData.nextDueDate
+                      ? `Next due ${prettyDate(ppData.nextDueDate)}`
+                      : ppData.lastPaidDate
+                        ? `Last paid ${prettyDate(ppData.lastPaidDate)}`
+                        : undefined
+                  }
+                  style={{ marginTop: SIZES.margin.lg }}
+                />
+              )
             )}
           </PageHeader>
         }

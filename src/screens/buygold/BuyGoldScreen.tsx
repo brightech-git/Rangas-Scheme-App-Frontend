@@ -1,33 +1,4 @@
-// src/screens/buygold/BuyGoldScreen.tsx
-//
-// ─────────────────────────────────────────────────────────────────
-// LAYOUT
-//   A calculator, so the input IS the hero. The amount field sits in
-//   the dark zone at display size with the live rate directly beneath
-//   it, and the converted figure updates in place. Presets are a
-//   hairline lattice on paper; the commit control is a pinned
-//   BottomActionBar that always shows what is being bought.
-//
-// WHY THIS IS BETTER UX
-//   • Typing and its result are adjacent and both above the fold —
-//     previously the conversion summary sat below the presets and
-//     could be pushed off-screen by the keyboard.
-//   • The pinned bar means the buy action is reachable with the
-//     keyboard open, which the old flex-spacer layout could not do.
-//   • Amount/weight switching preserves the equivalent value instead
-//     of resetting to a default, so the member doesn't lose their
-//     place.
-//
-// REUSED (unchanged business logic)
-//   ratesService.getRates, useToast, navigation target Main>Scheme.
-//   The "instant buy coming soon" guard is preserved verbatim.
-//
-// NEW UI COMPONENTS
-//   ScreenCanvas, PageHeader, BottomActionBar, SummaryCard,
-//   PaymentTile, SectionHeading, SkeletonBlock
-// ─────────────────────────────────────────────────────────────────
-
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -36,16 +7,24 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ScrollView,
+  FlatList,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
 import { useToast } from '../../components/ui/Toast';
+import { usePayment } from '../../api/hooks/Payment/usePayment';
+import { useMemberScheme } from '../../api/hooks/Member/useMemberScheme';
+import { useAppSelector } from '../../store/hooks';
+import { InitiatePaymentRequest } from '../../types/Payment/Payment';
 
 import {
   ScreenCanvas,
@@ -54,104 +33,407 @@ import {
   SummaryCard,
   SectionHeading,
   SkeletonBlock,
+  FormField,
+  PremiumButton,
+  StatusChip,
   asText,
   money,
   type SummaryRow,
 } from '../../components/ui/premium';
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
-type Mode = 'amount' | 'weight';
+type Nav   = NativeStackNavigationProp<RootStackParamList>;
+type Route = RouteProp<RootStackParamList, 'BuyGold'>;
+type Mode  = 'amount' | 'weight';
+
+type PostOffice = {
+  Name: string;
+  Block: string;
+  District: string;
+  State: string;
+};
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
+const DIGI_GOLD_SCHEME_ID = 6;
+
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+function calcAge(day: number, month: number, year: number): number {
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  if (
+    today.getMonth() + 1 < month ||
+    (today.getMonth() + 1 === month && today.getDate() < day)
+  )
+    age--;
+  return age;
+}
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
+const GENDER_ICONS: Record<string, string> = {
+  Male: 'male-outline',
+  Female: 'female-outline',
+  Other: 'people-outline',
+};
 
 export default function BuyGoldScreen() {
   const navigation = useNavigation<Nav>();
+  const route      = useRoute<Route>();
+  const scheme     = route.params?.scheme;
+
   const toast = useToast();
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const user = useAppSelector((s) => s.auth.user);
 
-  const [rates, setRates] = useState<RatesResponse | null>(null);
+  // ── Rates ──
+  const [rates,   setRates]   = useState<RatesResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<Mode>('amount');
-  const [input, setInput] = useState('1000');
+  const [mode,    setMode]    = useState<Mode>('amount');
+  const [input,   setInput]   = useState('1000');
 
-  // ── Data (identical call to before) ──
   const load = useCallback(() => {
     setLoading(true);
-    ratesService
-      .getRates()
-      .then(setRates)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    ratesService.getRates().then(setRates).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  const goldRate = rates?.gold?.currentRate ?? 0; // ₹ per gram (916)
+  const goldRate = rates?.gold?.currentRate ?? 0;
 
   const { amount, weight } = useMemo(() => {
     const val = parseFloat(input.replace(/[^0-9.]/g, '')) || 0;
-    if (mode === 'amount') {
-      return { amount: val, weight: goldRate > 0 ? val / goldRate : 0 };
-    }
+    if (mode === 'amount') return { amount: val, weight: goldRate > 0 ? val / goldRate : 0 };
     return { amount: val * goldRate, weight: val };
   }, [input, mode, goldRate]);
 
-  // Switching mode carries the equivalent value across
-  const switchMode = useCallback(
-    (m: Mode) => {
-      if (m === mode) return;
-      if (m === 'weight') setInput(weight > 0 ? weight.toFixed(4) : '1');
-      else setInput(amount > 0 ? String(Math.round(amount)) : '1000');
-      setMode(m);
-    },
-    [mode, amount, weight],
-  );
+  const switchMode = useCallback((m: Mode) => {
+    if (m === mode) return;
+    if (m === 'weight') setInput(weight > 0 ? weight.toFixed(4) : '1');
+    else setInput(amount > 0 ? String(Math.round(amount)) : '1000');
+    setMode(m);
+  }, [mode, amount, weight]);
 
-  // ── Preserved business guard ──
-  const onBuy = useCallback(() => {
-    if (amount <= 0) {
-      toast.info('Enter an amount', {
-        message: 'Please enter how much gold to buy.',
-      });
+  // ── Member groups (for groupCode / regNo) ──
+  const { groups } = useMemberScheme(DIGI_GOLD_SCHEME_ID);
+
+  // ── Payment ──
+  const { status, initiateData, error, initiate, checkStatus, reset } = usePayment();
+  const isProcessing = status === 'initiating';
+  const showFailed   = status === 'failed';
+
+  // ── Customer info (auto-filled from user profile) ──
+  const [name,       setName]       = useState('');
+  const [mobile,     setMobile]     = useState('');
+  const [email,      setEmail]      = useState('');
+  const [doorStreet, setDoorStreet] = useState('');
+  const [area,       setArea]       = useState('');
+  const [city,       setCity]       = useState('');
+  const [district,   setDistrict]   = useState('');
+  const [stateVal,   setStateVal]   = useState('');
+  const [pincode,    setPincode]    = useState('');
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearErr = (key: string) =>
+    setFieldErrors((p) => { const n = { ...p }; delete n[key]; return n; });
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.username    && !name)       setName(user.username);
+    if (user.contactNumber && !mobile)   setMobile(user.contactNumber);
+    if (user.email       && !email)      setEmail(user.email);
+    if (user.address1    && !doorStreet) setDoorStreet(user.address1);
+    if (user.city        && !city)       setCity(user.city);
+    if (user.state       && !stateVal)   setStateVal(user.state);
+    if (user.pincode     && !pincode)    setPincode(user.pincode);
+  }, [user]);
+
+  // ── Pincode → auto-fill area / city / district / state ──
+  const [pincodeOptions, setPincodeOptions] = useState<PostOffice[]>([]);
+  const [showPincodeModal, setShowPincodeModal] = useState(false);
+
+  const fetchPincode = async (pin: string) => {
+    if (pin.length !== 6) {
+      setArea('');
+      setCity('');
+      setDistrict('');
+      setStateVal('');
+      setPincodeOptions([]);
       return;
     }
-    // Instant digital-gold purchase is not yet available — guide the user to the
-    // supported savings path (schemes) rather than take a payment we can't fulfil.
-    toast.info('Instant buy coming soon', {
-      message: 'Meanwhile, you can start a gold savings scheme.',
-      duration: 3500,
-    });
-    (navigation as any).navigate('Main', { screen: 'Scheme' });
-  }, [amount, toast, navigation]);
+    try {
+      setPincodeLoading(true);
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const json = await res.json();
+      const po = json?.[0];
+      if (po?.Status === 'Success' && po.PostOffice?.length > 0) {
+        const offices = po.PostOffice as PostOffice[];
+        if (offices.length === 1) {
+          setArea(offices[0].Name ?? '');
+          setCity(offices[0].Block ?? '');
+          setDistrict(offices[0].District ?? '');
+          setStateVal(offices[0].State ?? '');
+        } else {
+          setPincodeOptions(offices);
+          setShowPincodeModal(true);
+          setDistrict(offices[0].District ?? '');
+          setStateVal(offices[0].State ?? '');
+        }
+        clearErr('pincode');
+      } else {
+        setFieldErrors((p) => ({
+          ...p,
+          pincode: 'Invalid pincode — no results found',
+        }));
+      }
+    } catch {
+      setFieldErrors((p) => ({ ...p, pincode: 'Could not fetch pincode data' }));
+    } finally {
+      setPincodeLoading(false);
+    }
+  };
 
-  const breakdown: SummaryRow[] = useMemo(
-    () => [
-      { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
-      {
-        label: mode === 'amount' ? 'Amount entered' : 'Weight entered',
-        value:
-          mode === 'amount'
-            ? money(amount)
-            : `${weight.toFixed(4)} g`,
-      },
-      {
-        label: mode === 'amount' ? 'Gold received' : 'Amount payable',
-        value:
-          mode === 'amount' ? `${weight.toFixed(4)} g` : money(amount),
-        highlight: true,
-      },
-      { label: 'Total payable', value: money(Math.round(amount)), total: true },
-    ],
-    [goldRate, mode, amount, weight],
+  const addressRows: SummaryRow[] = useMemo(() => {
+    const rows: SummaryRow[] = [];
+    if (area) rows.push({ label: 'Area', value: area });
+    if (city) rows.push({ label: 'City', value: city });
+    if (district) rows.push({ label: 'District', value: district });
+    if (stateVal) rows.push({ label: 'State', value: stateVal });
+    return rows;
+  }, [area, city, district, stateVal]);
+
+  // ── KYC details ──
+  const [aadhaar, setAadhaar] = useState('');
+  const [pan,     setPan]     = useState('');
+  const [gender,  setGender]  = useState('');
+
+  const today = new Date();
+  const [dobDay,   setDobDay]   = useState(today.getDate());
+  const [dobMonth, setDobMonth] = useState(today.getMonth() + 1);
+  const [dobYear,  setDobYear]  = useState(today.getFullYear() - 25);
+  const [dobSet,   setDobSet]   = useState(false);
+  const [showDob,  setShowDob]  = useState(false);
+  const [tempDob,  setTempDob]  = useState<Date>(
+    new Date(today.getFullYear() - 25, 0, 1),
   );
 
+  const dobLabel = dobSet
+    ? `${String(dobDay).padStart(2, '0')} ${MONTHS[dobMonth - 1]} ${dobYear}`
+    : '';
+  const dobAge = dobSet ? calcAge(dobDay, dobMonth, dobYear) : 0;
+
+  const dobMax = new Date();
+  dobMax.setFullYear(dobMax.getFullYear() - 18);
+  const dobMin = new Date();
+  dobMin.setFullYear(dobMin.getFullYear() - 100);
+
+  const applyDob = (d: Date) => {
+    setDobDay(d.getDate());
+    setDobMonth(d.getMonth() + 1);
+    setDobYear(d.getFullYear());
+    setDobSet(true);
+  };
+
+  const openDobPicker = () => {
+    setTempDob(dobSet ? new Date(dobYear, dobMonth - 1, dobDay) : dobMax);
+    setShowDob(true);
+  };
+
+  const onDobChange = (event: any, selected?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDob(false);
+      if (event?.type === 'set' && selected) applyDob(selected);
+    } else if (selected) {
+      setTempDob(selected);
+    }
+  };
+
+  // ── Nominee ──
+  const [nominee,   setNominee]   = useState('');
+  const [nomRel,    setNomRel]    = useState('');
+  const [nomMobile, setNomMobile] = useState('');
+
+  // ── Auto-populate KYC from logged-in user profile ──
+  useEffect(() => {
+    if (!user) return;
+    if (user.gender && !gender) setGender(user.gender);
+    if (user.dateOfBirth && !dobSet) {
+      try {
+        const d = new Date(user.dateOfBirth);
+        if (!isNaN(d.getTime())) {
+          setDobDay(d.getDate());
+          setDobMonth(d.getMonth() + 1);
+          setDobYear(d.getFullYear());
+          setDobSet(true);
+        }
+      } catch {}
+    }
+  }, [user]);
+
+  const isValidMobile = (v: string) => /^[6-9]\d{9}$/.test(v.trim());
+  const isValidEmail  = (v: string) => v.includes('@') && v.includes('.');
+  const isValidAadhaar = (v: string) => /^\d{12}$/.test(v.trim());
+  const isValidPAN = (v: string) =>
+    v === '' || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.trim().toUpperCase());
+
+  const isCustomerValid =
+    name.trim().length > 1 &&
+    isValidMobile(mobile) &&
+    isValidEmail(email) &&
+    isValidAadhaar(aadhaar) &&
+    isValidPAN(pan) &&
+    dobSet && dobAge >= 18 &&
+    gender !== '' &&
+    doorStreet.trim().length > 3 &&
+    pincode.trim().length === 6 &&
+    nominee.trim().length > 1 &&
+    (nomMobile === '' || isValidMobile(nomMobile));
+
+  const isReady = amount > 0 && isCustomerValid;
+
+  // ── Payload ──
+  const buildPayload = (): InitiatePaymentRequest => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dt  = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const dobFormatted = dobSet ? `${dobYear}-${pad(dobMonth)}-${pad(dobDay)}` : '';
+    const titleMap: Record<string, string> = { Male: 'Mr', Female: 'Mrs', Other: 'Mx' };
+    const group   = groups[0] ?? null;
+    const groupCode = group?.GROUPCODE ?? '';
+    const regNo     = group ? (group.REGNO ?? group.CURRENTREGNO ?? 1) : 1;
+    const finalAmount = Math.round(amount);
+
+    return {
+      amount:         finalAmount,
+      currency:       'INR',
+      billingName:    name.trim(),
+      billingEmail:   email.trim(),
+      billingTel:     mobile.trim(),
+      billingAddress: doorStreet.trim(),
+      billingCity:    city.trim(),
+      billingState:   stateVal.trim(),
+      billingZip:     pincode.trim(),
+      billingCountry: 'India',
+      regno:          Number(regNo),
+      groupcode:      groupCode,
+      newJoin:        true,
+      schemeDetails:  null,
+      nmData: {
+        newMember: {
+          title:       titleMap[gender] || 'Mr',
+          initial:     (name.trim()[0] || 'K').toUpperCase(),
+          pName:       name.trim() || 'NA',
+          sName:       'NA',
+          doorNo:      doorStreet.trim(),
+          address1:    doorStreet.trim(),
+          address2:    district.trim(),
+          area:        area.trim(),
+          city:        city.trim(),
+          state:       stateVal.trim() || 'Tamil Nadu',
+          country:     'India',
+          pinCode:     pincode.trim(),
+          mobile:      mobile.trim(),
+          idProof:     'Aadhaar',
+          idProofNo:   aadhaar.trim(),
+          panNumber:   pan.trim().toUpperCase(),
+          dob:         dobFormatted,
+          email:       email.trim(),
+          upDateTime:  dt,
+          userId:      '9999',
+          appVer:      'APP',
+        },
+        createSchemeSummary: {
+          schemeId:    DIGI_GOLD_SCHEME_ID,
+          groupCode:   groupCode,
+          regNo:       Number(regNo),
+          joinDate:    dt,
+          upDateTime2: dt,
+          openingDate: dt,
+          userId2:     '9999',
+        },
+        schemeCollectInsert: {
+          amount:  finalAmount,
+          modePay: 'O',
+          accCode: '',
+        },
+      },
+    };
+  };
+
+  const handleBuy = () => {
+    const fe: Record<string, string> = {};
+    if (name.trim().length <= 1)    fe.name       = 'Enter your full name';
+    if (!isValidMobile(mobile))     fe.mobile     = 'Enter a valid 10-digit mobile number';
+    if (!isValidEmail(email))       fe.email      = 'Enter a valid email address';
+    if (!isValidAadhaar(aadhaar))   fe.aadhaar    = 'Aadhaar must be exactly 12 digits';
+    if (!isValidPAN(pan))           fe.pan        = 'Invalid PAN format (e.g. ABCDE1234F)';
+    if (!dobSet || dobAge < 18)     fe.dob        = 'Must be 18 years or older';
+    if (gender === '')              fe.gender     = 'Select gender';
+    if (doorStreet.trim().length <= 3) fe.doorStreet = 'Enter your address';
+    if (pincode.trim().length !== 6)   fe.pincode    = 'Enter a valid 6-digit pincode';
+    if (nominee.trim().length <= 1) fe.nominee    = 'Enter nominee name';
+    if (nomMobile && !isValidMobile(nomMobile)) fe.nomMobile = 'Enter a valid 10-digit mobile';
+    if (amount <= 0) {
+      toast.info('Enter an amount', { message: 'Please enter how much gold to buy.' });
+      return;
+    }
+    setFieldErrors(fe);
+    if (Object.keys(fe).length > 0) {
+      toast.error('Please check the form', { position: 'top', duration: 3000 });
+      return;
+    }
+    const payload = buildPayload();
+    console.log('[BuyGold] Initiate payload:', JSON.stringify(payload, null, 2));
+    initiate(payload, (url) => {
+      navigation.navigate('WebView', { url, title: 'Payment' });
+    });
+  };
+
+  // ── Poll status on return from WebView ──
+  const statusRef    = useRef(status);
+  const initiateRef  = useRef(initiateData);
+  statusRef.current  = status;
+  initiateRef.current = initiateData;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
+        console.log('[BuyGold] Order status check:', { orderId: initiateRef.current.orderId });
+        checkStatus(initiateRef.current.orderId);
+      }
+    }, [])
+  );
+
+  useEffect(() => {
+    if (status !== 'success') return;
+    toast.success('Purchase successful 🎉', {
+      message:  `${weight.toFixed(4)} g of DigiGold purchased.`,
+      position: 'top',
+      duration: 4000,
+    });
+    reset();
+    (navigation as any).navigate('Main', { screen: 'Scheme' });
+  }, [status]);
+
+  // ── Breakdown rows ──
+  const breakdown: SummaryRow[] = useMemo(() => [
+    { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
+    {
+      label: mode === 'amount' ? 'Amount entered' : 'Weight entered',
+      value: mode === 'amount' ? money(amount) : `${weight.toFixed(4)} g`,
+    },
+    {
+      label: mode === 'amount' ? 'Gold received' : 'Amount payable',
+      value: mode === 'amount' ? `${weight.toFixed(4)} g` : money(amount),
+      highlight: true,
+    },
+    { label: 'Total payable', value: money(Math.round(amount)), total: true },
+  ], [goldRate, mode, amount, weight]);
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenCanvas
         overlap={moderateScale(24)}
         paddingBottom={moderateScale(40)}
@@ -162,80 +444,33 @@ export default function BuyGoldScreen() {
             bleedBottom={moderateScale(24)}
             actions={[{ icon: 'refresh-outline', onPress: load }]}
           >
-            {/* ── Mode rail ── */}
-            <View
-              style={[
-                s.rail,
-                {
-                  marginTop: SIZES.margin.xxl,
-                  borderColor: COLORS.heroHairline,
-                  borderRadius: SIZES.radius.tile,
-                },
-              ]}
-            >
+            {/* Mode rail */}
+            <View style={[s.rail, { marginTop: SIZES.margin.xxl, borderColor: COLORS.heroHairline, borderRadius: SIZES.radius.tile }]}>
               {(['amount', 'weight'] as Mode[]).map((m, i) => {
                 const on = m === mode;
                 return (
                   <Pressable
                     key={m}
                     onPress={() => switchMode(m)}
-                    style={({ pressed }) => [
-                      s.railItem,
-                      {
-                        paddingVertical: SIZES.padding.md,
-                        borderLeftWidth:
-                          i === 0 ? 0 : StyleSheet.hairlineWidth,
-                        borderLeftColor: COLORS.heroHairline,
-                        opacity: pressed ? 0.6 : 1,
-                      },
-                    ]}
+                    style={({ pressed }) => [s.railItem, { paddingVertical: SIZES.padding.md, borderLeftWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderLeftColor: COLORS.heroHairline, opacity: pressed ? 0.6 : 1 }]}
                   >
-                    <Text
-                      style={[
-                        asText(FONTS.microBold),
-                        {
-                          color: on
-                            ? COLORS.heroTextPrimary
-                            : COLORS.heroTextMuted,
-                        },
-                      ]}
-                    >
+                    <Text style={[asText(FONTS.microBold), { color: on ? COLORS.heroTextPrimary : COLORS.heroTextMuted }]}>
                       {m === 'amount' ? 'By amount' : 'By weight'}
                     </Text>
-                    {on && (
-                      <View
-                        style={[
-                          s.railMark,
-                          { backgroundColor: COLORS.heroAccent },
-                        ]}
-                      />
-                    )}
+                    {on && <View style={[s.railMark, { backgroundColor: COLORS.heroAccent }]} />}
                   </Pressable>
                 );
               })}
             </View>
 
-            {/* ── The input, at display size ── */}
+            {/* Input */}
             <View style={{ marginTop: SIZES.margin.xxl }}>
-              <Text
-                style={[
-                  asText(FONTS.eyebrow),
-                  { color: COLORS.heroTextTertiary },
-                ]}
-              >
+              <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>
                 {mode === 'amount' ? 'You pay' : 'You want'}
               </Text>
-
               <View style={s.inputRow}>
                 {mode === 'amount' && (
-                  <Text
-                    style={[
-                      asText(FONTS.displayXL),
-                      { color: COLORS.heroTextSecondary },
-                    ]}
-                  >
-                    ₹
-                  </Text>
+                  <Text style={[asText(FONTS.displayXL), { color: COLORS.heroTextSecondary }]}>₹</Text>
                 )}
                 <TextInput
                   value={input}
@@ -244,69 +479,28 @@ export default function BuyGoldScreen() {
                   placeholder="0"
                   placeholderTextColor={COLORS.heroTextMuted}
                   selectionColor={COLORS.heroAccent}
-                  style={[
-                    asText(FONTS.displayXL),
-                    {
-                      color: COLORS.heroTextPrimary,
-                      flex: 1,
-                      padding: 0,
-                    },
-                  ]}
+                  style={[asText(FONTS.displayXL), { color: COLORS.heroTextPrimary, flex: 1, padding: 0 }]}
                 />
                 {mode === 'weight' && (
-                  <Text
-                    style={[
-                      asText(FONTS.displaySm),
-                      { color: COLORS.heroTextSecondary },
-                    ]}
-                  >
-                    g
-                  </Text>
+                  <Text style={[asText(FONTS.displaySm), { color: COLORS.heroTextSecondary }]}>g</Text>
                 )}
               </View>
 
-              <View
-                style={[
-                  s.convRow,
-                  {
-                    marginTop: SIZES.margin.md,
-                    paddingTop: SIZES.padding.md,
-                    borderTopColor: COLORS.heroHairline,
-                  },
-                ]}
-              >
+              <View style={[s.convRow, { marginTop: SIZES.margin.md, paddingTop: SIZES.padding.md, borderTopColor: COLORS.heroHairline }]}>
                 {loading && !rates ? (
                   <SkeletonBlock width="60%" height={14} surface="hero" />
                 ) : (
                   <>
-                    <Text
-                      style={[
-                        asText(FONTS.micro),
-                        { color: COLORS.heroTextTertiary },
-                      ]}
-                    >
+                    <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}>
                       {mode === 'amount' ? 'You get' : 'You pay'}
                     </Text>
-                    <Text
-                      style={[
-                        asText(FONTS.numeral),
-                        { color: COLORS.heroAccent },
-                      ]}
-                    >
-                      {mode === 'amount'
-                        ? `${weight.toFixed(4)} g`
-                        : money(Math.round(amount))}
+                    <Text style={[asText(FONTS.numeral), { color: COLORS.heroAccent }]}>
+                      {mode === 'amount' ? `${weight.toFixed(4)} g` : money(Math.round(amount))}
                     </Text>
                   </>
                 )}
               </View>
-
-              <Text
-                style={[
-                  asText(FONTS.micro),
-                  { color: COLORS.heroTextMuted, marginTop: 6, fontSize: 10 },
-                ]}
-              >
+              <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 6, fontSize: 10 }]}>
                 At {goldRate > 0 ? `${money(goldRate)} / g` : '—'} · 916 (22K)
               </Text>
             </View>
@@ -317,18 +511,18 @@ export default function BuyGoldScreen() {
             label="Total payable"
             value={money(Math.round(amount))}
             note={`${weight.toFixed(4)} g of 916 gold`}
-            actionLabel="Buy gold"
+            actionLabel={isProcessing ? 'Processing…' : 'Buy gold'}
             actionVariant="gold"
-            disabled={amount <= 0}
-            onAction={onBuy}
+            disabled={!isReady || isProcessing}
+            loading={isProcessing}
+            onAction={handleBuy}
           />
         }
       >
-        {/* ── Presets ── */}
+        {/* Presets */}
         {mode === 'amount' && (
           <View style={{ marginTop: SIZES.layout.sectionTight }}>
             <SectionHeading eyebrow="Shortcuts" title="Common amounts" />
-
             <View style={[s.presetGrid, { marginTop: SIZES.margin.lg }]}>
               {QUICK_AMOUNTS.map((q) => {
                 const on = String(q) === input;
@@ -336,32 +530,10 @@ export default function BuyGoldScreen() {
                   <Pressable
                     key={q}
                     onPress={() => setInput(String(q))}
-                    style={({ pressed }) => [
-                      s.preset,
-                      {
-                        borderRadius: SIZES.radius.tile,
-                        borderColor: on ? COLORS.primary : COLORS.hairline,
-                        borderWidth: on ? 1.5 : 1,
-                        backgroundColor: COLORS.canvasElevated,
-                        paddingVertical: SIZES.padding.lg,
-                        opacity: pressed ? 0.75 : 1,
-                      },
-                    ]}
+                    style={({ pressed }) => [s.preset, { borderRadius: SIZES.radius.tile, borderColor: on ? COLORS.primary : COLORS.hairline, borderWidth: on ? 1.5 : 1, backgroundColor: COLORS.canvasElevated, paddingVertical: SIZES.padding.lg, opacity: pressed ? 0.75 : 1 }]}
                   >
-                    <Text
-                      style={[
-                        asText(FONTS.microBold),
-                        { color: on ? COLORS.primary : COLORS.inkPrimary },
-                      ]}
-                    >
-                      {money(q)}
-                    </Text>
-                    <Text
-                      style={[
-                        asText(FONTS.micro),
-                        { color: COLORS.inkTertiary, fontSize: 9 },
-                      ]}
-                    >
+                    <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkPrimary }]}>{money(q)}</Text>
+                    <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, fontSize: 9 }]}>
                       {goldRate > 0 ? `${(q / goldRate).toFixed(3)} g` : '—'}
                     </Text>
                   </Pressable>
@@ -371,63 +543,442 @@ export default function BuyGoldScreen() {
           </View>
         )}
 
-        {/* ── Order breakdown ── */}
+        {/* Order breakdown */}
         <View style={{ marginTop: SIZES.layout.section }}>
           <SectionHeading eyebrow="Order" title="Breakdown" />
           <SummaryCard rows={breakdown} style={{ marginTop: SIZES.margin.lg }} />
         </View>
 
-        {/* ── Disclaimer ── */}
-        <View style={[s.note, { marginTop: SIZES.layout.block }]}>
-          <Ionicons
-            name="information-circle-outline"
-            size={SIZES.icon.sm}
-            color={COLORS.inkMuted}
+        {/* ── Customer info ── */}
+        <View style={{ marginTop: SIZES.layout.section }}>
+          <SectionHeading
+            eyebrow="Required"
+            title="Your details"
+            caption="Used for billing and delivery of your DigiGold"
           />
-          <Text
-            style={[
-              asText(FONTS.micro),
-              { color: COLORS.inkMuted, flex: 1, fontSize: 10 },
-            ]}
-          >
-            Rates are indicative and refresh on load. The final price is
-            confirmed at checkout.
+          <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
+            <FormField
+              label="Full name"
+              indicator="required"
+              icon="person-outline"
+              value={name}
+              placeholder="As printed on your ID"
+              autoCapitalize="words"
+              onChangeText={(v) => { setName(v); clearErr('name'); }}
+              error={fieldErrors.name}
+            />
+            <FormField
+              label="Mobile number"
+              indicator="required"
+              icon="call-outline"
+              value={mobile}
+              placeholder="10-digit mobile"
+              keyboardType="phone-pad"
+              maxLength={10}
+              onChangeText={(v) => { setMobile(v.replace(/[^0-9]/g, '')); clearErr('mobile'); }}
+              error={fieldErrors.mobile}
+            />
+            <FormField
+              label="Email address"
+              indicator="required"
+              icon="mail-outline"
+              value={email}
+              placeholder="your@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onChangeText={(v) => { setEmail(v); clearErr('email'); }}
+              error={fieldErrors.email}
+            />
+            <FormField
+              label="Aadhaar number"
+              indicator="required"
+              icon="card-outline"
+              value={aadhaar}
+              placeholder="12-digit Aadhaar"
+              keyboardType="numeric"
+              maxLength={12}
+              onChangeText={(v) => { setAadhaar(v.replace(/[^0-9]/g, '')); clearErr('aadhaar'); }}
+              error={fieldErrors.aadhaar}
+            />
+            <FormField
+              label="PAN number"
+              indicator="optional"
+              icon="document-text-outline"
+              value={pan}
+              placeholder="ABCDE1234F"
+              maxLength={10}
+              autoCapitalize="characters"
+              onChangeText={(v) => { setPan(v.toUpperCase()); clearErr('pan'); }}
+              error={fieldErrors.pan}
+              hint="Leave blank if not available"
+            />
+            <FormField
+              asButton
+              onPress={openDobPicker}
+              label="Date of birth"
+              indicator="required"
+              icon="calendar-outline"
+              value={dobLabel}
+              placeholder="Select date of birth"
+              rightIcon="chevron-down"
+              onRightIconPress={openDobPicker}
+              badge={dobSet ? `${dobAge}y` : undefined}
+              badgeTone={dobSet && dobAge >= 18 ? 'success' : 'error'}
+              error={fieldErrors.dob ?? (dobSet && dobAge < 18 ? 'Age must be 18 or older' : undefined)}
+              hint={!dobSet ? 'You must be 18 or older' : undefined}
+            />
+
+            <View>
+              <View style={s.labelRow}>
+                <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}>
+                  Gender
+                  <Text style={{ color: COLORS.metalGold }}> *</Text>
+                </Text>
+              </View>
+              <View style={[s.genderRow, { marginTop: 6 }]}>
+                {GENDER_OPTIONS.map((g) => {
+                  const on = gender === g;
+                  return (
+                    <Pressable
+                      key={g}
+                      onPress={() => { setGender(g); clearErr('gender'); }}
+                      style={({ pressed }) => [
+                        s.genderChip,
+                        {
+                          borderRadius: SIZES.radius.tile,
+                          borderColor: on ? COLORS.primary : fieldErrors.gender ? COLORS.error : COLORS.hairline,
+                          borderWidth: on ? 1.5 : 1,
+                          backgroundColor: COLORS.canvasElevated,
+                          paddingVertical: SIZES.padding.md,
+                          opacity: pressed ? 0.75 : 1,
+                        },
+                      ]}
+                    >
+                      <Ionicons name={GENDER_ICONS[g] as any} size={SIZES.icon.sm} color={on ? COLORS.primary : COLORS.inkTertiary} />
+                      <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkSecondary }]}>{g}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {!!fieldErrors.gender && (
+                <View style={s.msgRow}>
+                  <Ionicons name="alert-circle" size={12} color={COLORS.error} />
+                  <Text style={[asText(FONTS.micro), { color: COLORS.error, fontSize: 10 }]}>{fieldErrors.gender}</Text>
+                </View>
+              )}
+            </View>
+
+            <FormField
+              label="Door no. / street"
+              indicator="required"
+              icon="home-outline"
+              value={doorStreet}
+              placeholder="12A, Gandhi Nagar, 2nd Street"
+              autoCapitalize="words"
+              onChangeText={(v) => { setDoorStreet(v); clearErr('doorStreet'); }}
+              error={fieldErrors.doorStreet}
+            />
+            <FormField
+              label="Pincode"
+              indicator="required"
+              icon="location-outline"
+              value={pincode}
+              placeholder="6-digit pincode"
+              keyboardType="numeric"
+              maxLength={6}
+              onChangeText={(v) => {
+                const p = v.replace(/[^0-9]/g, '').slice(0, 6);
+                setPincode(p);
+                clearErr('pincode');
+                if (p.length === 6) fetchPincode(p);
+              }}
+              error={fieldErrors.pincode}
+              rightIcon={
+                pincodeLoading
+                  ? 'hourglass-outline'
+                  : area
+                  ? 'checkmark-circle-outline'
+                  : undefined
+              }
+            />
+
+            {addressRows.length > 0 && (
+              <SummaryCard
+                eyebrow="Detected address"
+                rows={
+                  pincodeOptions.length > 1
+                    ? [
+                        ...addressRows,
+                        {
+                          label: 'Change area',
+                          value: `${pincodeOptions.length} options`,
+                          onPress: () => setShowPincodeModal(true),
+                        },
+                      ]
+                    : addressRows
+                }
+              />
+            )}
+          </View>
+        </View>
+
+        {/* ── Nominee ── */}
+        <View style={{ marginTop: SIZES.layout.section }}>
+          <SectionHeading
+            eyebrow="Required"
+            title="Nominee"
+            caption="Mandatory for DigiGold enrolment"
+          />
+          <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
+            <FormField
+              label="Nominee name"
+              indicator="required"
+              icon="people-outline"
+              value={nominee}
+              placeholder="Nominee's full name"
+              autoCapitalize="words"
+              onChangeText={(v) => { setNominee(v); clearErr('nominee'); }}
+              error={fieldErrors.nominee}
+            />
+            <FormField
+              label="Relationship"
+              indicator="optional"
+              icon="heart-outline"
+              value={nomRel}
+              placeholder="Spouse, son, daughter…"
+              autoCapitalize="words"
+              onChangeText={setNomRel}
+            />
+            <FormField
+              label="Nominee mobile"
+              indicator="optional"
+              icon="call-outline"
+              value={nomMobile}
+              placeholder="10-digit mobile"
+              keyboardType="phone-pad"
+              maxLength={10}
+              onChangeText={(v) => { setNomMobile(v.replace(/[^0-9]/g, '')); clearErr('nomMobile'); }}
+              error={fieldErrors.nomMobile}
+            />
+          </View>
+        </View>
+
+        {/* Disclaimer */}
+        <View style={[s.note, { marginTop: SIZES.layout.block }]}>
+          <Ionicons name="information-circle-outline" size={SIZES.icon.sm} color={COLORS.inkMuted} />
+          <Text style={[asText(FONTS.micro), { color: COLORS.inkMuted, flex: 1, fontSize: 10 }]}>
+            Rates are indicative and refresh on load. The final price is confirmed at checkout.
           </Text>
         </View>
       </ScreenCanvas>
+
+      {/* ── Pincode area selector ── */}
+      <Modal
+        visible={showPincodeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPincodeModal(false)}
+      >
+        <Pressable
+          style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}
+          onPress={() => setShowPincodeModal(false)}
+        >
+          <Pressable
+            style={[
+              s.sheet,
+              {
+                backgroundColor: COLORS.canvasElevated,
+                borderRadius: SIZES.radius.sheet,
+                width: '90%',
+                maxHeight: '75%',
+                paddingBottom: SIZES.padding.xxl,
+                overflow: 'hidden',
+              },
+            ]}
+          >
+            <View
+              style={{
+                paddingHorizontal: SIZES.layout.gutter,
+                paddingTop: SIZES.padding.xl,
+                paddingBottom: SIZES.padding.md,
+              }}
+            >
+              <Text style={[asText(FONTS.eyebrow), { color: COLORS.primaryInk }]}>
+                Pincode {pincode}
+              </Text>
+              <Text
+                style={[
+                  asText(FONTS.displaySm),
+                  { color: COLORS.inkPrimary, marginTop: 2 },
+                ]}
+              >
+                Select your area
+              </Text>
+            </View>
+
+            <FlatList
+              data={pincodeOptions}
+              keyExtractor={(_, i) => String(i)}
+              style={{ paddingHorizontal: SIZES.layout.gutter }}
+              contentContainerStyle={{ paddingBottom: SIZES.padding.xl }}
+              renderItem={({ item, index }) => (
+                <Pressable
+                  onPress={() => {
+                    setArea(item.Name);
+                    setCity(item.Block);
+                    setDistrict(item.District);
+                    setStateVal(item.State);
+                    setShowPincodeModal(false);
+                  }}
+                  style={({ pressed }) => [
+                    s.poRow,
+                    {
+                      paddingVertical: SIZES.padding.lg,
+                      borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
+                      borderTopColor: COLORS.hairline,
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        asText(FONTS.microBold),
+                        { color: COLORS.inkPrimary },
+                      ]}
+                    >
+                      {item.Name}
+                    </Text>
+                    <Text
+                      style={[
+                        asText(FONTS.micro),
+                        { color: COLORS.inkTertiary, fontSize: 10, marginTop: 2 },
+                      ]}
+                    >
+                      {item.Block} · {item.District}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={area === item.Name ? 'checkmark-circle' : 'chevron-forward'}
+                    size={SIZES.icon.md}
+                    color={area === item.Name ? COLORS.primary : COLORS.inkMuted}
+                  />
+                </Pressable>
+              )}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Native Date of Birth picker ── */}
+      {showDob && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={tempDob}
+          mode="date"
+          display="default"
+          maximumDate={dobMax}
+          minimumDate={dobMin}
+          onChange={onDobChange}
+        />
+      )}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={showDob}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDob(false)}
+        >
+          <Pressable
+            style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}
+            onPress={() => setShowDob(false)}
+          >
+            <Pressable
+              style={[
+                s.sheet,
+                {
+                  backgroundColor: COLORS.canvasElevated,
+                  borderRadius: SIZES.radius.sheet,
+                  width: '90%',
+                  overflow: 'hidden',
+                },
+              ]}
+            >
+              <View
+                style={[
+                  s.sheetHead,
+                  {
+                    paddingHorizontal: SIZES.layout.gutter,
+                    paddingVertical: SIZES.padding.lg,
+                    borderBottomColor: COLORS.hairline,
+                  },
+                ]}
+              >
+                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary }]}>
+                  Date of birth
+                </Text>
+                <Pressable
+                  onPress={() => { applyDob(tempDob); setShowDob(false); }}
+                  hitSlop={10}
+                >
+                  <Text style={[asText(FONTS.microBold), { color: COLORS.primaryInk }]}>
+                    Done
+                  </Text>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                value={tempDob}
+                mode="date"
+                display="spinner"
+                maximumDate={dobMax}
+                minimumDate={dobMin}
+                onChange={onDobChange}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
+
+      {/* Failure modal */}
+      <Modal visible={showFailed} transparent animationType="fade">
+        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}>
+          <View style={[s.resultCard, { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl }]}>
+            <View style={[s.resultIcon, { backgroundColor: COLORS.errorBg }]}>
+              <Ionicons name="close-circle" size={SIZES.icon.xl} color={COLORS.error} />
+            </View>
+            <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
+              Payment failed
+            </Text>
+            <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+              {error || 'Something went wrong. No amount has been debited. Please try again.'}
+            </Text>
+            <View style={{ marginTop: SIZES.margin.xxl, gap: 10, width: '100%' }}>
+              <PremiumButton label="Try again" onPress={() => { reset(); handleBuy(); }} />
+              <PremiumButton label="Cancel" variant="outline" onPress={() => reset()} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  rail: { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
-  railItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  railMark: {
-    position: 'absolute',
-    bottom: 0,
-    left: '25%',
-    right: '25%',
-    height: 2,
-    borderRadius: 1,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  convRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-  },
+  rail:       { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
+  railItem:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  railMark:   { position: 'absolute', bottom: 0, left: '25%', right: '25%', height: 2, borderRadius: 1 },
+  inputRow:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  convRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1 },
   presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  preset: {
-    width: '31.5%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  note: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  preset:     { width: '31.5%', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  note:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  overlay:    { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  resultCard: { width: '100%', alignItems: 'center' },
+  resultIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  sheet:      { width: '100%' },
+  sheetHead:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
+  poRow:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  labelRow:   { flexDirection: 'row', alignItems: 'center' },
+  genderRow:  { flexDirection: 'row', gap: 8 },
+  genderChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  msgRow:     { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
 });

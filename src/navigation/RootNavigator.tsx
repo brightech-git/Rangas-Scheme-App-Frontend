@@ -47,7 +47,7 @@ export type RootStackParamList = {
   PayInstallment:          { ppData: PPData };
   ViewInstallment:         { ppData: PPData };
   Rates:                   { metal?: 'Gold' | 'Silver' };
-  BuyGold:                 undefined;
+  BuyGold:                 { scheme?: SchemeItem };
   Portfolio:               undefined;
   Transactions:            undefined;
   Wallet:                  undefined;

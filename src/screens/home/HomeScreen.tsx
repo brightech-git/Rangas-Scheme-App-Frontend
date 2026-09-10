@@ -32,7 +32,7 @@
 //   EmptyState, Skeleton*
 // ─────────────────────────────────────────────────────────────────
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Dimensions, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -49,6 +49,7 @@ import { useAppSelector } from '../../store/hooks';
 import { portfolioMetrics, schemeMetrics } from '../../utils/schemeMetrics';
 import { useTheme } from '../../theme';
 import HomeBanner from '../../components/HomeBanner';
+import MySchemeHoldings, { MySchemeHoldingsHandle } from '../../components/MySchemeHoldings';
 import LOGO from '../../assets/company/logo.png';
 
 import {
@@ -86,11 +87,6 @@ function schemeState(pp: PPData): 'active' | 'pending' | 'completed' {
   return paid > 0 ? 'active' : 'pending';
 }
 
-const num = (v: unknown): number => {
-  const n = typeof v === 'string' ? parseFloat(v) : (v as number);
-  return Number.isFinite(n) ? n : 0;
-};
-
 export default function HomeScreen() {
   const { COLORS, SIZES, moderateScale } = useTheme();
   const navigation = useNavigation<Nav>();
@@ -108,6 +104,7 @@ export default function HomeScreen() {
 
   const [rates, setRates] = useState<RatesResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const holdingsRef = useRef<MySchemeHoldingsHandle>(null);
 
   const loadRates = useCallback(() => {
     ratesService.getRates().then(setRates).catch(() => { });
@@ -122,6 +119,7 @@ export default function HomeScreen() {
     try {
       loadRates();
       refetchSchemes();
+      holdingsRef.current?.refetch();
       await refetchMySchemes();
     } finally {
       setRefreshing(false);
@@ -355,88 +353,17 @@ export default function HomeScreen() {
         />
 
         <View style={{ marginTop: SIZES.margin.lg }}>
-          {mySchemesLoading ? (
-            <FlatList
-              horizontal
-              data={[1, 2]}
-              keyExtractor={(i) => String(i)}
-              renderItem={() => <SkeletonSchemeCard width={RAIL_CARD_W} />}
-              showsHorizontalScrollIndicator={false}
-              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-              style={{ marginHorizontal: -G }}
-              contentContainerStyle={{ paddingHorizontal: G }}
-            />
-          ) : holdings.length === 0 ? (
-            <EmptyState
-              compact
-              icon="albums-outline"
-              title="No schemes yet"
-              body="Join a savings scheme to start building your gold position."
-              actionLabel="Browse schemes"
-              onAction={() => (navigation as any).navigate('Scheme')}
-            />
-          ) : (
-            <FlatList
-              horizontal
-              data={holdings}
-              keyExtractor={(m) => `${m.groupCode}-${m.regNo}`}
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={RAIL_CARD_W + 12}
-              decelerationRate="fast"
-              disableIntervalMomentum
-              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-              style={{ marginHorizontal: -G }}
-              contentContainerStyle={{ paddingHorizontal: G }}
-              renderItem={({ item: m }) => {
-                const mx = schemeMetrics(m);
-                const state = mx.state;
-                const paidCount = mx.paid;
-                const totalCount = mx.total;
-                const isFullyPaid = totalCount > 0 && paidCount >= totalCount;
-                return (
-                  <SchemeCardV2
-                    width={RAIL_CARD_W}
-                    variant="holding"
-                    title={m.schemeSummary?.schemeName ?? 'Scheme'}
-                    eyebrow={`REG ${m.regNo} · ${m.groupCode ?? ''}`.trim()}
-                    metal="G"
-                    metalLabel="GOLD"
-                    status={{
-                      label: state === 'active' ? 'Active' : 'Pending',
-                      tone: state === 'active' ? 'success' : 'warning',
-                    }}
-                    stats={[
-                      { label: 'Paid', value: money(mx.invested) },
-                      m.schemeSummary?.weightLedger === 'Y'
-                        ? { label: 'Weight', value: grams(mx.weight, 3) }
-                        : { label: 'Days Active', value: String(num(m.totalDays)) },
-                      {
-                        // Bonus is not part of this product, so the third
-                        // slot shows what is still owed on the commitment.
-                        label: isFullyPaid ? 'Instalment' : 'Remaining',
-                        value: isFullyPaid
-                          ? money(mx.perInstalment)
-                          : mx.remaining > 0
-                          ? money(mx.remaining)
-                          : money(mx.perInstalment),
-                      },
-                    ]}
-                    paid={paidCount}
-                    total={totalCount}
-                    progressNote={
-                      isFullyPaid
-                        ? 'All instalments paid'
-                        : m.nextDueDate ? `Due ${shortDate(m.nextDueDate)}` : undefined
-                    }
-                    actionLabel="View instalments"
-                    onAction={() => navigation.navigate('ViewInstallment', { ppData: m })}
-                    secondActionLabel={isFullyPaid ? undefined : 'Pay instalment'}
-                    onSecondAction={isFullyPaid ? undefined : () => navigation.navigate('PayInstallment', { ppData: m })}
-                  />
-                );
-              }}
-            />
-          )}
+          <MySchemeHoldings
+            ref={holdingsRef}
+            variant="rail"
+            limit={3}
+            excludeCompleted
+            cardWidth={RAIL_CARD_W}
+            emptyTitle="No schemes yet"
+            emptyBody="Join a savings scheme to start building your gold position."
+            emptyActionLabel="Browse schemes"
+            onEmptyAction={() => (navigation as any).navigate('Scheme')}
+          />
         </View>
       </View>
 

@@ -90,11 +90,17 @@ export default function SchemeTermsScreen() {
   const isFixed = scheme.FixedIns === 'Y';
   const canJoin = scheme.ADDNEWMEMBER === 'Y';
 
+  const isDigiGold = scheme.SchemeId === 6;
+
   // ── Preserved business logic ──
   const handleJoin = useCallback(() => {
     if (!accepted) return;
-    navigation.navigate('SchemeJoin', { scheme });
-  }, [accepted, navigation, scheme]);
+    if (isDigiGold) {
+      navigation.navigate('BuyGold', { scheme });
+    } else {
+      navigation.navigate('SchemeJoin', { scheme });
+    }
+  }, [accepted, navigation, scheme, isDigiGold]);
 
   const onScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -236,7 +242,7 @@ export default function SchemeTermsScreen() {
       }
       footer={
         <BottomActionBar
-          actionLabel={canJoin ? 'Join scheme' : 'Enrolment closed'}
+          actionLabel={!canJoin ? 'Enrolment closed' : isDigiGold ? 'Buy DigiGold' : 'Join scheme'}
           onAction={handleJoin}
           disabled={!accepted || !canJoin}
           helper={

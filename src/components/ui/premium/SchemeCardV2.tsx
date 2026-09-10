@@ -39,6 +39,12 @@ type Props = {
   paid?: number;
   total?: number;
   progressNote?: string;
+  /**
+   * Shown in the progress rail's place when total is 0 (e.g. a
+   * pay-anytime scheme with no fixed instalment count). Pairs with
+   * progressNote, which becomes a right-aligned secondary line here.
+   */
+  flexibleNote?: string;
   /** Footer call to action */
   actionLabel?: string;
   onAction?: () => void;
@@ -62,6 +68,7 @@ function SchemeCardV2({
   paid = 0,
   total = 0,
   progressNote,
+  flexibleNote,
   actionLabel,
   onAction,
   secondActionLabel,
@@ -205,6 +212,36 @@ function SchemeCardV2({
             style={{ marginTop: SIZES.margin.xl }}
           />
         )}
+
+        {/* ── No fixed instalment count (e.g. DigiGold) — swap the rail for a note ── */}
+        {variant === 'holding' && total === 0 && !!flexibleNote && (
+          <View
+            style={[
+              s.flexRow,
+              {
+                marginTop: SIZES.margin.xl,
+                paddingTop: SIZES.padding.md,
+                borderTopColor: COLORS.hairline,
+              },
+            ]}
+          >
+            <Ionicons name="infinite-outline" size={SIZES.icon.sm} color={spine} />
+            <Text
+              numberOfLines={1}
+              style={[asText(FONTS.microBold), { color: COLORS.inkSecondary, flex: 1 }]}
+            >
+              {flexibleNote}
+            </Text>
+            {!!progressNote && (
+              <Text
+                numberOfLines={1}
+                style={[asText(FONTS.micro), { color: COLORS.inkTertiary, fontSize: 10 }]}
+              >
+                {progressNote}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       {/* ── Footer action rail ── */}
@@ -264,6 +301,7 @@ const s = StyleSheet.create({
     opacity: 0.85,
   },
   headRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  flexRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: StyleSheet.hairlineWidth },
   statStrip: { flexDirection: 'row', borderTopWidth: 1 },
   vRule: { width: 1, alignSelf: 'stretch', marginHorizontal: 12 },
   footer: {

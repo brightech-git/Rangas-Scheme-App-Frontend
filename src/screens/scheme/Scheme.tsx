@@ -30,7 +30,7 @@
 //   EmptyState, SkeletonSchemeCard
 // ─────────────────────────────────────────────────────────────────
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,11 +38,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import PoweredByFooter from '../../components/ui/PoweredByFooter';
+import MySchemeHoldings, { MySchemeHoldingsHandle } from '../../components/MySchemeHoldings';
 import { useSchemes } from '../../api/hooks/Schemes/useSchemes';
 import { useMySchemes } from '../../api/hooks/Account/useMySchemes';
 import { ApiScheme, METAL_LABEL } from '../../types/Scheme/Scheme';
-import { PPData } from '../../types/Account/PhoneDetails';
-import { schemeMetrics } from '../../utils/schemeMetrics';
 
 import {
   ScreenCanvas,
@@ -51,36 +50,17 @@ import {
   EmptyState,
   SkeletonSchemeCard,
   asText,
-  money,
-  grams,
-  prettyDate,
-  shortDate,
 } from '../../components/ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Tab = 'my' | 'all';
-
-const num = (v: unknown): number => {
-  const n = typeof v === 'string' ? parseFloat(v) : (v as number);
-  return Number.isFinite(n) ? n : 0;
-};
-
-function ppStatus(pp: PPData): 'active' | 'pending' | 'completed' {
-  const ct = pp.schemeClosedSummary?.closeType ?? '';
-  if (ct.trim() !== '') return 'completed';
-  return parseInt(
-    pp.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
-    10,
-  ) > 0
-    ? 'active'
-    : 'pending';
-}
 
 export default function SchemeScreen() {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
   const navigation = useNavigation<Nav>();
 
   const [activeTab, setActiveTab] = useState<Tab>('my');
+  const holdingsRef = useRef<MySchemeHoldingsHandle>(null);
 
   const {
     schemes,
@@ -102,7 +82,14 @@ export default function SchemeScreen() {
 
   const loading = activeTab === 'all' ? loadingAll : loadingMy;
   const error = activeTab === 'all' ? errorAll : errorMy;
-  const refetch = activeTab === 'all' ? refetchAll : refetchMy;
+  const refetch = useCallback(async () => {
+    if (activeTab === 'all') {
+      await refetchAll();
+    } else {
+      await refetchMy();
+      holdingsRef.current?.refetch();
+    }
+  }, [activeTab, refetchAll, refetchMy]);
 
   const handleJoin = useCallback(
     (scheme: ApiScheme) => navigation.navigate('SchemeTerms', { scheme }),
@@ -259,93 +246,16 @@ export default function SchemeScreen() {
           ))}
 
         {/* ── Holdings ── */}
-        {!loading &&
-          !error &&
-          activeTab === 'my' &&
-          (mySchemes.length === 0 ? (
-            <EmptyState
-              icon="folder-open-outline"
-              title="No enrolments yet"
-              body="Browse the catalogue to find a savings scheme that fits your goal."
-              actionLabel="Browse catalogue"
-              onAction={() => setActiveTab('all')}
-            />
-          ) : (
-            mySchemes.map((item) => {
-              const status = ppStatus(item);
-              const paid = parseInt(
-                item.schemeSummary?.schemaSummaryTransBalance?.insPaid ?? '0',
-                10,
-              );
-              const total = parseInt(item.schemeSummary?.instalment ?? '0', 10);
-              const done = status === 'completed';
-              const isFullyPaid = done || (total > 0 && paid >= total);
-
-              return (
-                <SchemeCardV2
-                  key={`${item.groupCode}-${item.regNo}`}
-                  variant="holding"
-                  title={item.schemeSummary?.schemeName ?? item.pName}
-                  eyebrow={`REG ${item.regNo} · ${
-                    item.schemeSummary?.fixedIns === 'Y' ? 'FIXED' : 'FLEXIBLE'
-                  }`}
-                  metal="G"
-                  metalLabel="GOLD"
-                  status={{
-                    label:
-                      status.charAt(0).toUpperCase() + status.slice(1),
-                    tone:
-                      status === 'active'
-                        ? 'success'
-                        : status === 'completed'
-                        ? 'info'
-                        : 'warning',
-                  }}
-                  stats={[
-                    {
-                      label: 'Invested',
-                      value: money(num(item.totalAmount)),
-                    },
-                    {
-                      label: 'Remaining',
-                      value:
-                        schemeMetrics(item).remaining > 0
-                          ? money(schemeMetrics(item).remaining)
-                          : `${paid} / ${total || '—'} paid`,
-                    },
-                    item.schemeSummary?.weightLedger === 'Y'
-                      ? {
-                          label: 'Weight',
-                          value: grams(num(item.schemeSummary?.totalWeight), 3),
-                        }
-                      : {
-                          label: 'Days Active',
-                          value: String(num(item.totalDays)),
-                        },
-                  ]}
-                  paid={paid}
-                  total={isFullyPaid ? 0 : total}
-                  progressNote={
-                    item.nextDueDate
-                      ? `Next ${shortDate(item.nextDueDate)}`
-                      : item.maturityDate
-                      ? `Matures ${prettyDate(item.maturityDate)}`
-                      : undefined
-                  }
-                  actionLabel="View instalments"
-                  onAction={() =>
-                    navigation.navigate('ViewInstallment', { ppData: item })
-                  }
-                  secondActionLabel={isFullyPaid ? undefined : 'Pay instalment'}
-                  onSecondAction={
-                    isFullyPaid
-                      ? undefined
-                      : () => navigation.navigate('PayInstallment', { ppData: item })
-                  }
-                />
-              );
-            })
-          ))}
+        {!loading && !error && activeTab === 'my' && (
+          <MySchemeHoldings
+            ref={holdingsRef}
+            variant="list"
+            emptyTitle="No enrolments yet"
+            emptyBody="Browse the catalogue to find a savings scheme that fits your goal."
+            emptyActionLabel="Browse catalogue"
+            onEmptyAction={() => setActiveTab('all')}
+          />
+        )}
       </View>
 
       <PoweredByFooter style={{ marginTop: SIZES.layout.section }} />
