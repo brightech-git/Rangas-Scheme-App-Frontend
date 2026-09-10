@@ -72,6 +72,11 @@ export const RAZORPAY = {
   RECEIPT:         (receipt: string) => `/razorpay/payment/receipt/${receipt}`,
 };
 
+export const PAYMENTS = {
+  INITIATE: '/payments/initiate',
+  STATUS:   (orderId: string) => `/payments/status/${orderId}`,
+};
+
 export const USER_PROFILE = {
   GET:          (userId: number) => `/user/${userId}`,
   UPDATE:       (userId: number) => `/${userId}/update`,

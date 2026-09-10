@@ -283,7 +283,7 @@ export default function SchemeScreen() {
 
               return (
                 <SchemeCardV2
-                  key={String(item.regNo)}
+                  key={`${item.groupCode}-${item.regNo}`}
                   variant="holding"
                   title={item.schemeSummary?.schemeName ?? item.pName}
                   eyebrow={`REG ${item.regNo} · ${
@@ -311,12 +311,17 @@ export default function SchemeScreen() {
                       value:
                         schemeMetrics(item).remaining > 0
                           ? money(schemeMetrics(item).remaining)
-                          : '—',
+                          : `${paid} / ${total || '—'} paid`,
                     },
-                    {
-                      label: 'Weight',
-                      value: grams(num(item.schemeSummary?.totalWeight), 3),
-                    },
+                    item.schemeSummary?.weightLedger === 'Y'
+                      ? {
+                          label: 'Weight',
+                          value: grams(num(item.schemeSummary?.totalWeight), 3),
+                        }
+                      : {
+                          label: 'Days Active',
+                          value: String(num(item.totalDays)),
+                        },
                   ]}
                   paid={paid}
                   total={isFullyPaid ? 0 : total}

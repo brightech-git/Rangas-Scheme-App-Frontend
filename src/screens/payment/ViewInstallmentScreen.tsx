@@ -88,6 +88,7 @@ export default function ViewInstallmentScreen() {
   const mx = schemeMetrics(ppData);
 
   const canPay = !mx.closed && (mx.remaining > 0 || (total > 0 && paid < total));
+  const hasGold = scheme?.weightLedger === 'Y';
 
   const status = useMemo(() => {
     if (mx.state === 'completed') return { tone: 'success' as const, label: 'Completed' };
@@ -264,14 +265,25 @@ export default function ViewInstallmentScreen() {
                 tone="gold"
                 flex={1}
               />
-              <MetricCard
-                label="Gold accrued"
-                value={`${text(scheme?.totalWeight ?? '0')} g`}
-                caption={`Last ${text(scheme?.lastWeight ?? '0')} g`}
-                icon="sparkles-outline"
-                tone="positive"
-                flex={1}
-              />
+              {hasGold ? (
+                <MetricCard
+                  label="Gold accrued"
+                  value={`${text(scheme?.totalWeight ?? '0')} g`}
+                  caption={`Last ${text(scheme?.lastWeight ?? '0')} g`}
+                  icon="sparkles-outline"
+                  tone="positive"
+                  flex={1}
+                />
+              ) : (
+                <MetricCard
+                  label="Days Active"
+                  value={`${toNum(ppData.totalDays)}`}
+                  caption={ppData.lastPaidDate ? `Last paid ${prettyDate(ppData.lastPaidDate)}` : 'No payments yet'}
+                  icon="calendar-outline"
+                  tone="positive"
+                  flex={1}
+                />
+              )}
             </View>
             <SummaryCard rows={moneyRows} style={{ marginTop: SIZES.margin.lg }} />
           </View>

@@ -379,7 +379,7 @@ export default function HomeScreen() {
             <FlatList
               horizontal
               data={holdings}
-              keyExtractor={(m) => String(m.regNo)}
+              keyExtractor={(m) => `${m.groupCode}-${m.regNo}`}
               showsHorizontalScrollIndicator={false}
               snapToInterval={RAIL_CARD_W + 12}
               decelerationRate="fast"
@@ -407,10 +407,9 @@ export default function HomeScreen() {
                     }}
                     stats={[
                       { label: 'Paid', value: money(mx.invested) },
-                      {
-                        label: 'Weight',
-                        value: mx.weight > 0 ? grams(mx.weight, 3) : '—',
-                      },
+                      m.schemeSummary?.weightLedger === 'Y'
+                        ? { label: 'Weight', value: grams(mx.weight, 3) }
+                        : { label: 'Days Active', value: String(num(m.totalDays)) },
                       {
                         // Bonus is not part of this product, so the third
                         // slot shows what is still owed on the commitment.

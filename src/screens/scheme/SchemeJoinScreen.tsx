@@ -55,26 +55,19 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import RazorpayWebCheckout, {
-  RazorpayWebCheckoutRef,
-} from '../../components/ui/RazorpayWebCheckout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useCallback } from 'react';
 
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { METAL_LABEL } from '../../types/Scheme/Scheme';
-import { useRazorpay } from '../../api/hooks/Razorpay/useRazorpay';
-import {
-  UserDetails,
-  RazorpaySuccessPayment,
-} from '../../types/Razorpay/Razorpay';
+import { usePayment } from '../../api/hooks/Payment/usePayment';
+import { InitiatePaymentRequest } from '../../types/Payment/Payment';
 import { useMemberScheme } from '../../api/hooks/Member/useMemberScheme';
 import { MemberSchemeGroup } from '../../types/Member/MemberScheme';
-import { memberService } from '../../api/services/memberService';
-import { NMData } from '../../types/Member/NMData';
 import { useToast } from '../../components/ui/Toast';
 import { useAppSelector } from '../../store/hooks';
 
@@ -136,29 +129,14 @@ export default function SchemeJoinScreen() {
   const route = useRoute<RouteProps>();
   const { scheme } = route.params;
 
-  const { status, error, pay, reset } = useRazorpay();
-  const rzpWebRef = useRef<RazorpayWebCheckoutRef>(null);
+  const { status, initiateData, error, initiate, checkStatus, reset } = usePayment();
   const toast = useToast();
-  const user = useAppSelector((s) => s.auth.user);
+  const user  = useAppSelector((s) => s.auth.user);
 
-  // API: fetch groups for this scheme (gives AMOUNT, GROUPCODE, CURRENTREGNO)
   const { groups, loading: groupsLoading } = useMemberScheme(scheme.SchemeId);
 
   const mLabel = METAL_LABEL[scheme.MetalType] ?? scheme.MetalType;
   const isFixed = scheme.FixedIns === 'Y';
-
-  // Metal-specific accent, used to tint the Razorpay checkout exactly as
-  // before. Sourced from AppTheme's metal tokens rather than the legacy
-  // hardcoded METAL_COLOR map.
-  const mColor =
-    (
-      {
-        G: COLORS.metalGold,
-        S: COLORS.metalSilver,
-        P: COLORS.metalPlatinum,
-        D: COLORS.metalDiamond,
-      } as Record<string, string>
-    )[scheme.MetalType] ?? COLORS.primary;
 
   // Selected group (FixedIns=Y)
   const [selectedGroup, setSelectedGroup] =
@@ -387,157 +365,74 @@ export default function SchemeJoinScreen() {
     effectiveAmount > 0 &&
     (!isFixed || selectedGroup !== null);
 
-  const isProcessing = ['creating_order', 'checkout_open', 'verifying'].includes(
-    status,
-  );
-  const showFailed     = status === 'failed';
-  const showVerifying  = status === 'verifying';
-  const showSuccess    = status === 'success';
-  const showCancelled  = status === 'cancelled';
+  const isProcessing  = status === 'initiating';
+  const showFailed    = status === 'failed';
+  const showSuccess   = status === 'success';
 
-  // ── Build userDetails payload for /verify_payment (unchanged) ──
-  const buildUserDetails = (): UserDetails => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // yyyy-MM-dd
-    const todayDT = `${todayStr} 00:00:00`;
-    const dobFormatted = dobSet
-      ? `${String(dobDay).padStart(2, '0')}/${String(dobMonth).padStart(
-          2,
-          '0',
-        )}/${dobYear}`
-      : undefined;
-    const titleMap: Record<string, string> = {
-      Male: 'Mr',
-      Female: 'Mrs',
-      Other: 'Mx',
-    };
-    const activeGroup = isFixed ? selectedGroup : (groups[0] ?? null);
-    const groupCode = activeGroup?.GROUPCODE ?? '';
-    const regNo = activeGroup ? String(activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? '') : '';
-
-    return {
-      newMember: {
-        title: titleMap[gender] ?? undefined,
-        pName: name.trim() || undefined,
-        dob: dobFormatted,
-        email: email.trim() || undefined,
-        address1: doorStreet.trim() || undefined,
-        mobile: mobile.trim() || undefined,
-        pinCode: pincode.trim() || undefined,
-        city: city.trim() || undefined,
-        state: stateVal.trim() || undefined,
-        area: area.trim() || undefined,
-        nomeni: nominee.trim() || undefined,
-        nomineeRelationship: nomRel.trim() || undefined,
-        nomineeMobile: nomMobile.trim() || undefined,
-        panno: pan.trim().toUpperCase() || undefined,
-      },
-      createSchemeSummary: {
-        schemeId: String(scheme.SchemeId),
-        groupCode: groupCode || undefined,
-        regNo: regNo || undefined,
-        joinDate: todayStr,
-        updateTime: todayDT,
-        totalIns: String(scheme.Instalment),
-      },
-      schemeCollectInsert: {
-        groupCode: groupCode || undefined,
-        regNo: regNo || undefined,
-        rDate: todayDT,
-        amount: String(effectiveAmount),
-        modePay: 'ONLINE',
-        installment: '1',
-        SchemeId: scheme.SchemeId,
-        chqBankCode: 'RAZORPAY',
-        // chqCardNo filled by useRazorpay hook with razorpay_payment_id
-      },
-    };
-  };
-
-  // ── Build NMData payload for /api/v1/member/create (unchanged) ──
-  // Called only after the Razorpay payment succeeds & signature is verified.
-  const buildMemberPayload = (payment: RazorpaySuccessPayment): NMData => {
+  const buildPayload = (): InitiatePaymentRequest => {
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
-      now.getDate(),
-    )}`;
-    const nowDateTime = `${dateStr} ${pad(now.getHours())}:${pad(
-      now.getMinutes(),
-    )}:${pad(now.getSeconds())}`;
-    // LocalDateTime format (yyyy-MM-ddTHH:mm:ss) — unambiguous for SQL Server.
-    const dobFormatted = dobSet
-      ? `${dobYear}-${pad(dobMonth)}-${pad(dobDay)}T00:00:00`
-      : '';
-    const titleMap: Record<string, string> = {
-      Male: 'Mr',
-      Female: 'Mrs',
-      Other: 'Mx',
-    };
+    const dt  = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const dobFormatted = dobSet ? `${dobYear}-${pad(dobMonth)}-${pad(dobDay)}` : '';
+    const titleMap: Record<string, string> = { Male: 'Mr', Female: 'Mrs', Other: 'Mx' };
     const activeGroup = isFixed ? selectedGroup : (groups[0] ?? null);
-    const groupCode = activeGroup?.GROUPCODE ?? '';
-    const regNo = activeGroup ? String(activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? '1') : '1';
+    const groupCode   = activeGroup?.GROUPCODE ?? '';
+    const regNo       = activeGroup ? (activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? 1) : 1;
 
     return {
-      newMember: {
-        title: titleMap[gender] || 'Mr',
-        initial: (name.trim()[0] || 'K').toUpperCase(),
-        pName: name.trim() || 'NA',
-        sName: 'NA',
-        doorNo: doorStreet.trim() || '',
-        address1: doorStreet.trim() || '',
-        address2: district.trim() || '',
-        area: area.trim() || '',
-        city: city.trim() || '',
-        state: stateVal.trim() || 'Tamil Nadu',
-        country: 'India',
-        pinCode: pincode.trim() || '',
-        mobile: mobile.trim() || '',
-        mobile2: '',
-        nomeni: nominee.trim() || 'NA',
-        nomineeMobile: nomMobile.trim() || '',
-        nomineeRelationship: nomRel.trim() || 'Spouse',
-        nomAddr1: doorStreet.trim() || '',
-        nomAddr2: '',
-        nomCity: city.trim() || '',
-        nomState: stateVal.trim() || 'Tamil Nadu',
-        nomPincode: pincode.trim() || '',
-        nomCountry: 'India',
-        idProof: 'Aadhaar',
-        idProofNo: aadhaar.trim(),
-        aadhaarMasked: aadhaar.trim(),
-        panno: pan.trim().toUpperCase(),
-        dob: dobFormatted,
-        email: email.trim() || '',
-        nomineeMobileVerified: false,
-        nomineeAadhaarVerified: false,
-        upDateTime: nowDateTime,
-        userId: '999', // FIXED
-        appVer: 'WEB',
-        // Omit when empty: '' breaks an insert into a DATE column.
-        anniversaryDate: undefined,
+      amount:         effectiveAmount,
+      currency:       'INR',
+      billingName:    name.trim(),
+      billingEmail:   email.trim(),
+      billingTel:     mobile.trim(),
+      billingAddress: doorStreet.trim(),
+      billingCity:    city.trim(),
+      billingState:   stateVal.trim(),
+      billingZip:     pincode.trim(),
+      billingCountry: 'India',
+      regno:          Number(regNo),
+      groupcode:      groupCode,
+      newJoin:        true,
+      schemeDetails:  null,
+      nmData: {
+        newMember: {
+          title:       titleMap[gender] || 'Mr',
+          initial:     (name.trim()[0] || 'K').toUpperCase(),
+          pName:       name.trim() || 'NA',
+          sName:       'NA',
+          doorNo:      doorStreet.trim(),
+          address1:    doorStreet.trim(),
+          address2:    district.trim(),
+          area:        area.trim(),
+          city:        city.trim(),
+          state:       stateVal.trim() || 'Tamil Nadu',
+          country:     'India',
+          pinCode:     pincode.trim(),
+          mobile:      mobile.trim(),
+          idProof:     'Aadhaar',
+          idProofNo:   aadhaar.trim(),
+          panNumber:   pan.trim().toUpperCase(),
+          dob:         dobFormatted,
+          email:       email.trim(),
+          upDateTime:  dt,
+          userId:      '9999',
+          appVer:      'APP',
+        },
+        createSchemeSummary: {
+          schemeId:    scheme.SchemeId,
+          groupCode:   groupCode,
+          regNo:       Number(regNo),
+          joinDate:    dt,
+          upDateTime2: dt,
+          openingDate: dt,
+          userId2:     '9999',
+        },
+        schemeCollectInsert: {
+          amount:  effectiveAmount,
+          modePay: 'O',
+          accCode: '',
+        },
       },
-      createSchemeSummary: {
-        schemeId: String(scheme.SchemeId),
-        groupCode,
-        regNo,
-        joinDate: nowDateTime,
-        updateTime: nowDateTime,
-        openingDate: nowDateTime,
-        userId: '999', // FIXED
-        totalIns: String(scheme.Instalment),
-      },
-      schemeCollectInsert: {
-        amount: String(effectiveAmount),
-        modePay: '4',
-        accCode: '00001', // FIXED
-        chqBankCode: '4',
-        chqCardNo: payment.razorpay_payment_id, // paymentId
-        chqBranch: 'Online',
-        chkBank: 'Razorpay',
-        chqRtnReason: payment.razorpay_order_id, // orderId
-      },
-      referralCode: '',
     };
   };
 
@@ -567,31 +462,26 @@ export default function SchemeJoinScreen() {
     );
   };
 
-  const handleSubmit = async () => {
-    // Collect per-field errors
+  const handleSubmit = () => {
     const fe: Record<string, string> = {};
-    if (name.trim().length <= 1) fe.name = 'Enter your full name';
-    if (!isValidMobile(mobile)) fe.mobile = 'Enter a valid 10-digit mobile number';
-    if (!isValidEmail(email)) fe.email = 'Enter a valid email address';
-    if (!dobSet || dobAge < 18) fe.dob = 'Must be 18 years or older';
-    if (!isValidAadhaar(aadhaar)) fe.aadhaar = 'Aadhaar must be exactly 12 digits';
-    if (!isValidPAN(pan)) fe.pan = 'Invalid PAN format (e.g. ABCDE1234F)';
-    if (nominee.trim().length <= 1) fe.nominee = 'Enter nominee name';
-    if (nomMobile && !isValidMobile(nomMobile))
-      fe.nomMobile = 'Enter a valid 10-digit mobile';
-    if (gender === '') fe.gender = 'Select gender';
-    if (doorStreet.trim().length <= 3)
-      fe.doorStreet = 'Enter door number and street';
-    if (pincode.trim().length !== 6) fe.pincode = 'Enter a valid 6-digit pincode';
-    if (effectiveAmount <= 0) fe.amount = 'Select or enter amount';
-    if (isFixed && !selectedGroup) fe.group = 'Select a group';
+    if (name.trim().length <= 1)                    fe.name       = 'Enter your full name';
+    if (!isValidMobile(mobile))                     fe.mobile     = 'Enter a valid 10-digit mobile number';
+    if (!isValidEmail(email))                       fe.email      = 'Enter a valid email address';
+    if (!dobSet || dobAge < 18)                     fe.dob        = 'Must be 18 years or older';
+    if (!isValidAadhaar(aadhaar))                   fe.aadhaar    = 'Aadhaar must be exactly 12 digits';
+    if (!isValidPAN(pan))                           fe.pan        = 'Invalid PAN format (e.g. ABCDE1234F)';
+    if (nominee.trim().length <= 1)                 fe.nominee    = 'Enter nominee name';
+    if (nomMobile && !isValidMobile(nomMobile))     fe.nomMobile  = 'Enter a valid 10-digit mobile';
+    if (gender === '')                              fe.gender     = 'Select gender';
+    if (doorStreet.trim().length <= 3)              fe.doorStreet = 'Enter door number and street';
+    if (pincode.trim().length !== 6)                fe.pincode    = 'Enter a valid 6-digit pincode';
+    if (effectiveAmount <= 0)                       fe.amount     = 'Select or enter amount';
+    if (isFixed && !selectedGroup)                  fe.group      = 'Select a group';
 
     setFieldErrors(fe);
     if (Object.keys(fe).length > 0) {
       toast.error('Please check the form', {
-        message:
-          fe[FIELD_ORDER.find((k) => fe[k]) ?? ''] ??
-          'Some fields need attention.',
+        message:  fe[FIELD_ORDER.find((k) => fe[k]) ?? ''] ?? 'Some fields need attention.',
         position: 'top',
         duration: 3500,
       });
@@ -599,42 +489,25 @@ export default function SchemeJoinScreen() {
       return;
     }
 
-    const activeGroup = isFixed ? selectedGroup : (groups[0] ?? null);
-    const groupCode = activeGroup?.GROUPCODE ?? '';
-    const regno = activeGroup ? String(activeGroup.REGNO ?? activeGroup.CURRENTREGNO ?? '') : '';
-    const receipt = `join_${scheme.SchemeId}_${mobile}_${Date.now()}`;
-
-    pay(
-      {
-        AMOUNT: effectiveAmount, // paise
-        CURRENCY: 'INR',
-        RECEIPT: receipt,
-        SCHEMEID: String(scheme.SchemeId),
-        GROUPCODE: groupCode,
-        REGNO: regno,
-        INSTALLMENTNUMBER: 1,
-      },
-      {
-        _checkoutFn: (opts: any) => rzpWebRef.current!.open(opts),
-        name: 'Rangas DigiGold',
-        description: `Join ${scheme.schemeName} – Instalment 1`,
-        image: 'https://scheme.rangasjewellery.com/logo.png',
-        prefill: { name, email, contact: mobile },
-        theme: { color: mColor },
-      },
-      buildUserDetails(),
-      // After the payment is verified, create the member via /api/v1/member/create.
-      async (payment) => {
-        const payload = buildMemberPayload(payment);
-        console.log('=== /api/v1/member/create REQUEST BODY ===');
-        console.log(JSON.stringify(payload, null, 2));
-        console.log('==========================================');
-        await memberService.createMember(payload);
-      },
-    );
+    initiate(buildPayload(), (url, orderId) => {
+      navigation.navigate('WebView', { url, title: 'Payment' });
+    });
   };
 
-  // On payment success: clear draft.
+  const statusRef     = React.useRef(status);
+  const initiateRef   = React.useRef(initiateData);
+  statusRef.current   = status;
+  initiateRef.current = initiateData;
+
+  // Poll status once when returning from the CCAvenue WebView
+  useFocusEffect(
+    useCallback(() => {
+      if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
+        checkStatus(initiateRef.current.orderId);
+      }
+    }, [])
+  );
+
   useEffect(() => {
     if (status !== 'success') return;
     AsyncStorage.removeItem(DRAFT_KEY(scheme.SchemeId));
@@ -699,13 +572,7 @@ export default function SchemeJoinScreen() {
     return rows;
   }, [area, city, district, stateVal]);
 
-  const submitLabel = isProcessing
-    ? status === 'creating_order'
-      ? 'Creating order…'
-      : status === 'checkout_open'
-      ? 'Processing…'
-      : 'Verifying…'
-    : 'Confirm & pay';
+  const submitLabel = isProcessing ? 'Processing…' : 'Confirm & pay';
 
   const G = SIZES.layout.gutter;
 
@@ -1234,63 +1101,20 @@ export default function SchemeJoinScreen() {
         </View>
       </ScreenCanvas>
 
-      {/* ── Verifying / Success / Cancelled full-page overlay ── */}
-      <Modal visible={showVerifying || showSuccess || showCancelled} transparent animationType="fade">
+      {/* Success overlay */}
+      <Modal visible={showSuccess} transparent animationType="fade">
         <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60, justifyContent: 'center', alignItems: 'center', padding: G * 2 }]}>
-          <View style={[
-            s.resultCard,
-            { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl },
-          ]}>
-            {showVerifying && (
-              <>
-                <View style={[s.resultIcon, { backgroundColor: COLORS.background ?? COLORS.canvasElevated }]}>
-                  <Ionicons name="hourglass-outline" size={SIZES.icon.xl} color={COLORS.primary} />
-                </View>
-                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
-                  Confirming your enrolment
-                </Text>
-                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
-                  Please wait while we verify your payment and set up your scheme. This takes a few seconds.
-                </Text>
-              </>
-            )}
-
-            {showSuccess && (
-              <>
-                <View style={[s.resultIcon, { backgroundColor: COLORS.successBg ?? '#E6F9F0' }]}>
-                  <Ionicons name="checkmark-circle" size={SIZES.icon.xl} color={COLORS.success ?? '#1A9E5C'} />
-                </View>
-                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
-                  You're enrolled! 🎉
-                </Text>
-                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
-                  {`Welcome to ${scheme.schemeName}. Your first instalment has been received.`}
-                </Text>
-                <PremiumButton
-                  label="Go to home"
-                  style={{ marginTop: SIZES.margin.xxl }}
-                  onPress={() => { reset(); navigation.navigate('Main'); }}
-                />
-              </>
-            )}
-
-            {showCancelled && (
-              <>
-                <View style={[s.resultIcon, { backgroundColor: COLORS.warningBg ?? '#FFF8E1' }]}>
-                  <Ionicons name="close-circle-outline" size={SIZES.icon.xl} color={COLORS.warning ?? '#F59E0B'} />
-                </View>
-                <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
-                  Payment cancelled
-                </Text>
-                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
-                  No amount was debited. You can try again whenever you're ready.
-                </Text>
-                <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
-                  <PremiumButton label="Try again" onPress={() => { reset(); void handleSubmit(); }} />
-                  <PremiumButton label="Back to form" variant="outline" onPress={reset} />
-                </View>
-              </>
-            )}
+          <View style={[s.resultCard, { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl }]}>
+            <View style={[s.resultIcon, { backgroundColor: COLORS.successBg ?? '#E6F9F0' }]}>
+              <Ionicons name="checkmark-circle" size={SIZES.icon.xl} color={COLORS.success ?? '#1A9E5C'} />
+            </View>
+            <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
+              You're enrolled! 🎉
+            </Text>
+            <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+              {`Welcome to ${scheme.schemeName}. Your first instalment has been received.`}
+            </Text>
+            <PremiumButton label="Go to home" style={{ marginTop: SIZES.margin.xxl }} onPress={() => { reset(); navigation.navigate('Main'); }} />
           </View>
         </View>
       </Modal>
@@ -1520,9 +1344,7 @@ export default function SchemeJoinScreen() {
         </Pressable>
       </Modal>
 
-      <RazorpayWebCheckout ref={rzpWebRef} />
-
-      {/* ── Failure modal (centered) ── */}
+      {/* Failure modal */}
       <Modal visible={showFailed} transparent animationType="fade">
         <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60, justifyContent: 'center', alignItems: 'center', padding: G * 2 }]}>
           <View style={[s.resultCard, { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl }]}>

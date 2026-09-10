@@ -16,15 +16,27 @@ export default function WebViewComponent() {
   const navigation = useNavigation();
   const { params } = useRoute<WebViewRoute>();
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(false);
+  const [error, setError]       = useState(false);
 
   const loading = progress < 1;
 
+  const didGoBack = React.useRef(false);
+
+  const handleNavigationChange = (navState: { url: string }) => {
+    const url = navState.url ?? '';
+    console.log('=== WebView URL change ===', url);
+
+    if (url.includes('/api/v1/payments/callback') && !didGoBack.current) {
+      didGoBack.current = true;
+      console.log('=== CCAvenue callback detected, navigating back ===');
+      navigation.goBack();
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-
       <AppHeader
-        title={'Rangas Jewellery'}
+        title={params.title ?? 'Payment'}
         showBack
         onBackPress={() => navigation.goBack()}
         variant="gold"
@@ -36,9 +48,8 @@ export default function WebViewComponent() {
         onLoadProgress={({ nativeEvent }) => setProgress(nativeEvent.progress)}
         onLoadEnd={() => setProgress(1)}
         onError={() => { setProgress(1); setError(true); }}
+        onNavigationStateChange={handleNavigationChange}
         style={{ flex: 1 }}
-        cacheEnabled
-        cacheMode="LOAD_CACHE_ELSE_NETWORK"
         domStorageEnabled
         javaScriptEnabled
         setSupportMultipleWindows={false}
@@ -60,7 +71,6 @@ export default function WebViewComponent() {
           <Text style={{ color: COLORS.textSecondary, marginTop: 8 }}>Failed to load page</Text>
         </View>
       )}
-
     </View>
   );
 }
