@@ -409,7 +409,7 @@ export default function PortfolioScreen() {
 
                   return (
                     <SchemeCardV2
-                      key={String(item.regNo)}
+                      key={`${item.groupCode}-${item.regNo}`}
                       variant="holding"
                       title={
                         item.schemeSummary?.schemeName ||

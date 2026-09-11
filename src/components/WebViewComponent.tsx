@@ -1,8 +1,8 @@
 // src/components/WebViewComponent.tsx
 
 import React, { useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { View, StyleSheet, ActivityIndicator, Text, Linking } from 'react-native';
+import { WebView, WebViewNavigation } from 'react-native-webview';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../theme';
@@ -22,12 +22,22 @@ export default function WebViewComponent() {
 
   const didGoBack = React.useRef(false);
 
-  const handleNavigationChange = (navState: { url: string }) => {
+  const UPI_SCHEMES = ['upi://', 'phonepe://', 'paytmmp://', 'gpay://', 'tez://', 'bhim://'];
+
+  const handleShouldStartLoadWithRequest = (request: WebViewNavigation): boolean => {
+    const url = request.url ?? '';
+    if (UPI_SCHEMES.some((s) => url.startsWith(s))) {
+      Linking.openURL(url).catch(() => {});
+      return false; // block WebView from navigating
+    }
+    return true;
+  };
+
+  const handleNavigationChange = (navState: WebViewNavigation) => {
     const url = navState.url ?? '';
     if (url.includes('/api/v1/payments/callback') && !didGoBack.current) {
       didGoBack.current = true;
       setVerifying(true);
-      // Small delay so the overlay renders before goBack triggers useFocusEffect
       setTimeout(() => navigation.goBack(), 300);
     }
   };
@@ -47,6 +57,7 @@ export default function WebViewComponent() {
         onLoadEnd={() => setPageLoaded(true)}
         onError={() => { setPageLoaded(true); setError(true); }}
         onNavigationStateChange={handleNavigationChange}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         style={{ flex: 1 }}
         domStorageEnabled
         javaScriptEnabled

@@ -67,7 +67,7 @@ export default function GoldAmountInput({
             value={weightInput}
             onChangeText={onWeightChange}
             keyboardType="decimal-pad"
-            placeholder="0.0000"
+            placeholder="0.000"
             placeholderTextColor={COLORS.inkMuted}
             selectionColor={COLORS.primary}
             style={[asText(FONTS.displaySm), s.equalValue, { color: COLORS.inkPrimary }]}

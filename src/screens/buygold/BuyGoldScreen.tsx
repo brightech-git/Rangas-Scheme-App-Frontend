@@ -147,10 +147,11 @@ export default function BuyGoldScreen() {
   const isProcessing = status === 'initiating';
   const isVerifying  = status === 'pending';
 
-  // ── Customer info (auto-filled from user profile) ──
-  const [name,       setName]       = useState('');
-  const [mobile,     setMobile]     = useState('');
-  const [email,      setEmail]      = useState('');
+  // name / mobile / email come directly from login — not stored in form state
+  const loginName   = user?.username      ?? '';
+  const loginMobile = user?.contactNumber ?? '';
+  const loginEmail  = user?.email         ?? '';
+
   const [doorStreet, setDoorStreet] = useState('');
   const [area,       setArea]       = useState('');
   const [city,       setCity]       = useState('');
@@ -165,13 +166,10 @@ export default function BuyGoldScreen() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.username    && !name)       setName(user.username);
-    if (user.contactNumber && !mobile)   setMobile(user.contactNumber);
-    if (user.email       && !email)      setEmail(user.email);
-    if (user.address1    && !doorStreet) setDoorStreet(user.address1);
-    if (user.city        && !city)       setCity(user.city);
-    if (user.state       && !stateVal)   setStateVal(user.state);
-    if (user.pincode     && !pincode)    setPincode(user.pincode);
+    if (user.address1 && !doorStreet) setDoorStreet(user.address1);
+    if (user.city     && !city)       setCity(user.city);
+    if (user.state    && !stateVal)   setStateVal(user.state);
+    if (user.pincode  && !pincode)    setPincode(user.pincode);
   }, [user]);
 
   // ── Pincode → auto-fill area / city / district / state ──
@@ -303,9 +301,8 @@ export default function BuyGoldScreen() {
     v === '' || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.trim().toUpperCase());
 
   const isCustomerValid =
-    name.trim().length > 1 &&
-    isValidMobile(mobile) &&
-    isValidEmail(email) &&
+    loginName.trim().length > 0 &&
+    loginMobile.trim().length > 0 &&
     isValidAadhaar(aadhaar) &&
     isValidPAN(pan) &&
     dobSet && dobAge >= 18 &&
@@ -319,9 +316,6 @@ export default function BuyGoldScreen() {
 
   const validateCustomerFields = (): Record<string, string> => {
     const fe: Record<string, string> = {};
-    if (name.trim().length <= 1)    fe.name       = 'Enter your full name';
-    if (!isValidMobile(mobile))     fe.mobile     = 'Enter a valid 10-digit mobile number';
-    if (!isValidEmail(email))       fe.email      = 'Enter a valid email address';
     if (!isValidAadhaar(aadhaar))   fe.aadhaar    = 'Aadhaar must be exactly 12 digits';
     if (!isValidPAN(pan))           fe.pan        = 'Invalid PAN format (e.g. ABCDE1234F)';
     if (!dobSet || dobAge < 18)     fe.dob        = 'Must be 18 years or older';
@@ -359,9 +353,9 @@ export default function BuyGoldScreen() {
     return {
       amount:         finalAmount,
       currency:       'INR',
-      billingName:    name.trim(),
-      billingEmail:   email.trim(),
-      billingTel:     mobile.trim(),
+      billingName:    loginName,
+      billingEmail:   loginEmail,
+      billingTel:     loginMobile,
       billingAddress: doorStreet.trim(),
       billingCity:    city.trim(),
       billingState:   stateVal.trim(),
@@ -374,8 +368,8 @@ export default function BuyGoldScreen() {
       nmData: {
         newMember: {
           title:       titleMap[gender] || 'Mr',
-          initial:     (name.trim()[0] || 'K').toUpperCase(),
-          pName:       name.trim() || 'NA',
+          initial:     (loginName[0] || 'K').toUpperCase(),
+          pName:       loginName || 'NA',
           sName:       'NA',
           doorNo:      doorStreet.trim(),
           address1:    doorStreet.trim(),
@@ -385,12 +379,12 @@ export default function BuyGoldScreen() {
           state:       stateVal.trim() || 'Tamil Nadu',
           country:     'India',
           pinCode:     pincode.trim(),
-          mobile:      mobile.trim(),
+          mobile:      loginMobile,
           idProof:     'Aadhaar',
           idProofNo:   aadhaar.trim(),
           panNumber:   pan.trim().toUpperCase(),
           dob:         dobFormatted,
-          email:       email.trim(),
+          email:       loginEmail,
           upDateTime:  dt,
           userId:      '9999',
           appVer:      'APP',
@@ -438,16 +432,30 @@ export default function BuyGoldScreen() {
   statusRef.current  = status;
   initiateRef.current = initiateData;
 
+  // Persist orderId in a plain ref so it survives reset()
+  const orderIdRef = useRef<string | null>(null);
+  if (initiateData?.orderId) orderIdRef.current = initiateData.orderId;
+
+  const [isChecking, setIsChecking] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
-      if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
-        console.log('[BuyGold] Order status check:', { orderId: initiateRef.current.orderId });
-        checkStatus(initiateRef.current.orderId).then((sd) => {
+      console.log('[BuyGold] useFocusEffect fired — status:', statusRef.current, 'orderId:', orderIdRef.current);
+      if (statusRef.current === 'pending' && orderIdRef.current) {
+        setIsChecking(true);
+        checkStatus(orderIdRef.current).then((sd) => {
+          console.log('[BuyGold] checkStatus resolved — sd:', sd ? 'has data' : 'null/undefined');
           if (sd) {
-            reset();
             navigation.navigate('PaymentResult', { result: sd, context: 'buygold' });
+          } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
           }
-        });
+          reset();
+        }).catch((e) => {
+          console.log('[BuyGold] checkStatus catch:', e);
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+          reset();
+        }).finally(() => setIsChecking(false));
       }
     }, [])
   );
@@ -456,7 +464,7 @@ export default function BuyGoldScreen() {
   const breakdown: SummaryRow[] = useMemo(() => [
     { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
     { label: 'Amount entered', value: money(amount) },
-    { label: 'Gold received', value: `${weight.toFixed(4)} g`, highlight: true },
+    { label: 'Gold received', value: `${weight.toFixed(3)} g`, highlight: true },
     { label: 'Total payable', value: money(Math.round(amount)), total: true },
   ], [goldRate, amount, weight]);
 
@@ -519,7 +527,7 @@ export default function BuyGoldScreen() {
             <BottomActionBar
               label="Total payable"
               value={money(Math.round(amount))}
-              note={`${weight.toFixed(4)} g of 916 gold`}
+              note={`${weight.toFixed(3)} g of 916 gold`}
               actionLabel={isProcessing ? 'Processing…' : 'Buy gold'}
               actionVariant="gold"
               disabled={!isReady || isProcessing}
@@ -539,38 +547,6 @@ export default function BuyGoldScreen() {
                 caption="Used for billing and delivery of your DigiGold"
               />
               <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
-                <FormField
-                  label="Full name"
-                  indicator="required"
-                  icon="person-outline"
-                  value={name}
-                  placeholder="As printed on your ID"
-                  autoCapitalize="words"
-                  onChangeText={(v) => { setName(v); clearErr('name'); }}
-                  error={fieldErrors.name}
-                />
-                <FormField
-                  label="Mobile number"
-                  indicator="required"
-                  icon="call-outline"
-                  value={mobile}
-                  placeholder="10-digit mobile"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  onChangeText={(v) => { setMobile(v.replace(/[^0-9]/g, '')); clearErr('mobile'); }}
-                  error={fieldErrors.mobile}
-                />
-                <FormField
-                  label="Email address"
-                  indicator="required"
-                  icon="mail-outline"
-                  value={email}
-                  placeholder="your@email.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  onChangeText={(v) => { setEmail(v); clearErr('email'); }}
-                  error={fieldErrors.email}
-                />
                 <FormField
                   label="Aadhaar number"
                   indicator="required"
@@ -938,7 +914,7 @@ export default function BuyGoldScreen() {
       )}
 
       {/* Verifying overlay — shown while checkStatus API call is in flight */}
-      {isVerifying && (
+      {(isVerifying || isChecking) && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={[asText(FONTS.microBold), { color: COLORS.inkPrimary }]}>Verifying your payment…</Text>

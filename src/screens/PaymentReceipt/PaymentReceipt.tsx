@@ -200,6 +200,7 @@ export default function PaymentReceipt() {
               <Text style={[st.th, { flex: 1.8 }]}>Group-Reg No</Text>
               <Text style={[st.th, { flex: 1 }]}>Installment</Text>
               {weight > 0 && <Text style={[st.th, { flex: 1 }]}>Weight</Text>}
+              <Text style={[st.th, { flex: 1.2 }]}>Rate</Text>
               <Text style={[st.th, { flex: 1.2 }]}>Amount</Text>
             </View>
             <View style={[st.tableRow, { borderTopColor: COLORS.border }]}>
@@ -207,6 +208,9 @@ export default function PaymentReceipt() {
               <Text style={[st.td, { flex: 1.8, color: COLORS.textPrimary }]}>{groupRegNo}</Text>
               <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>#{payment.installment}</Text>
               {weight > 0 && <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>{weight.toFixed(3)}</Text>}
+              <Text style={[st.td, { flex: 1.2, color: COLORS.textPrimary }]}>
+                {payment.rate ? parseFloat(String(payment.rate)).toLocaleString('en-IN') : '—'}
+              </Text>
               <Text style={[st.td, { flex: 1.2, color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
                 {currency(payment.amount)}
               </Text>

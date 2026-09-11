@@ -61,6 +61,9 @@ export interface PaymentHistory {
   chqBranch: string;
   chqBank: string;
   chqRtnReason: string | null;
+  rate: string | null;
+  bonusAmount: string | null;
+  bonusWeight: string | null;
 }
 
 export interface PPData {

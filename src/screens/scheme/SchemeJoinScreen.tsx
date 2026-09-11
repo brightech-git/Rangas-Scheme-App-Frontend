@@ -54,6 +54,7 @@ import {
   Modal,
   FlatList,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -193,10 +194,12 @@ export default function SchemeJoinScreen() {
     ? Math.round(flexAmount)
     : parseInt(customAmount) || 0;
 
+  // name / mobile / email come directly from login — not stored in form state
+  const loginName   = user?.username       ?? '';
+  const loginMobile = user?.contactNumber  ?? '';
+  const loginEmail  = user?.email          ?? '';
+
   // Customer details
-  const [name, setName] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [email, setEmail] = useState('');
   const [nominee, setNominee] = useState('');
   const [nomRel, setNomRel] = useState('');
   const [nomMobile, setNomMobile] = useState('');
@@ -231,17 +234,14 @@ export default function SchemeJoinScreen() {
     new Date(today.getFullYear() - 25, 0, 1),
   );
 
-  // ── Auto-populate from logged-in user profile (unchanged) ──────
+  // ── Auto-populate from logged-in user profile ──────
   useEffect(() => {
     if (!user) return;
-    if (user.username && !name) setName(user.username);
-    if (user.contactNumber && !mobile) setMobile(user.contactNumber);
-    if (user.email && !email) setEmail(user.email);
-    if (user.gender && !gender) setGender(user.gender);
-    if (user.address1 && !doorStreet) setDoorStreet(user.address1);
-    if (user.city && !city) setCity(user.city);
-    if (user.state && !stateVal) setStateVal(user.state);
-    if (user.pincode && !pincode) setPincode(user.pincode);
+    if (user.gender    && !gender)     setGender(user.gender);
+    if (user.address1  && !doorStreet) setDoorStreet(user.address1);
+    if (user.city      && !city)       setCity(user.city);
+    if (user.state     && !stateVal)   setStateVal(user.state);
+    if (user.pincode   && !pincode)    setPincode(user.pincode);
     if (user.dateOfBirth && !dobSet) {
       try {
         const d = new Date(user.dateOfBirth);
@@ -255,15 +255,12 @@ export default function SchemeJoinScreen() {
     }
   }, [user]);
 
-  // ── AsyncStorage: load draft on mount (step 2 & 3 only) ──────────────
+  // ── AsyncStorage: load draft on mount ──────────────
   useEffect(() => {
     AsyncStorage.getItem(PERSONAL_KEY).then((raw) => {
       if (!raw) return;
       try {
         const d = JSON.parse(raw);
-        if (d.name) setName(d.name);
-        if (d.mobile) setMobile(d.mobile);
-        if (d.email) setEmail(d.email);
         if (d.aadhaar) setAadhaar(d.aadhaar);
         if (d.pan) setPan(d.pan);
         if (d.doorStreet) setDoorStreet(d.doorStreet);
@@ -334,17 +331,17 @@ export default function SchemeJoinScreen() {
     }
   };
 
-  // ── AsyncStorage: save draft (step 2 & 3 only) ────────
+  // ── AsyncStorage: save draft ────────
   useEffect(() => {
     const draft = {
-      name, mobile, email, aadhaar, pan,
+      aadhaar, pan,
       doorStreet, pincode, area, city, district, stateVal,
       gender, dobDay, dobMonth, dobYear, dobSet,
       nominee, nomRel, nomMobile,
     };
     AsyncStorage.setItem(PERSONAL_KEY, JSON.stringify(draft));
   }, [
-    name, mobile, email, aadhaar, pan,
+    aadhaar, pan,
     doorStreet, pincode, area, city, district, stateVal,
     gender, dobDay, dobMonth, dobYear, dobSet,
     nominee, nomRel, nomMobile,
@@ -391,9 +388,8 @@ export default function SchemeJoinScreen() {
   const isValidEmail = (v: string) => v.includes('@') && v.includes('.');
 
   const isFormValid =
-    name.trim().length > 1 &&
-    isValidMobile(mobile) &&
-    isValidEmail(email) &&
+    loginName.trim().length > 0 &&
+    loginMobile.trim().length > 0 &&
     dobSet && dobAge >= 18 &&
     isValidAadhaar(aadhaar) &&
     isValidPAN(pan) &&
@@ -422,9 +418,9 @@ export default function SchemeJoinScreen() {
     return {
       amount:         effectiveAmount,
       currency:       'INR',
-      billingName:    name.trim(),
-      billingEmail:   email.trim(),
-      billingTel:     mobile.trim(),
+      billingName:    loginName,
+      billingEmail:   loginEmail,
+      billingTel:     loginMobile,
       billingAddress: doorStreet.trim(),
       billingCity:    city.trim(),
       billingState:   stateVal.trim(),
@@ -437,8 +433,8 @@ export default function SchemeJoinScreen() {
       nmData: {
         newMember: {
           title:       titleMap[gender] || 'Mr',
-          initial:     (name.trim()[0] || 'K').toUpperCase(),
-          pName:       name.trim() || 'NA',
+          initial:     (loginName[0] || 'K').toUpperCase(),
+          pName:       loginName || 'NA',
           sName:       'NA',
           doorNo:      doorStreet.trim(),
           address1:    doorStreet.trim(),
@@ -448,12 +444,12 @@ export default function SchemeJoinScreen() {
           state:       stateVal.trim() || 'Tamil Nadu',
           country:     'India',
           pinCode:     pincode.trim(),
-          mobile:      mobile.trim(),
+          mobile:      loginMobile,
           idProof:     'Aadhaar',
           idProofNo:   aadhaar.trim(),
           panNumber:   pan.trim().toUpperCase(),
           dob:         dobFormatted,
-          email:       email.trim(),
+          email:       loginEmail,
           upDateTime:  dt,
           userId:      '9999',
           appVer:      'APP',
@@ -484,7 +480,7 @@ export default function SchemeJoinScreen() {
     fieldNodeRefs.current[key] = node;
   };
   const FIELD_ORDER = [
-    'group', 'amount', 'name', 'mobile', 'email', 'aadhaar', 'pan',
+    'group', 'amount', 'aadhaar', 'pan',
     'dob', 'gender', 'doorStreet', 'pincode', 'nominee', 'nomMobile',
   ];
   const scrollToFirstError = (errs: Record<string, string>) => {
@@ -504,9 +500,6 @@ export default function SchemeJoinScreen() {
 
   const handleSubmit = () => {
     const fe: Record<string, string> = {};
-    if (name.trim().length <= 1)                    fe.name       = 'Enter your full name';
-    if (!isValidMobile(mobile))                     fe.mobile     = 'Enter a valid 10-digit mobile number';
-    if (!isValidEmail(email))                       fe.email      = 'Enter a valid email address';
     if (!dobSet || dobAge < 18)                     fe.dob        = 'Must be 18 years or older';
     if (!isValidAadhaar(aadhaar))                   fe.aadhaar    = 'Aadhaar must be exactly 12 digits';
     if (!isValidPAN(pan))                           fe.pan        = 'Invalid PAN format (e.g. ABCDE1234F)';
@@ -539,17 +532,32 @@ export default function SchemeJoinScreen() {
   statusRef.current   = status;
   initiateRef.current = initiateData;
 
+  // Persist orderId in a plain ref so it survives reset()
+  const orderIdRef = React.useRef<string | null>(null);
+  if (initiateData?.orderId) orderIdRef.current = initiateData.orderId;
+
+  const [isChecking, setIsChecking] = useState(false);
+
   // Poll status once when returning from the CCAvenue WebView
   useFocusEffect(
     useCallback(() => {
-      if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
-        checkStatus(initiateRef.current.orderId).then((sd) => {
+      console.log('[SchemeJoin] useFocusEffect fired — status:', statusRef.current, 'orderId:', orderIdRef.current);
+      if (statusRef.current === 'pending' && orderIdRef.current) {
+        setIsChecking(true);
+        checkStatus(orderIdRef.current).then((sd) => {
+          console.log('[SchemeJoin] checkStatus resolved — sd:', sd ? 'has data' : 'null/undefined');
           if (sd) {
             AsyncStorage.removeItem(DRAFT_KEY(scheme.SchemeId));
-            reset();
             navigation.navigate('PaymentResult', { result: sd, context: 'join' });
+          } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
           }
-        });
+          reset();
+        }).catch((e) => {
+          console.log('[SchemeJoin] checkStatus catch:', e);
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+          reset();
+        }).finally(() => setIsChecking(false));
       }
     }, [])
   );
@@ -563,9 +571,8 @@ export default function SchemeJoinScreen() {
   const stages = useMemo(() => {
     const planOk = effectiveAmount > 0 && (!isFixed || !!selectedGroup);
     const detailsOk =
-      name.trim().length > 1 &&
-      isValidMobile(mobile) &&
-      isValidEmail(email) &&
+      loginName.trim().length > 0 &&
+      loginMobile.trim().length > 0 &&
       dobSet &&
       dobAge >= 18 &&
       isValidAadhaar(aadhaar) &&
@@ -604,7 +611,7 @@ export default function SchemeJoinScreen() {
       },
     ];
   }, [
-    effectiveAmount, isFixed, selectedGroup, name, mobile, email, dobSet,
+    effectiveAmount, isFixed, selectedGroup, loginName, loginMobile, loginEmail, dobSet,
     dobAge, aadhaar, pan, gender, doorStreet, pincode, nominee, nomMobile,
     fieldErrors,
   ]);
@@ -927,53 +934,6 @@ export default function SchemeJoinScreen() {
             />
 
             <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
-              <FormField
-                ref={registerField('name')}
-                label="Full name"
-                indicator="required"
-                icon="person-outline"
-                value={name}
-                placeholder="As printed on your ID"
-                onChangeText={(v) => {
-                  setName(v);
-                  clearErr('name');
-                }}
-                error={fieldErrors.name}
-                autoCapitalize="words"
-              />
-
-              <FormField
-                ref={registerField('mobile')}
-                label="Mobile number"
-                indicator="required"
-                icon="call-outline"
-                value={mobile}
-                placeholder="10-digit mobile"
-                keyboardType="phone-pad"
-                maxLength={10}
-                onChangeText={(v) => {
-                  setMobile(v.replace(/[^0-9]/g, ''));
-                  clearErr('mobile');
-                }}
-                error={fieldErrors.mobile}
-              />
-
-              <FormField
-                ref={registerField('email')}
-                label="Email address"
-                indicator="required"
-                icon="mail-outline"
-                value={email}
-                placeholder="your@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onChangeText={(v) => {
-                  setEmail(v);
-                  clearErr('email');
-                }}
-                error={fieldErrors.email}
-              />
-
               <FormField
                 ref={registerField('aadhaar')}
                 label="Aadhaar number"
@@ -1523,6 +1483,15 @@ export default function SchemeJoinScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Verifying overlay */}
+      {isChecking && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', gap: 12, zIndex: 999 }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[asText(FONTS.microBold), { color: COLORS.inkPrimary }]}>Verifying your payment…</Text>
+          <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>Please wait, do not close the app</Text>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }

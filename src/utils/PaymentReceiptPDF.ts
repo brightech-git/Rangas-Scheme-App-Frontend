@@ -197,10 +197,11 @@ function buildReceiptHtml(data: ReceiptData, company: Company | undefined, logoB
     <table>
       <thead>
         <tr>
-          <th style="width:12%;">S.No</th>
-          <th style="width:32%;">Group Code - Reg No</th>
-          <th style="width:20%;">Installment</th>
-          ${weight > 0 ? `<th style="width:16%;">Weight (g)</th>` : ''}
+          <th style="width:10%;">S.No</th>
+          <th style="width:28%;">Group Code - Reg No</th>
+          <th style="width:16%;">Installment</th>
+          ${weight > 0 ? `<th style="width:14%;">Weight (g)</th>` : ''}
+          <th style="width:16%;">Rate</th>
           <th>Amount</th>
         </tr>
       </thead>
@@ -210,6 +211,7 @@ function buildReceiptHtml(data: ReceiptData, company: Company | undefined, logoB
           <td>${groupRegNo}</td>
           <td>#${payment.installment}</td>
           ${weight > 0 ? `<td>${weight.toFixed(3)}</td>` : ''}
+          <td>${payment.rate ? parseFloat(String(payment.rate)).toLocaleString('en-IN') : '—'}</td>
           <td>${formatCurrency(payment.amount)}</td>
         </tr>
       </tbody>

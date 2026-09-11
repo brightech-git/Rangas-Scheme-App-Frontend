@@ -22,7 +22,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "../../theme";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { verifyMpin } from "../../store/mpinSlice";
-import { logoutUser } from "../../store/authSlice";
+import { logoutUser, restoreSession } from "../../store/authSlice";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { useToast } from "../../components/ui/Toast";
 import { initNotifications } from "../../utils/NotificationService";
@@ -57,6 +57,10 @@ export default function VerifyMpinScreen() {
   const boxesRef = useRef<MpinBoxesRef>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+
+  // Rehydrate Redux store from AsyncStorage on every mount so switching
+  // accounts always shows the current user's data, not the previous one.
+  useEffect(() => { dispatch(restoreSession()); }, []);
 
   // ── Attempt lockout ────────────────────────────────────────────
   const [failCount, setFailCount] = useState(0);

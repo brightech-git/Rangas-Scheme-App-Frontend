@@ -188,7 +188,7 @@ export default function HomeScreen() {
   );
 
   const G = SIZES.layout.gutter;
-  const RAIL_CARD_W = Math.min(SCREEN_W - G * 2 - moderateScale(36), 320);
+  const RAIL_CARD_W = Math.min(SCREEN_W - G * 2 - moderateScale(36), 360);
 
   const gold = rates?.gold;
   const silver = rates?.silver;

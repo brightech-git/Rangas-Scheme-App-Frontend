@@ -253,11 +253,8 @@ export default function LoginScreen() {
             }`,
           });
 
-          const mpinSet =
-            await AsyncStorageHelper.isMpinSet();
-
           navigation.replace(
-            mpinSet
+            user.mpinSet === 'Y'
               ? 'MpinLogin'
               : 'CreateMpin',
           );

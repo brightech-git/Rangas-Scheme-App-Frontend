@@ -56,12 +56,15 @@ export function usePayment(): UsePaymentReturn {
 
   const checkStatus = async (orderId: string) => {
     try {
+      console.log('[usePayment] checkStatus → calling API for orderId:', orderId);
       const res = await paymentService.getStatus(orderId);
+      console.log('[usePayment] checkStatus ← response:', JSON.stringify(res, null, 2));
       setStatusData(res);
 
       // API returns orderStatus: 'SUCCESSFUL' | 'UNSUCCESSFUL'
       // with a legacy status field as fallback
       const raw = (res.orderStatus ?? res.status ?? '').toUpperCase();
+      console.log('[usePayment] checkStatus raw status:', raw);
       if (raw === 'SUCCESSFUL' || raw === 'SUCCESS' || raw === 'CAPTURED') {
         setStatus('success');
       } else if (raw === 'UNSUCCESSFUL' || raw === 'FAILED' || raw === 'FAILURE') {
@@ -72,6 +75,7 @@ export function usePayment(): UsePaymentReturn {
       }
       return res;
     } catch (err: any) {
+      console.log('[usePayment] checkStatus ✗ error:', err);
       setStatus('failed');
       setError(err?.message ?? 'Status check failed');
     }

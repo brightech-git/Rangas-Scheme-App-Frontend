@@ -42,11 +42,10 @@ const saveUserSession = async (user: UserData): Promise<void> => {
   if (user.playStoreLink)      pairs.push([KEYS.PLAYSTORE_LINK, user.playStoreLink]);
   if (user.whatsappLink)       pairs.push([KEYS.WHATSAPP_LINK,  user.whatsappLink]);
   if (user.used_referral_code) pairs.push([KEYS.USED_REFERRAL,  user.used_referral_code]);
-  if (user.picture) {
-    const existing = await AsyncStorage.getItem(KEYS.PICTURE);
-    if (!existing) pairs.push([KEYS.PICTURE, user.picture]);
-  }
+  if (user.picture)            pairs.push([KEYS.PICTURE,        user.picture]);
   if (user.socialMedia)        pairs.push([KEYS.SOCIAL_MEDIA,   user.socialMedia]);
+  if (user.mpinSet)            pairs.push([KEYS.MPIN_SET,        String(user.mpinSet === 'Y')]);
+  await AsyncStorage.multiRemove(Object.values(KEYS).filter(k => k !== KEYS.THEME && k !== KEYS.ONBOARDED));
   await AsyncStorage.multiSet(pairs);
 };
 

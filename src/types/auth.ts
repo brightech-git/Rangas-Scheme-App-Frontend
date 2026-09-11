@@ -72,6 +72,7 @@ export interface UserData {
   used_referral_code?: string;
   picture?: string;
   socialMedia?: string;
+  mpinSet?: string;
 }
 
 export interface AuthState {

@@ -43,6 +43,7 @@ export default function EnterMobileScreen() {
   const handleSendOtp = async () => {
     if (!validate()) return;
     const res = await dispatch(forgotPassword({ contactNumber: mobile.trim(), hashKey }));
+    console.log('Forgot Password Response:', res);
     if (forgotPassword.fulfilled.match(res)) {
       toast.success('OTP Sent!', { message: `Code sent to ${mobile.trim()}` });
       navigation.navigate('ForgotVerifyOTP', { contactNumber: mobile.trim(), hashKey });

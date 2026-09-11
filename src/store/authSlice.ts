@@ -49,10 +49,12 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (data: LoginRequest, { rejectWithValue }: { rejectWithValue: (v: string) => any }) => {
     try {
-          const res = await authService.login(data);
+      const res = await authService.login(data);
+      console.log('[loginUser] response:', JSON.stringify(res, null, 2));
       if (res.token) await AsyncStorageHelper.saveUserSession(res);
       return res;
     } catch (err: any) {
+      console.log('[loginUser] error:', err);
       return rejectWithValue(err.message);
     }
   }

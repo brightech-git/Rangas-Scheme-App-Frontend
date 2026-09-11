@@ -45,7 +45,7 @@ export default function PayInstallmentScreen() {
   const route      = useRoute<RouteProps>();
   const { ppData } = route.params;
 
-  const { status, initiateData, statusData, error, initiate, checkStatus, reset } = usePayment();
+  const { status, initiateData, error, initiate, checkStatus, reset } = usePayment();
 
   const scheme        = ppData.schemeSummary;
   const schemeName    = scheme?.schemeName ?? ppData.pName;
@@ -84,7 +84,7 @@ export default function PayInstallmentScreen() {
 
   const switchMode = (m: Mode) => {
     if (m === mode) return;
-    if (m === 'weight') setInput(enteredWeight > 0 ? enteredWeight.toFixed(4) : '');
+    if (m === 'weight') setInput(enteredWeight > 0 ? enteredWeight.toFixed(3) : '');
     else setInput(enteredAmount > 0 ? String(Math.round(enteredAmount)) : '');
     setMode(m);
   };
@@ -149,46 +149,52 @@ export default function PayInstallmentScreen() {
     });
   };
 
-  const statusRef      = React.useRef(status);
-  const initiateRef    = React.useRef(initiateData);
-  const statusDataRef   = React.useRef(statusData);
-  statusRef.current     = status;
-  initiateRef.current   = initiateData;
-  statusDataRef.current = statusData;
+  const statusRef    = React.useRef(status);
+  const initiateRef  = React.useRef(initiateData);
+  statusRef.current  = status;
+  initiateRef.current = initiateData;
+
+  // Persist orderId in a plain ref so it survives reset()
+  const orderIdRef = React.useRef<string | null>(null);
+  if (initiateData?.orderId) orderIdRef.current = initiateData.orderId;
+
+  const [isChecking, setIsChecking] = React.useState(false);
 
   // Poll status once when returning from the CCAvenue WebView
   useFocusEffect(
     useCallback(() => {
-      if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
-        console.log('[PayInstallment] Order status check payload:', { orderId: initiateRef.current.orderId });
-        checkStatus(initiateRef.current.orderId).then((sd) => {
+      console.log('[PayInstallment] useFocusEffect fired — status:', statusRef.current, 'orderId:', orderIdRef.current);
+      if (statusRef.current === 'pending' && orderIdRef.current) {
+        setIsChecking(true);
+        checkStatus(orderIdRef.current).then((sd) => {
+          console.log('[PayInstallment] checkStatus resolved — sd:', sd ? 'has data' : 'null/undefined');
           if (sd) {
-            reset();
             navigation.navigate('PaymentResult', { result: sd, context: 'installment' });
+          } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
           }
-        });
+          reset();
+        }).catch((e) => {
+          console.log('[PayInstallment] checkStatus catch:', e);
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+          reset();
+        }).finally(() => setIsChecking(false));
       }
     }, [])
   );
-
-  useEffect(() => {
-    if (status !== 'success') return;
-    reset();
-    navigation.navigate('Main');
-  }, [status]);
 
   const paymentSummaryRows: SummaryRow[] = useMemo(() => [
     { label: 'Scheme',         value: schemeName },
     { label: 'Instalment no.', value: `#${nextInstNum}` },
     { label: 'Method',         value: 'Online payment' },
-    ...(goldRate > 0 ? [{ label: 'Gold equivalent', value: `${effectiveWeight.toFixed(4)} g` }] : []),
+    ...(goldRate > 0 ? [{ label: 'Gold equivalent', value: `${effectiveWeight.toFixed(3)} g` }] : []),
     { label: 'Total payable',  value: money(effectiveAmount), total: true },
   ], [schemeName, nextInstNum, goldRate, effectiveWeight, effectiveAmount]);
 
   const breakdownRows: SummaryRow[] = useMemo(() => [
     { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
     { label: 'Amount entered',        value: money(effectiveAmount) },
-    { label: 'Gold received',         value: `${effectiveWeight.toFixed(4)} g`, highlight: true },
+    { label: 'Gold received',         value: `${effectiveWeight.toFixed(3)} g`, highlight: true },
     { label: 'Total payable',         value: money(effectiveAmount), total: true },
   ], [goldRate, effectiveAmount, effectiveWeight]);
 
@@ -250,7 +256,7 @@ export default function PayInstallmentScreen() {
                   </Text>
                 </View>
                 <Text style={[asText(FONTS.numeral), { color: COLORS.heroAccent, marginTop: 4 }]}>
-                  {mx.weight > 0 ? `${mx.weight.toFixed(4)} g` : '0.0000 g'}
+                  {mx.weight > 0 ? `${mx.weight.toFixed(3)} g` : '0.000 g'}
                 </Text>
                 <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 2, fontSize: 10 }]}>
                   {goldRate > 0 && mx.weight > 0
@@ -309,7 +315,7 @@ export default function PayInstallmentScreen() {
                   {ratesLoading && !rates
                     ? 'Calculating gold equivalent…'
                     : goldRate > 0
-                    ? `≈ ${effectiveWeight.toFixed(4)} g at ${money(goldRate)} / g`
+                    ? `≈ ${effectiveWeight.toFixed(3)} g at ${money(goldRate)} / g`
                     : '—'}
                 </Text>
               </View>
@@ -321,7 +327,7 @@ export default function PayInstallmentScreen() {
             <View style={{ marginTop: SIZES.margin.lg }}>
               <GoldAmountInput
                 amountInput={mode === 'amount' ? input : (goldRate > 0 && enteredWeight > 0 ? String(Math.round(enteredWeight * goldRate)) : '')}
-                weightInput={mode === 'weight' ? input : (goldRate > 0 && enteredAmount > 0 ? (enteredAmount / goldRate).toFixed(4) : '')}
+                weightInput={mode === 'weight' ? input : (goldRate > 0 && enteredAmount > 0 ? (enteredAmount / goldRate).toFixed(3) : '')}
                 onAmountChange={(v) => { setMode('amount'); setInput(v.replace(/[^0-9.]/g, '')); }}
                 onWeightChange={(v) => { setMode('weight'); setInput(v.replace(/[^0-9.]/g, '')); }}
                 goldRate={goldRate}
@@ -349,7 +355,7 @@ export default function PayInstallmentScreen() {
         )}
       </ScreenCanvas>
       {/* Verifying overlay — shown while checkStatus API call is in flight */}
-      {isVerifying && (
+      {(isVerifying || isChecking) && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={[asText(FONTS.microBold), { color: COLORS.inkPrimary }]}>Verifying your payment…</Text>

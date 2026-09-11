@@ -139,7 +139,7 @@ function SchemeCardV2({
             {!!eyebrow && (
               <Text
                 numberOfLines={1}
-                style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}
+                style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary, fontSize: 12 }]}
               >
                 {eyebrow}
               </Text>

@@ -31,7 +31,16 @@ import {
   money,
   grams,
   shortDate,
+  prettyDate,
 } from './ui/premium';
+
+const fmtDate = (iso: string) => {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+};
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -118,32 +127,28 @@ function MySchemeHoldings(
             { label: 'Paid', value: money(mx.invested) },
             item.schemeSummary?.weightLedger === 'Y'
               ? { label: 'Weight', value: grams(mx.weight, 3) }
-              : { label: 'Days Active', value: String(num(item.totalDays)) },
+              : { label: 'Remaining', value: String( money(mx.remaining)) },
             isMultiPay
-              ? { label: 'Purchases', value: String(item.paymentHistoryList?.length ?? 0) }
+              ? { label: 'bonusAmount', value: String(item.bonusAmount ?? 0) }
               : {
-                  label: isFullyPaid ? 'Instalment' : 'Remaining',
-                  value: isFullyPaid
-                    ? money(mx.perInstalment)
-                    : mx.remaining > 0
-                    ? money(mx.remaining)
-                    : money(mx.perInstalment),
+                  label: 'Maturity',
+                  value: item.maturityDate ? fmtDate(item.maturityDate) : '—',
                 },
           ]}
           paid={mx.paid}
-          total={isMultiPay ? 0 : isFullyPaid ? 0 : mx.total}
+          total={isMultiPay ? 0 : mx.total}
           flexibleNote={isMultiPay ? 'Flexible · buy anytime' : undefined}
           progressNote={
             isMultiPay
               ? item.lastPaidDate
-                ? `Last bought ${shortDate(item.lastPaidDate)}`
+                ? `Last bought ${fmtDate(item.lastPaidDate)}`
                 : undefined
               : isFullyPaid
               ? 'All instalments paid'
               : item.nextDueDate
-              ? `Due ${shortDate(item.nextDueDate)}`
+              ? `Due ${fmtDate(item.nextDueDate)}`
               : item.maturityDate
-              ? `Matures ${shortDate(item.maturityDate)}`
+              ? `Matures ${fmtDate(item.maturityDate)}`
               : undefined
           }
           actionLabel="View instalments"
