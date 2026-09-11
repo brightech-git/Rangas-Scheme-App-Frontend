@@ -12,6 +12,7 @@ import { useCompanies } from '../../api/hooks/Company/useCompanies';
 import { downloadPaymentReceipt } from '../../utils/PaymentReceiptPDF';
 import { PaymentHistory } from '../../types/Account/PhoneDetails';
 import { schemeMetrics } from '../../utils/schemeMetrics';
+import { classifySchemeKind } from '../../utils/schemeKind';
 import {
   ScreenCanvas,
   PageHeader,
@@ -33,9 +34,6 @@ type RouteProps = RouteProp<RootStackParamList, 'ViewInstallment'>;
 type NavProps = NativeStackNavigationProp<RootStackParamList, 'ViewInstallment'>;
 
 type TabKey = 'overview' | 'details' | 'history';
-
-/** DigiGold — bought in multiple ad-hoc payments, not a fixed instalment count. */
-const DIGI_GOLD_SCHEME_ID = 6;
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -88,11 +86,17 @@ export default function ViewInstallmentScreen() {
 
   const scheme = ppData.schemeSummary;
   const paid = toNum(scheme?.schemaSummaryTransBalance?.insPaid);
-  const isMultiPay = Number(scheme?.schemeId) === DIGI_GOLD_SCHEME_ID;
+
+  // Payment shape: 'fixed' = locked monthly amount, 'lumpsum' = single
+  // one-time payment, 'flexible' (DigiGold-style) = pay-anytime by
+  // rupees or by gold weight. See utils/schemeKind.ts.
+  const schemeKind = classifySchemeKind(scheme?.fixedIns, scheme?.instalment, scheme?.weightLedger);
+  const isLumpsum = schemeKind === 'lumpsum';
+  const isMultiPay = schemeKind === 'flexible';
   const total = isMultiPay ? 0 : toNum(scheme?.instalment);
   const mx = schemeMetrics(ppData);
 
-  const canPay = !mx.closed && (isMultiPay || mx.remaining > 0 || (total > 0 && paid < total));
+  const canPay = !mx.closed && (isMultiPay || (isLumpsum && paid < 1) || mx.remaining > 0 || (total > 0 && paid < total));
   const hasGold = scheme?.weightLedger === 'Y';
 
   const status = useMemo(() => {

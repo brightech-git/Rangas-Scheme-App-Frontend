@@ -5,6 +5,7 @@ import {
   Animated, StatusBar, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../../theme';
@@ -26,6 +27,8 @@ type Props = {
   rightComponent?: React.ReactNode;
   variant?: 'primary' | 'white' | 'transparent' | 'gold';
   animated?: boolean;
+  /** Extra content rendered below the nav row, still inside the curved/gradient surface (e.g. tabs, search). */
+  bottomContent?: React.ReactNode;
 };
 
 export default function AppHeader({
@@ -33,6 +36,7 @@ export default function AppHeader({
   onBackPress, actions = [],
   leftComponent, centerComponent, rightComponent,
   variant = 'primary', animated = true,
+  bottomContent,
 }: Props) {
   const { COLORS, FONTS, SIZES, SHADOWS, moderateScale, verticalScale } = useTheme();
   const navigation = useNavigation();
@@ -47,17 +51,28 @@ export default function AppHeader({
     ]).start();
   }, []);
 
-  const onDark = variant === 'primary' || variant === 'gold';
+  const onDark      = variant === 'primary' || variant === 'gold';
+  const isGradient   = variant === 'primary' || variant === 'gold';
+  const isCurved     = variant !== 'transparent';
+
   const bg =
-    variant === 'gold'        ? COLORS.primaryDark
-    : variant === 'white'     ? COLORS.white
+    variant === 'gold'         ? COLORS.primaryDark
+    : variant === 'white'      ? COLORS.white
     : variant === 'transparent'? 'transparent'
     : COLORS.primary;
 
+  const gradientColors =
+    variant === 'gold'
+      ? [COLORS.primaryDark, COLORS.accentDark ?? COLORS.primaryDark] as const
+      : [COLORS.primary, COLORS.accent ?? COLORS.primaryDark, COLORS.accentDark ?? COLORS.primaryDark] as const;
+
   const iconColor    = onDark ? COLORS.white        : COLORS.textPrimary;
   const iconBg       = onDark ? COLORS.whiteOpacity20: COLORS.gray100;
-  const titleColor   = onDark ? COLORS.white        : COLORS.textPrimary;
-  const subtitleColor= onDark ? COLORS.whiteOpacity70: COLORS.textSecondary;
+  const titleColor   = onDark ? (COLORS.heroTextPrimary ?? COLORS.white) : COLORS.textPrimary;
+  const subtitleColor= onDark ? (COLORS.heroTextSecondary ?? COLORS.whiteOpacity70) : COLORS.textSecondary;
+
+  const radius     = isCurved ? 26 : 0;
+  const shadow     = variant === 'transparent' ? SHADOWS.none : isGradient ? SHADOWS.heroLift : SHADOWS.lift;
 
   const handleBack = () => { onBackPress ? onBackPress() : navigation.canGoBack() && navigation.goBack(); };
 
@@ -72,7 +87,7 @@ export default function AppHeader({
         <Animated.View style={[styles.iconCircle, { backgroundColor: iconBg, transform: [{ scale: s }] }]}>
           <Ionicons name={action.iconName as any} size={moderateScale(20)} color={iconColor} />
           {!!action.badge && action.badge > 0 && (
-            <View style={[styles.badgeDot, { borderColor: bg }]}>
+            <View style={[styles.badgeDot, { borderColor: bg === 'transparent' ? COLORS.primary : bg }]}>
               <Text style={styles.badgeText}>{action.badge > 99 ? '99+' : action.badge}</Text>
             </View>
           )}
@@ -81,17 +96,18 @@ export default function AppHeader({
     );
   }
 
-  return (
-    <View style={{ width: '100%' }}>
-      <StatusBar barStyle={onDark ? 'light-content' : 'dark-content'} backgroundColor={bg} />
-      <SafeAreaView edges={['top']} style={{ backgroundColor: bg, width: '100%', alignSelf: 'stretch' }}>
-        {variant === 'gold' && (
-          <>
-            <View style={[styles.dc1, { backgroundColor: COLORS.orangeOpacity20 }]} />
-            <View style={[styles.dc2, { backgroundColor: COLORS.goldOpacity20 }]} />
-            <View style={[styles.goldStrip, { backgroundColor: COLORS.secondary }]} />
-          </>
-        )}
+  const navContent = (
+    <>
+      {/* decorative glow accents — same brand-glass language across every screen */}
+      {isGradient && (
+        <>
+          <View pointerEvents="none" style={[styles.glowCircleLg, { backgroundColor: COLORS.goldOpacity20 ?? COLORS.orangeOpacity20 }]} />
+          <View pointerEvents="none" style={[styles.glowCircleSm, { backgroundColor: COLORS.whiteOpacity10 }]} />
+          {variant === 'gold' && <View style={[styles.goldStrip, { backgroundColor: COLORS.secondary }]} />}
+        </>
+      )}
+
+      <SafeAreaView edges={['top']} style={{ width: '100%', alignSelf: 'stretch' }}>
         <Animated.View style={[
           styles.bar,
           { minHeight: verticalScale(56), paddingHorizontal: SIZES.padding.md, width: '100%' },
@@ -140,21 +156,44 @@ export default function AppHeader({
             )}
           </View>
         </Animated.View>
+
+        {bottomContent}
       </SafeAreaView>
+    </>
+  );
+
+  return (
+    <View style={[{ width: '100%' }, shadow]}>
+      <StatusBar barStyle={onDark ? 'light-content' : 'dark-content'} backgroundColor={variant === 'transparent' ? 'transparent' : bg} translucent={variant === 'transparent'} />
+      {isGradient ? (
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.surface, { borderBottomLeftRadius: radius, borderBottomRightRadius: radius }]}
+        >
+          {navContent}
+        </LinearGradient>
+      ) : (
+        <View style={[styles.surface, { backgroundColor: bg, borderBottomLeftRadius: radius, borderBottomRightRadius: radius }]}>
+          {navContent}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', width: '100%', alignSelf: 'stretch' },
+  surface:   { width: '100%', overflow: 'hidden' },
+  bar:       { flexDirection: 'row', alignItems: 'center', width: '100%', alignSelf: 'stretch' },
   side:      { minWidth: 46, justifyContent: 'center' },
   center:    { flex: 1, alignItems: 'center', paddingHorizontal: 4 },
   title:     { textAlign: 'center' },
   subtitle:  { textAlign: 'center', marginTop: 1 },
-  iconCircle:{ width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  iconCircle:{ width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   badgeDot:  { position: 'absolute', top: 2, right: 2, minWidth: 15, height: 15, borderRadius: 8, backgroundColor: '#7A0303', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5 },
   badgeText: { color: '#FFFFFF', fontSize: 8, fontWeight: '800' },
-  dc1:       { position: 'absolute', width: 130, height: 130, borderRadius: 65, top: -50, right: -20 },
-  dc2:       { position: 'absolute', width: 80,  height: 80,  borderRadius: 40, top: 10,  right: 90 },
+  glowCircleLg: { position: 'absolute', width: 160, height: 160, borderRadius: 80, top: -60, right: -40 },
+  glowCircleSm: { position: 'absolute', width: 90,  height: 90,  borderRadius: 45, bottom: -40, left: -20 },
   goldStrip: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 },
 });

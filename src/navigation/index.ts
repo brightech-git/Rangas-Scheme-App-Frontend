@@ -24,3 +24,4 @@ export { default as BuyGoldScreen } from '../screens/buygold/BuyGoldScreen';
 export { default as PortfolioScreen } from '../screens/portfolio/PortfolioScreen';
 export { default as TransactionsScreen } from '../screens/transactions/TransactionsScreen';
 export { default as DeleteAccountScreen } from '../screens/profile/DeleteAccountScreen';
+export { default as PaymentResultScreen } from '../screens/payment/PaymentResultScreen';

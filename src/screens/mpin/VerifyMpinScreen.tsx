@@ -15,12 +15,14 @@
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { View, Pressable, Text } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { useTheme } from "../../theme";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { verifyMpin } from "../../store/mpinSlice";
+import { logoutUser } from "../../store/authSlice";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { useToast } from "../../components/ui/Toast";
 import { initNotifications } from "../../utils/NotificationService";
@@ -196,6 +198,16 @@ export default function VerifyMpinScreen() {
   return (
     <WaveAuthShell
       title="Welcome back"
+      footer={
+        <Pressable
+          onPress={async () => { await dispatch(logoutUser()); navigation.replace('Login'); }}
+          hitSlop={10}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8 })}
+        >
+          <Ionicons name="log-out-outline" size={14} color={COLORS.inkTertiary} />
+          <Text style={[asText(FONTS.microBold), { color: COLORS.inkTertiary }]}>Logout & switch account</Text>
+        </Pressable>
+      }
     >
       <View style={{ alignItems: "center", gap: moderateScale(4) }}>
         <Text
@@ -264,6 +276,7 @@ export default function VerifyMpinScreen() {
           }}
         />
       )}
+
     </WaveAuthShell>
   );
 }

@@ -15,19 +15,20 @@ export default function WebViewComponent() {
   const { COLORS } = useTheme();
   const navigation = useNavigation();
   const { params } = useRoute<WebViewRoute>();
-  const [progress, setProgress] = useState(0);
-  const [error, setError]       = useState(false);
 
-  const loading = progress < 1;
+  const [pageLoaded, setPageLoaded] = useState(false);
+  const [verifying,  setVerifying]  = useState(false);
+  const [error,      setError]      = useState(false);
 
   const didGoBack = React.useRef(false);
 
   const handleNavigationChange = (navState: { url: string }) => {
     const url = navState.url ?? '';
-
     if (url.includes('/api/v1/payments/callback') && !didGoBack.current) {
       didGoBack.current = true;
-      navigation.goBack();
+      setVerifying(true);
+      // Small delay so the overlay renders before goBack triggers useFocusEffect
+      setTimeout(() => navigation.goBack(), 300);
     }
   };
 
@@ -42,10 +43,9 @@ export default function WebViewComponent() {
 
       <WebView
         source={{ uri: params.url }}
-        onLoadStart={() => { setProgress(0); setError(false); }}
-        onLoadProgress={({ nativeEvent }) => setProgress(nativeEvent.progress)}
-        onLoadEnd={() => setProgress(1)}
-        onError={() => { setProgress(1); setError(true); }}
+        onLoadStart={() => { setPageLoaded(false); setError(false); }}
+        onLoadEnd={() => setPageLoaded(true)}
+        onError={() => { setPageLoaded(true); setError(true); }}
         onNavigationStateChange={handleNavigationChange}
         style={{ flex: 1 }}
         domStorageEnabled
@@ -54,30 +54,46 @@ export default function WebViewComponent() {
         renderLoading={() => <View />}
       />
 
-      {loading && !error && (
-        <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#F5B800" />
-          <Text style={{ color: COLORS.textSecondary, marginTop: 8, fontSize: 12 }}>
-            {Math.round(progress * 100)}%
+      {/* Initial page load — replaces the old % progress */}
+      {!pageLoaded && !error && (
+        <View style={[s.overlay, { backgroundColor: COLORS.background }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[s.label, { color: COLORS.inkSecondary }]}>
+            Loading payment page…
+          </Text>
+        </View>
+      )}
+
+      {/* Post-payment overlay — shown when callback URL detected, stays until goBack completes */}
+      {verifying && (
+        <View style={[s.overlay, { backgroundColor: COLORS.background }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[s.label, { color: COLORS.inkPrimary, fontWeight: '600' }]}>
+            Verifying your payment…
+          </Text>
+          <Text style={[s.sub, { color: COLORS.inkTertiary }]}>
+            Please wait, do not close the app
           </Text>
         </View>
       )}
 
       {error && (
-        <View style={styles.overlay}>
-          <Ionicons name="wifi-outline" size={40} color={COLORS.textTertiary} />
-          <Text style={{ color: COLORS.textSecondary, marginTop: 8 }}>Failed to load page</Text>
+        <View style={[s.overlay, { backgroundColor: COLORS.background }]}>
+          <Ionicons name="wifi-outline" size={40} color={COLORS.inkTertiary} />
+          <Text style={[s.label, { color: COLORS.inkSecondary }]}>Failed to load page</Text>
         </View>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    gap: 12,
   },
+  label: { fontSize: 15, marginTop: 4 },
+  sub:   { fontSize: 12, marginTop: 2 },
 });

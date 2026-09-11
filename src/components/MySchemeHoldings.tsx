@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 import { useMySchemes } from '../api/hooks/Account/useMySchemes';
 import { PPData } from '../types/Account/PhoneDetails';
 import { schemeMetrics, num } from '../utils/schemeMetrics';
+import { classifySchemeKind } from '../utils/schemeKind';
 
 import {
   SchemeCardV2,
@@ -33,9 +34,6 @@ import {
 } from './ui/premium';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-/** DigiGold — bought in multiple ad-hoc payments, not a fixed instalment count. */
-const DIGI_GOLD_SCHEME_ID = 6;
 
 export type MySchemeHoldingsHandle = { refetch: () => void };
 
@@ -92,7 +90,11 @@ function MySchemeHoldings(
     (item: PPData) => {
       const mx = schemeMetrics(item);
       const isFullyPaid = mx.total > 0 && mx.paid >= mx.total;
-      const isMultiPay = Number(item.schemeSummary?.schemeId) === DIGI_GOLD_SCHEME_ID;
+      const isMultiPay = classifySchemeKind(
+        item.schemeSummary?.fixedIns,
+        item.schemeSummary?.instalment,
+        item.schemeSummary?.weightLedger,
+      ) === 'flexible';
 
       return (
         <SchemeCardV2

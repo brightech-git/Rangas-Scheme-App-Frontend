@@ -14,6 +14,7 @@ import {
 } from '../utils/NotificationHandler';
 import { ApiScheme } from '../types/Scheme/Scheme';
 import { PPData, PaymentHistory } from '../types/Account/PhoneDetails';
+import { PaymentStatusResponse } from '../types/Payment/Payment';
 import SplashScreen from '../screens/splash/SplashScreen';
 import WalletScreen from '../screens/wallet/WalletScreen';
 import PaymentReceiptScreen from '../screens/PaymentReceipt/PaymentReceipt';
@@ -52,6 +53,7 @@ export type RootStackParamList = {
   Transactions:            undefined;
   Wallet:                  undefined;
   PaymentReceipt:          { ppData: PPData; payment: PaymentHistory };
+  PaymentResult:           { result: PaymentStatusResponse; context?: string };
   DeleteAccount:           undefined;
 };
 
@@ -163,6 +165,7 @@ export default function RootNavigator() {
         <Stack.Screen name="Transactions"    component={Screens.TransactionsScreen}    options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Wallet"          component={WalletScreen}                  options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="PaymentReceipt"  component={PaymentReceiptScreen}          options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="PaymentResult"  component={Screens.PaymentResultScreen}   options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="DeleteAccount"   component={Screens.DeleteAccountScreen}   options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>

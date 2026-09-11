@@ -12,7 +12,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme';
@@ -196,7 +196,7 @@ function EmptyState({ filter }: { filter: Filter }) {
 
 // ── Main screen ───────────────────────────────────────────────────
 export default function NotificationScreen() {
-  const { COLORS, FONTS, SIZES } = useTheme();
+  const { COLORS, FONTS, SIZES, SHADOWS } = useTheme();
   const navigation = useNavigation();
 
   // userId is read internally from AsyncStorage inside this hook
@@ -259,48 +259,64 @@ export default function NotificationScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }} >
 
-      {/* ── Header ─────────────────────────────────────────────── */}
+      {/* ── Header — shared AppHeader (curved + gradient + glass, same on every screen) ── */}
       <AppHeader
-        title="Notifications"
-        subtitle={unreadCount > 0 ? `${unreadCount} unread` : undefined}
+        variant="primary"
         showBack
         onBackPress={() => (navigation as any).navigate('Home')}
-        variant="primary"
+        centerComponent={
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontFamily: FONTS.family.bold, fontSize: 17, color: COLORS.heroTextPrimary ?? '#FFFFFF' }}>
+              Notifications
+            </Text>
+            {/* {unreadCount > 0 && (
+              <View style={[styles.unreadChip, { backgroundColor: COLORS.heroGlass ?? COLORS.whiteOpacity10, borderColor: COLORS.heroHairlineBold ?? COLORS.whiteOpacity20 }]}>
+                <Ionicons name="sparkles" size={9} color={COLORS.heroAccent ?? COLORS.secondary} />
+                <Text style={{ fontFamily: FONTS.family.semiBold, fontSize: 10.5, color: COLORS.heroAccent ?? COLORS.secondary, letterSpacing: 0.3 }}>
+                  {unreadCount} unread
+                </Text>
+              </View>
+            )} */}
+          </View>
+        }
         actions={[
-          ...(unreadCount > 0 ? [{
-            iconName: 'checkmark-done-outline',
-            onPress: markAllRead,
-          }] : []),
-          ...(notifications.length > 0 ? [{
-            iconName: 'trash-outline',
-            onPress: confirmDeleteAll,
-          }] : []),
+          ...(unreadCount > 0 ? [{ iconName: 'checkmark-done-outline', onPress: markAllRead }] : []),
+          ...(notifications.length > 0 ? [{ iconName: 'trash-outline', onPress: confirmDeleteAll }] : []),
         ]}
       />
 
-      {/* ── Filter tabs ─────────────────────────────────────────── */}
-      <View style={[styles.filterRow, {
-        backgroundColor:   COLORS.card,
-        borderBottomColor: COLORS.border,
-      }]}>
-        {FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f.key}
-            onPress={() => setFilter(f.key)}
-            style={[
-              styles.filterTab,
-              { borderBottomColor: filter === f.key ? COLORS.primary : 'transparent' },
-            ]}
-          >
-            <Text style={{
-              fontFamily: filter === f.key ? FONTS.family.semiBold : FONTS.family.regular,
-              fontSize:   FONTS.bodyMedium.fontSize,
-              color:      filter === f.key ? COLORS.primary : COLORS.textTertiary,
-            }}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* ── Filter tabs — glassy pill segment, floating over the curve ── */}
+      <View style={[styles.segmentWrap, SHADOWS.lift, { backgroundColor: COLORS.canvasElevated ?? COLORS.card }]}>
+        {FILTERS.map((f) => {
+          const active = filter === f.key;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              activeOpacity={0.8}
+              style={styles.segmentTabTouch}
+            >
+              {active ? (
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.segmentTabActive}
+                >
+                  <Text style={{ fontFamily: FONTS.family.semiBold, fontSize: FONTS.bodyMedium.fontSize, color: '#FFFFFF' }}>
+                    {f.label}
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={styles.segmentTab}>
+                  <Text style={{ fontFamily: FONTS.family.regular, fontSize: FONTS.bodyMedium.fontSize, color: COLORS.textTertiary }}>
+                    {f.label}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* ── Content ─────────────────────────────────────────────── */}
@@ -391,16 +407,20 @@ export default function NotificationScreen() {
 }
 
 const styles = StyleSheet.create({
-  filterRow: {
-    flexDirection:    'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  unreadChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, borderWidth: 1, marginTop: 3,
   },
-  filterTab: {
-    flex:           1,
-    alignItems:     'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2.5,
+
+  // Filter segment — glassy pill floating over the header curve
+  segmentWrap: {
+    flexDirection: 'row', marginHorizontal: 16, marginTop: 10,
+    borderRadius: 16, padding: 4, gap: 4, zIndex: 2,
   },
+  segmentTabTouch:  { flex: 1 },
+  segmentTab:       { alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12 },
+  segmentTabActive: { alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12 },
+
   card: {
     flexDirection: 'row',
     alignItems:    'flex-start',

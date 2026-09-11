@@ -90,8 +90,19 @@ export interface InitiatePaymentResponse {
 }
 
 export interface PaymentStatusResponse {
-  orderId:   string;
-  status:    string;
-  amount?:   number;
-  message?:  string;
+  orderId:          string;
+  trackingId?:      string;
+  bankRefNo?:       string;
+  orderStatus?:     string;   // 'SUCCESSFUL' | 'UNSUCCESSFUL'
+  status?:          string;   // legacy fallback
+  amount?:          number;
+  currency?:        string;
+  paymentMode?:     string;
+  cardName?:        string | null;
+  statusCode?:      string | null;
+  statusMessage?:   string | null;
+  failureMessage?:  string | null;
+  transactionDate?: string | null;
+  source?:          string;
+  message?:         string;
 }

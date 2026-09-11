@@ -44,6 +44,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { METAL_LABEL } from '../../types/Scheme/Scheme';
+import { classifySchemeKind } from '../../utils/schemeKind';
 
 import {
   ScreenCanvas,
@@ -90,7 +91,9 @@ export default function SchemeTermsScreen() {
   const isFixed = scheme.FixedIns === 'Y';
   const canJoin = scheme.ADDNEWMEMBER === 'Y';
 
-  const isDigiGold = scheme.SchemeId === 6;
+  const schemeKind = classifySchemeKind(scheme.FixedIns, scheme.Instalment, scheme.WeightLedger);
+  const isLumpsum = schemeKind === 'lumpsum';
+  const isDigiGold = schemeKind === 'flexible';
 
   // ── Preserved business logic ──
   const handleJoin = useCallback(() => {
@@ -119,7 +122,11 @@ export default function SchemeTermsScreen() {
       { label: 'Instalments', value: String(scheme.Instalment) },
       {
         label: 'Instalment amount',
-        value: isFixed ? 'Fixed each month' : 'Flexible each month',
+        value: isFixed
+          ? 'Fixed each month'
+          : isLumpsum
+          ? 'One-time payment'
+          : 'Flexible — by amount or weight',
       },
       {
         label: 'Ledger',
@@ -138,20 +145,24 @@ export default function SchemeTermsScreen() {
         value: canJoin ? 'Open' : 'Closed',
       },
     ],
-    [scheme, mLabel, isFixed, canJoin],
+    [scheme, mLabel, isFixed, isLumpsum, canJoin],
   );
 
   // ── Prose clauses that are genuinely scheme-specific ──
   const schemeClauses = useMemo(
     () => [
-      `This scheme covers ${scheme.Instalment} instalments for ${mLabel} savings.`,
+      isLumpsum
+        ? `This scheme is a single one-time payment for ${mLabel} savings.`
+        : `This scheme covers ${scheme.Instalment} instalments for ${mLabel} savings.`,
       isFixed
         ? 'Instalment type: Fixed – the same amount is paid each month.'
-        : 'Instalment type: Flexible – the amount may vary each month.',
+        : isLumpsum
+        ? 'Instalment type: One-time – paid once in full, no recurring instalments.'
+        : 'Instalment type: Flexible – pay any number of times, by amount or by weight.',
       `Only ${mLabel.toLowerCase()} purchases are eligible under this scheme.`,
       'Early exit before completing all instalments may attract a processing fee and forfeiture of accrued scheme benefits.',
     ],
-    [scheme.Instalment, mLabel, isFixed],
+    [scheme.Instalment, mLabel, isFixed, isLumpsum],
   );
 
   return (
@@ -179,7 +190,10 @@ export default function SchemeTermsScreen() {
           >
             {[
               { label: 'Instalments', value: String(scheme.Instalment) },
-              { label: 'Amount', value: isFixed ? 'Fixed' : 'Flexible' },
+              {
+                label: 'Amount',
+                value: isFixed ? 'Fixed' : isLumpsum ? 'One-time' : 'Flexible',
+              },
               { label: 'Metal', value: mLabel },
             ].map((f, i) => (
               <React.Fragment key={f.label}>

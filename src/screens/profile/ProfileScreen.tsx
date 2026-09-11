@@ -26,13 +26,29 @@ import PoweredByFooter from '../../components/ui/PoweredByFooter';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+// ── Gradient icon badge (used by rows & tiles for a richer, "jewel" feel) ──
+function GradientBadge({ icon, size = 32, iconSize = 15, colors, style }: {
+  icon: string; size?: number; iconSize?: number; colors: string[]; style?: any;
+}) {
+  return (
+    <LinearGradient
+      colors={colors as unknown as [string, string]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[{ width: size, height: size, borderRadius: size * 0.32, alignItems: 'center', justifyContent: 'center' }, style]}
+    >
+      <Ionicons name={icon as any} size={iconSize} color="#FFFFFF" />
+    </LinearGradient>
+  );
+}
+
 // ── Section label ─────────────────────────────────────────────────
 function SectionLabel({ title }: { title: string }) {
   const { COLORS } = useTheme();
   return (
     <View style={styles.sectionLabelWrap}>
-      <View style={[styles.sectionAccent, { backgroundColor: COLORS.primary }]} />
-      <AppText variant="label" color={COLORS.textSecondary} style={{ letterSpacing: 0.8 }}>
+      <View style={[styles.sectionAccent, { backgroundColor: COLORS.secondary }]} />
+      <AppText variant="label" color={COLORS.textSecondary} style={{ letterSpacing: 1.1 }}>
         {title.toUpperCase()}
       </AppText>
     </View>
@@ -40,37 +56,32 @@ function SectionLabel({ title }: { title: string }) {
 }
 
 // ── Big navigation tile (2-per-row grid) ──────────────────────────
-function NavTile({ icon, label, hint, onPress }: {
-  icon: string; label: string; hint?: string; onPress: () => void;
+function NavTile({ icon, label, hint, gradient, onPress }: {
+  icon: string; label: string; hint?: string; gradient: string[]; onPress: () => void;
 }) {
-  const { COLORS } = useTheme();
+  const { COLORS, SHADOWS } = useTheme();
   return (
     <TouchableOpacity
-      style={[styles.tile, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}
+      style={[styles.tile, { backgroundColor: COLORS.canvasElevated ?? COLORS.card }, SHADOWS.lift]}
       onPress={onPress}
       activeOpacity={0.85}
     >
-      <View style={[styles.tileIcon, { backgroundColor: COLORS.primaryPale }]}>
-        <Ionicons name={icon as any} size={20} color={COLORS.primary} />
-      </View>
-      <AppText variant="bodyMedium" style={{ fontWeight: '600', marginTop: 12 }}>{label}</AppText>
+      <GradientBadge icon={icon} size={42} iconSize={20} colors={gradient} />
+      <AppText variant="bodyMedium" style={{ fontWeight: '700', marginTop: 14 }}>{label}</AppText>
       {hint ? (
         <AppText variant="caption" color={COLORS.textTertiary} style={{ marginTop: 2 }}>{hint}</AppText>
       ) : null}
-      <Ionicons
-        name="arrow-forward"
-        size={14}
-        color={COLORS.textTertiary}
-        style={styles.tileArrow}
-      />
+      <View style={[styles.tileArrow, { backgroundColor: COLORS.canvasSunken ?? COLORS.primaryPale }]}>
+        <Ionicons name="arrow-forward" size={12} color={COLORS.primary} />
+      </View>
     </TouchableOpacity>
   );
 }
 
 // ── Compact list row (used inside cards) ──────────────────────────
-function ListRow({ icon, label, sublabel, onPress, danger = false, last = false }: {
+function ListRow({ icon, label, sublabel, onPress, danger = false, last = false, gradient }: {
   icon: string; label: string; sublabel?: string;
-  onPress: () => void; danger?: boolean; last?: boolean;
+  onPress: () => void; danger?: boolean; last?: boolean; gradient: string[];
 }) {
   const { COLORS } = useTheme();
   return (
@@ -82,25 +93,23 @@ function ListRow({ icon, label, sublabel, onPress, danger = false, last = false 
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.rowIcon, { backgroundColor: danger ? COLORS.error + '18' : COLORS.primaryPale }]}>
-        <Ionicons name={icon as any} size={15} color={danger ? COLORS.error : COLORS.primary} />
-      </View>
+      <GradientBadge icon={icon} size={36} iconSize={16} colors={gradient} />
       <View style={{ flex: 1 }}>
-        <AppText variant="bodyMedium" style={{ color: danger ? COLORS.error : COLORS.textPrimary }}>
+        <AppText variant="bodyMedium" style={{ color: danger ? COLORS.error : COLORS.textPrimary, fontWeight: '600' }}>
           {label}
         </AppText>
         {sublabel ? (
           <AppText variant="caption" color={COLORS.textTertiary} style={{ marginTop: 1 }}>{sublabel}</AppText>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={15} color={danger ? COLORS.error : COLORS.textTertiary} />
+      <Ionicons name="chevron-forward" size={16} color={danger ? COLORS.error : COLORS.textTertiary} />
     </TouchableOpacity>
   );
 }
 
-function ToggleRow({ icon, label, sublabel, value, onValueChange, last = false }: {
+function ToggleRow({ icon, label, sublabel, value, onValueChange, last = false, gradient }: {
   icon: string; label: string; sublabel?: string;
-  value: boolean; onValueChange: (v: boolean) => void; last?: boolean;
+  value: boolean; onValueChange: (v: boolean) => void; last?: boolean; gradient: string[];
 }) {
   const { COLORS } = useTheme();
   return (
@@ -108,11 +117,9 @@ function ToggleRow({ icon, label, sublabel, value, onValueChange, last = false }
       styles.row,
       !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
     ]}>
-      <View style={[styles.rowIcon, { backgroundColor: COLORS.primaryPale }]}>
-        <Ionicons name={icon as any} size={15} color={COLORS.primary} />
-      </View>
+      <GradientBadge icon={icon} size={36} iconSize={16} colors={gradient} />
       <View style={{ flex: 1 }}>
-        <AppText variant="bodyMedium">{label}</AppText>
+        <AppText variant="bodyMedium" style={{ fontWeight: '600' }}>{label}</AppText>
         {sublabel ? (
           <AppText variant="caption" color={COLORS.textTertiary} style={{ marginTop: 1 }}>{sublabel}</AppText>
         ) : null}
@@ -122,9 +129,22 @@ function ToggleRow({ icon, label, sublabel, value, onValueChange, last = false }
   );
 }
 
+// ── Small identity row inside the hero (phone / email) ────────────
+function HeroInfoRow({ icon, text }: { icon: string; text: string }) {
+  const { COLORS } = useTheme();
+  return (
+    <View style={styles.heroInfoRow}>
+      <Ionicons name={icon as any} size={12} color={COLORS.heroAccent ?? COLORS.secondary} />
+      <AppText variant="bodySmall" color={COLORS.heroTextSecondary ?? COLORS.whiteOpacity80} numberOfLines={1} style={{ flexShrink: 1 }}>
+        {text}
+      </AppText>
+    </View>
+  );
+}
+
 // ── Main Screen ───────────────────────────────────────────────────
 export default function ProfileScreen() {
-  const { COLORS, SIZES } = useTheme();
+  const { COLORS, SIZES, SHADOWS } = useTheme();
   const navigation = useNavigation<Nav>();
   const dispatch   = useAppDispatch();
   const reduxUser  = useAppSelector((s) => s.auth.user);
@@ -215,47 +235,62 @@ export default function ProfileScreen() {
       paddingHorizontal={0}
       paddingTop={0}
       paddingBottom={40}
-      header={<AppHeader title="My Profile" variant="primary" showBack onBackPress={() => navigation.navigate('Home' as any)} />}
     >
-      {/* ── HERO BANNER ─────────────────────────────────────────── */}
-      <LinearGradient colors={[COLORS.primary, COLORS.primary + 'CC']} style={styles.heroBanner}>
-        <View style={styles.heroTop}>
-          <AppAvatar
-            source={reduxUser?.picture ? { uri: reduxUser.picture } : null}
-            name={reduxUser?.username ?? ''}
-            size="xl"
-          />
-          <View style={styles.heroInfo}>
-            <AppText variant="h4" color={COLORS.textOnPrimary} numberOfLines={1}>
-              {reduxUser?.username || 'User'}
-            </AppText>
-            <AppText variant="bodySmall" color={COLORS.whiteOpacity70} style={{ marginTop: 2 }}>
-              {reduxUser?.contactNumber || '—'}
-            </AppText>
-            <AppText variant="bodySmall" color={COLORS.whiteOpacity70} numberOfLines={1}>
-              {reduxUser?.email || '—'}
-            </AppText>
+      {/* ── Header — shared AppHeader (curved + gradient + glass everywhere) ── */}
+      <AppHeader
+        variant="primary"
+        showBack
+        onBackPress={() => navigation.navigate('Home' as any)}
+        title="My Profile"
+        bottomContent={
+          <View style={styles.heroTop}>
+            <View style={[styles.avatarRing, SHADOWS.goldGlow]}>
+              <AppAvatar
+                source={reduxUser?.picture ? { uri: reduxUser.picture } : null}
+                name={reduxUser?.username ?? ''}
+                size="xl"
+                style={{ borderColor: COLORS.secondary, borderWidth: 2.5 }}
+              />
+            </View>
+            <View style={styles.heroInfo}>
+              <AppText variant="h4" color={COLORS.heroTextPrimary ?? COLORS.textOnPrimary} numberOfLines={1} style={{ fontWeight: '700' }}>
+                {reduxUser?.username || 'User'}
+              </AppText>
+
+              <View style={[styles.memberChip, { backgroundColor: COLORS.heroGlass ?? COLORS.whiteOpacity10, borderColor: COLORS.heroHairlineBold ?? COLORS.whiteOpacity20 }]}>
+                <Ionicons name="sparkles" size={10} color={COLORS.heroAccent ?? COLORS.secondary} />
+                <AppText variant="caption" color={COLORS.heroAccent ?? COLORS.secondary} style={{ fontWeight: '700', letterSpacing: 0.4 }}>
+                  DigiGold Member
+                </AppText>
+              </View>
+
+              <View style={{ marginTop: 8, gap: 5 }}>
+                <HeroInfoRow icon="call-outline" text={reduxUser?.contactNumber || '—'} />
+                <HeroInfoRow icon="mail-outline" text={reduxUser?.email || '—'} />
+              </View>
+            </View>
           </View>
-        </View>
+        }
+      />
 
-
-      </LinearGradient>
-
-      <View style={{ paddingHorizontal: SIZES.padding.md, paddingTop: 18 }}>
+      <View style={{ paddingHorizontal: SIZES.padding.md, paddingTop: 22 }}>
 
         {/* ── QUICK ACCESS GRID ────────────────────────────────── */}
         <SectionLabel title="Quick access" />
         <View style={styles.tileGrid}>
           <NavTile icon="pie-chart-outline" label="My Portfolio" hint="Holdings & value"
+            gradient={COLORS.gradient?.orangePrimary ?? [COLORS.primary, COLORS.primaryDark]}
             onPress={() => navigation.navigate('Portfolio')} />
           <NavTile icon="receipt-outline" label="Transactions" hint="Buy & sell history"
+            gradient={COLORS.gradient?.goldDark ?? [COLORS.secondary, COLORS.secondaryDark]}
             onPress={() => navigation.navigate('Transactions')} />
         </View>
 
         {/* ── SECURITY ─────────────────────────────────────────── */}
         <SectionLabel title="Security" />
-        <AppCard padding="none">
+        <AppCard padding="none" radius="xl" style={SHADOWS.lift}>
           <ListRow icon="lock-closed-outline" label="Change MPIN" sublabel="Update your 4-digit PIN"
+            gradient={COLORS.gradient?.orangePrimary ?? [COLORS.primary, COLORS.primaryDark]}
             onPress={() => navigation.navigate('ResetMpin')}
             last={!bioSupported} />
           {bioSupported && (
@@ -263,6 +298,7 @@ export default function ProfileScreen() {
               icon="finger-print-outline"
               label={`${bioLabel} unlock`}
               sublabel={`Use ${bioLabel} to unlock the app`}
+              gradient={COLORS.gradient?.orangeDeep ?? [COLORS.primaryDark, COLORS.primary]}
               value={bioEnabled}
               onValueChange={handleToggleBiometric}
               last
@@ -272,8 +308,9 @@ export default function ProfileScreen() {
 
         {/* ── ACCOUNT ──────────────────────────────────────────── */}
         <SectionLabel title="Account" />
-        <AppCard padding="none">
+        <AppCard padding="none" radius="xl" style={SHADOWS.lift}>
           <ListRow icon="log-out-outline" label="Logout" danger
+            gradient={[COLORS.error, COLORS.errorDark ?? COLORS.error]}
             onPress={() => showAlert('Logout', 'You will need your MPIN to sign back in.',
               async () => {
                 await dispatch(logoutUser());
@@ -281,14 +318,17 @@ export default function ProfileScreen() {
               })} />
           <ListRow icon="trash-outline" label="Delete account" danger last
             sublabel="Permanently removes all your data"
+            gradient={[COLORS.errorDark ?? COLORS.error, COLORS.error]}
             onPress={() => navigation.navigate('DeleteAccount')} />
         </AppCard>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <AppText variant="caption" color={COLORS.textTertiary} align="center">
-            Version {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
-          </AppText>
+          <View style={[styles.versionPill, { backgroundColor: COLORS.canvasSunken ?? COLORS.gray100, borderColor: COLORS.border }]}>
+            <AppText variant="caption" color={COLORS.textTertiary} align="center">
+              Version {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
+            </AppText>
+          </View>
         </View>
         <PoweredByFooter />
       </View>
@@ -318,24 +358,28 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Hero
-  heroBanner:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 22 },
-  heroTop:        { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
-  heroInfo:       { flex: 1, justifyContent: 'flex-start', gap: 2, paddingTop: 4 },
+  // Hero (rendered as AppHeader's bottomContent, inside its curved gradient)
+  heroTop:        { flexDirection: 'row', alignItems: 'flex-start', gap: 16, paddingHorizontal: 20, paddingTop: 6, paddingBottom: 26 },
+  avatarRing:     { borderRadius: 999 },
+  heroInfo:       { flex: 1, justifyContent: 'flex-start', gap: 4, paddingTop: 4 },
+  heroInfoRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  memberChip:     {
+    flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, borderWidth: 1, marginTop: 4,
+  },
 
   // Section labels
-  sectionLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 10 },
-  sectionAccent:    { width: 3, height: 14, borderRadius: 2 },
+  sectionLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 22, marginBottom: 12 },
+  sectionAccent:    { width: 4, height: 15, borderRadius: 2 },
 
   // Tile grid
   tileGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  tile:      { flexGrow: 1, flexBasis: '46%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 14, minHeight: 116, justifyContent: 'flex-start' },
-  tileIcon:  { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  tileArrow: { position: 'absolute', top: 16, right: 14 },
+  tile:      { flexGrow: 1, flexBasis: '46%', borderRadius: 20, padding: 16, minHeight: 122, justifyContent: 'flex-start' },
+  tileArrow: { position: 'absolute', top: 16, right: 14, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
   // List rows
-  row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
-  rowIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, gap: 13 },
 
-  footer:  { paddingVertical: 22, alignItems: 'center' },
+  footer:  { paddingTop: 24, paddingBottom: 10, alignItems: 'center' },
+  versionPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth },
 });

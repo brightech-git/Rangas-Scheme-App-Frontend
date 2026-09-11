@@ -5,6 +5,7 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Modal,
@@ -40,10 +41,11 @@ import {
   money,
   type SummaryRow,
 } from '../../components/ui/premium';
+import GoldAmountInput from '../../components/ui/appcomponents/GoldAmountInput';
 
 type Nav   = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BuyGold'>;
-type Mode  = 'amount' | 'weight';
+type Step  = 1 | 2;
 
 type PostOffice = {
   Name: string;
@@ -52,7 +54,6 @@ type PostOffice = {
   State: string;
 };
 
-const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 const DIGI_GOLD_SCHEME_ID = 6;
 
 const MONTHS = [
@@ -87,11 +88,16 @@ export default function BuyGoldScreen() {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
   const user = useAppSelector((s) => s.auth.user);
 
+  // ── Two-step flow: 1 = your details, 2 = amount / weight + review ──
+  const [step, setStep] = useState<Step>(1);
+
   // ── Rates ──
   const [rates,   setRates]   = useState<RatesResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mode,    setMode]    = useState<Mode>('amount');
-  const [input,   setInput]   = useState('1000');
+
+  // ── Dual input: amount (₹) and weight (g) stay in sync with each other ──
+  const [amountInput, setAmountInput] = useState('1000');
+  const [weightInput, setWeightInput] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -102,18 +108,36 @@ export default function BuyGoldScreen() {
 
   const goldRate = rates?.gold?.currentRate ?? 0;
 
-  const { amount, weight } = useMemo(() => {
-    const val = parseFloat(input.replace(/[^0-9.]/g, '')) || 0;
-    if (mode === 'amount') return { amount: val, weight: goldRate > 0 ? val / goldRate : 0 };
-    return { amount: val * goldRate, weight: val };
-  }, [input, mode, goldRate]);
+  const amount = parseFloat(amountInput) || 0;
+  const weight = parseFloat(weightInput) || 0;
 
-  const switchMode = useCallback((m: Mode) => {
-    if (m === mode) return;
-    if (m === 'weight') setInput(weight > 0 ? weight.toFixed(4) : '1');
-    else setInput(amount > 0 ? String(Math.round(amount)) : '1000');
-    setMode(m);
-  }, [mode, amount, weight]);
+  // Whenever the live rate changes (initial load / refresh), re-derive weight
+  // from the currently entered amount so the two fields stay consistent.
+  useEffect(() => {
+    if (goldRate > 0) {
+      const val = parseFloat(amountInput) || 0;
+      setWeightInput(val > 0 ? (val / goldRate).toFixed(4) : '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goldRate]);
+
+  const handleAmountChange = useCallback((v: string) => {
+    const cleaned = v.replace(/[^0-9.]/g, '');
+    setAmountInput(cleaned);
+    if (goldRate > 0) {
+      const val = parseFloat(cleaned) || 0;
+      setWeightInput(val > 0 ? (val / goldRate).toFixed(4) : '');
+    }
+  }, [goldRate]);
+
+  const handleWeightChange = useCallback((v: string) => {
+    const cleaned = v.replace(/[^0-9.]/g, '');
+    setWeightInput(cleaned);
+    if (goldRate > 0) {
+      const val = parseFloat(cleaned) || 0;
+      setAmountInput(val > 0 ? String(Math.round(val * goldRate)) : '');
+    }
+  }, [goldRate]);
 
   // ── Member groups (for groupCode / regNo) ──
   const { groups } = useMemberScheme(DIGI_GOLD_SCHEME_ID);
@@ -121,7 +145,7 @@ export default function BuyGoldScreen() {
   // ── Payment ──
   const { status, initiateData, error, initiate, checkStatus, reset } = usePayment();
   const isProcessing = status === 'initiating';
-  const showFailed   = status === 'failed';
+  const isVerifying  = status === 'pending';
 
   // ── Customer info (auto-filled from user profile) ──
   const [name,       setName]       = useState('');
@@ -293,6 +317,33 @@ export default function BuyGoldScreen() {
 
   const isReady = amount > 0 && isCustomerValid;
 
+  const validateCustomerFields = (): Record<string, string> => {
+    const fe: Record<string, string> = {};
+    if (name.trim().length <= 1)    fe.name       = 'Enter your full name';
+    if (!isValidMobile(mobile))     fe.mobile     = 'Enter a valid 10-digit mobile number';
+    if (!isValidEmail(email))       fe.email      = 'Enter a valid email address';
+    if (!isValidAadhaar(aadhaar))   fe.aadhaar    = 'Aadhaar must be exactly 12 digits';
+    if (!isValidPAN(pan))           fe.pan        = 'Invalid PAN format (e.g. ABCDE1234F)';
+    if (!dobSet || dobAge < 18)     fe.dob        = 'Must be 18 years or older';
+    if (gender === '')              fe.gender     = 'Select gender';
+    if (doorStreet.trim().length <= 3) fe.doorStreet = 'Enter your address';
+    if (pincode.trim().length !== 6)   fe.pincode    = 'Enter a valid 6-digit pincode';
+    if (nominee.trim().length <= 1) fe.nominee    = 'Enter nominee name';
+    if (nomMobile && !isValidMobile(nomMobile)) fe.nomMobile = 'Enter a valid 10-digit mobile';
+    return fe;
+  };
+
+  // Step 1 → Step 2: validate personal/KYC/nominee details before moving on
+  const goToStep2 = () => {
+    const fe = validateCustomerFields();
+    setFieldErrors(fe);
+    if (Object.keys(fe).length > 0) {
+      toast.error('Please check your details', { position: 'top', duration: 3000 });
+      return;
+    }
+    setStep(2);
+  };
+
   // ── Payload ──
   const buildPayload = (): InitiatePaymentRequest => {
     const now = new Date();
@@ -363,25 +414,15 @@ export default function BuyGoldScreen() {
   };
 
   const handleBuy = () => {
-    const fe: Record<string, string> = {};
-    if (name.trim().length <= 1)    fe.name       = 'Enter your full name';
-    if (!isValidMobile(mobile))     fe.mobile     = 'Enter a valid 10-digit mobile number';
-    if (!isValidEmail(email))       fe.email      = 'Enter a valid email address';
-    if (!isValidAadhaar(aadhaar))   fe.aadhaar    = 'Aadhaar must be exactly 12 digits';
-    if (!isValidPAN(pan))           fe.pan        = 'Invalid PAN format (e.g. ABCDE1234F)';
-    if (!dobSet || dobAge < 18)     fe.dob        = 'Must be 18 years or older';
-    if (gender === '')              fe.gender     = 'Select gender';
-    if (doorStreet.trim().length <= 3) fe.doorStreet = 'Enter your address';
-    if (pincode.trim().length !== 6)   fe.pincode    = 'Enter a valid 6-digit pincode';
-    if (nominee.trim().length <= 1) fe.nominee    = 'Enter nominee name';
-    if (nomMobile && !isValidMobile(nomMobile)) fe.nomMobile = 'Enter a valid 10-digit mobile';
+    const fe = validateCustomerFields();
     if (amount <= 0) {
       toast.info('Enter an amount', { message: 'Please enter how much gold to buy.' });
       return;
     }
     setFieldErrors(fe);
     if (Object.keys(fe).length > 0) {
-      toast.error('Please check the form', { position: 'top', duration: 3000 });
+      toast.error('Please check your details', { position: 'top', duration: 3000 });
+      setStep(1);
       return;
     }
     const payload = buildPayload();
@@ -401,36 +442,23 @@ export default function BuyGoldScreen() {
     useCallback(() => {
       if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
         console.log('[BuyGold] Order status check:', { orderId: initiateRef.current.orderId });
-        checkStatus(initiateRef.current.orderId);
+        checkStatus(initiateRef.current.orderId).then((sd) => {
+          if (sd) {
+            reset();
+            navigation.navigate('PaymentResult', { result: sd, context: 'buygold' });
+          }
+        });
       }
     }, [])
   );
 
-  useEffect(() => {
-    if (status !== 'success') return;
-    toast.success('Purchase successful 🎉', {
-      message:  `${weight.toFixed(4)} g of DigiGold purchased.`,
-      position: 'top',
-      duration: 4000,
-    });
-    reset();
-    (navigation as any).navigate('Main', { screen: 'Scheme' });
-  }, [status]);
-
   // ── Breakdown rows ──
   const breakdown: SummaryRow[] = useMemo(() => [
     { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
-    {
-      label: mode === 'amount' ? 'Amount entered' : 'Weight entered',
-      value: mode === 'amount' ? money(amount) : `${weight.toFixed(4)} g`,
-    },
-    {
-      label: mode === 'amount' ? 'Gold received' : 'Amount payable',
-      value: mode === 'amount' ? `${weight.toFixed(4)} g` : money(amount),
-      highlight: true,
-    },
+    { label: 'Amount entered', value: money(amount) },
+    { label: 'Gold received', value: `${weight.toFixed(4)} g`, highlight: true },
     { label: 'Total payable', value: money(Math.round(amount)), total: true },
-  ], [goldRate, mode, amount, weight]);
+  ], [goldRate, amount, weight]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -439,337 +467,308 @@ export default function BuyGoldScreen() {
         paddingBottom={moderateScale(40)}
         header={
           <PageHeader
-            eyebrow="Digital gold · 916"
-            title="Buy gold"
+            eyebrow={step === 1 ? 'Step 1 of 2 · Digital gold · 916' : 'Step 2 of 2 · Digital gold · 916'}
+            title={step === 1 ? 'Your details' : 'Amount & weight'}
             bleedBottom={moderateScale(24)}
             actions={[{ icon: 'refresh-outline', onPress: load }]}
           >
-            {/* Mode rail */}
-            <View style={[s.rail, { marginTop: SIZES.margin.xxl, borderColor: COLORS.heroHairline, borderRadius: SIZES.radius.tile }]}>
-              {(['amount', 'weight'] as Mode[]).map((m, i) => {
-                const on = m === mode;
-                return (
-                  <Pressable
-                    key={m}
-                    onPress={() => switchMode(m)}
-                    style={({ pressed }) => [s.railItem, { paddingVertical: SIZES.padding.md, borderLeftWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderLeftColor: COLORS.heroHairline, opacity: pressed ? 0.6 : 1 }]}
-                  >
-                    <Text style={[asText(FONTS.microBold), { color: on ? COLORS.heroTextPrimary : COLORS.heroTextMuted }]}>
-                      {m === 'amount' ? 'By amount' : 'By weight'}
-                    </Text>
-                    {on && <View style={[s.railMark, { backgroundColor: COLORS.heroAccent }]} />}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* Input */}
-            <View style={{ marginTop: SIZES.margin.xxl }}>
-              <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>
-                {mode === 'amount' ? 'You pay' : 'You want'}
+            {step === 1 ? (
+              <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary, marginTop: SIZES.margin.lg, fontSize: 11, lineHeight: 17 }]}>
+                A few KYC details to open your DigiGold account — takes under a minute.
               </Text>
-              <View style={s.inputRow}>
-                {mode === 'amount' && (
-                  <Text style={[asText(FONTS.displayXL), { color: COLORS.heroTextSecondary }]}>₹</Text>
-                )}
-                <TextInput
-                  value={input}
-                  onChangeText={(v) => setInput(v.replace(/[^0-9.]/g, ''))}
-                  keyboardType="decimal-pad"
-                  placeholder="0"
-                  placeholderTextColor={COLORS.heroTextMuted}
-                  selectionColor={COLORS.heroAccent}
-                  style={[asText(FONTS.displayXL), { color: COLORS.heroTextPrimary, flex: 1, padding: 0 }]}
-                />
-                {mode === 'weight' && (
-                  <Text style={[asText(FONTS.displaySm), { color: COLORS.heroTextSecondary }]}>g</Text>
-                )}
-              </View>
-
-              <View style={[s.convRow, { marginTop: SIZES.margin.md, paddingTop: SIZES.padding.md, borderTopColor: COLORS.heroHairline }]}>
-                {loading && !rates ? (
-                  <SkeletonBlock width="60%" height={14} surface="hero" />
-                ) : (
-                  <>
-                    <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary }]}>
-                      {mode === 'amount' ? 'You get' : 'You pay'}
+            ) : (
+              <View style={[s.rateCard, { marginTop: SIZES.margin.xxl, borderColor: COLORS.heroHairline, borderRadius: SIZES.radius.tile }]}>
+                <View style={[s.rateCoin, { backgroundColor: COLORS.heroAccent }]}>
+                  <Ionicons name="star" size={SIZES.icon.sm} color={COLORS.heroTextPrimary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary, fontSize: 10 }]}>
+                    Gold rate · 916 (22K)
+                  </Text>
+                  {loading && !rates ? (
+                    <View style={{ marginTop: 4 }}>
+                      <SkeletonBlock width={140} height={24} surface="hero" />
+                    </View>
+                  ) : (
+                    <Text style={[asText(FONTS.displaySm), { color: COLORS.heroTextPrimary, marginTop: 2 }]}>
+                      {goldRate > 0 ? `${money(goldRate)} / gram` : '—'}
                     </Text>
-                    <Text style={[asText(FONTS.numeral), { color: COLORS.heroAccent }]}>
-                      {mode === 'amount' ? `${weight.toFixed(4)} g` : money(Math.round(amount))}
-                    </Text>
-                  </>
-                )}
+                  )}
+                </View>
               </View>
-              <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 6, fontSize: 10 }]}>
-                At {goldRate > 0 ? `${money(goldRate)} / g` : '—'} · 916 (22K)
-              </Text>
-            </View>
+            )}
           </PageHeader>
         }
         footer={
-          <BottomActionBar
-            label="Total payable"
-            value={money(Math.round(amount))}
-            note={`${weight.toFixed(4)} g of 916 gold`}
-            actionLabel={isProcessing ? 'Processing…' : 'Buy gold'}
-            actionVariant="gold"
-            disabled={!isReady || isProcessing}
-            loading={isProcessing}
-            onAction={handleBuy}
-          />
+          step === 1 ? (
+            <View
+              style={[
+                s.stepFooter,
+                {
+                  backgroundColor: COLORS.canvasElevated,
+                  borderTopColor: COLORS.hairline,
+                  paddingHorizontal: SIZES.layout.gutter,
+                  paddingTop: SIZES.padding.lg,
+                  paddingBottom: SIZES.padding.xl,
+                },
+              ]}
+            >
+              <PremiumButton label="Continue to amount" onPress={goToStep2} disabled={!isCustomerValid} />
+            </View>
+          ) : (
+            <BottomActionBar
+              label="Total payable"
+              value={money(Math.round(amount))}
+              note={`${weight.toFixed(4)} g of 916 gold`}
+              actionLabel={isProcessing ? 'Processing…' : 'Buy gold'}
+              actionVariant="gold"
+              disabled={!isReady || isProcessing}
+              loading={isProcessing}
+              onAction={handleBuy}
+            />
+          )
         }
       >
-        {/* Presets */}
-        {mode === 'amount' && (
-          <View style={{ marginTop: SIZES.layout.sectionTight }}>
-            <SectionHeading eyebrow="Shortcuts" title="Common amounts" />
-            <View style={[s.presetGrid, { marginTop: SIZES.margin.lg }]}>
-              {QUICK_AMOUNTS.map((q) => {
-                const on = String(q) === input;
-                return (
-                  <Pressable
-                    key={q}
-                    onPress={() => setInput(String(q))}
-                    style={({ pressed }) => [s.preset, { borderRadius: SIZES.radius.tile, borderColor: on ? COLORS.primary : COLORS.hairline, borderWidth: on ? 1.5 : 1, backgroundColor: COLORS.canvasElevated, paddingVertical: SIZES.padding.lg, opacity: pressed ? 0.75 : 1 }]}
-                  >
-                    <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkPrimary }]}>{money(q)}</Text>
-                    <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, fontSize: 9 }]}>
-                      {goldRate > 0 ? `${(q / goldRate).toFixed(3)} g` : '—'}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Order breakdown */}
-        <View style={{ marginTop: SIZES.layout.section }}>
-          <SectionHeading eyebrow="Order" title="Breakdown" />
-          <SummaryCard rows={breakdown} style={{ marginTop: SIZES.margin.lg }} />
-        </View>
-
-        {/* ── Customer info ── */}
-        <View style={{ marginTop: SIZES.layout.section }}>
-          <SectionHeading
-            eyebrow="Required"
-            title="Your details"
-            caption="Used for billing and delivery of your DigiGold"
-          />
-          <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
-            <FormField
-              label="Full name"
-              indicator="required"
-              icon="person-outline"
-              value={name}
-              placeholder="As printed on your ID"
-              autoCapitalize="words"
-              onChangeText={(v) => { setName(v); clearErr('name'); }}
-              error={fieldErrors.name}
-            />
-            <FormField
-              label="Mobile number"
-              indicator="required"
-              icon="call-outline"
-              value={mobile}
-              placeholder="10-digit mobile"
-              keyboardType="phone-pad"
-              maxLength={10}
-              onChangeText={(v) => { setMobile(v.replace(/[^0-9]/g, '')); clearErr('mobile'); }}
-              error={fieldErrors.mobile}
-            />
-            <FormField
-              label="Email address"
-              indicator="required"
-              icon="mail-outline"
-              value={email}
-              placeholder="your@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onChangeText={(v) => { setEmail(v); clearErr('email'); }}
-              error={fieldErrors.email}
-            />
-            <FormField
-              label="Aadhaar number"
-              indicator="required"
-              icon="card-outline"
-              value={aadhaar}
-              placeholder="12-digit Aadhaar"
-              keyboardType="numeric"
-              maxLength={12}
-              onChangeText={(v) => { setAadhaar(v.replace(/[^0-9]/g, '')); clearErr('aadhaar'); }}
-              error={fieldErrors.aadhaar}
-            />
-            <FormField
-              label="PAN number"
-              indicator="optional"
-              icon="document-text-outline"
-              value={pan}
-              placeholder="ABCDE1234F"
-              maxLength={10}
-              autoCapitalize="characters"
-              onChangeText={(v) => { setPan(v.toUpperCase()); clearErr('pan'); }}
-              error={fieldErrors.pan}
-              hint="Leave blank if not available"
-            />
-            <FormField
-              asButton
-              onPress={openDobPicker}
-              label="Date of birth"
-              indicator="required"
-              icon="calendar-outline"
-              value={dobLabel}
-              placeholder="Select date of birth"
-              rightIcon="chevron-down"
-              onRightIconPress={openDobPicker}
-              badge={dobSet ? `${dobAge}y` : undefined}
-              badgeTone={dobSet && dobAge >= 18 ? 'success' : 'error'}
-              error={fieldErrors.dob ?? (dobSet && dobAge < 18 ? 'Age must be 18 or older' : undefined)}
-              hint={!dobSet ? 'You must be 18 or older' : undefined}
-            />
-
-            <View>
-              <View style={s.labelRow}>
-                <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}>
-                  Gender
-                  <Text style={{ color: COLORS.metalGold }}> *</Text>
-                </Text>
-              </View>
-              <View style={[s.genderRow, { marginTop: 6 }]}>
-                {GENDER_OPTIONS.map((g) => {
-                  const on = gender === g;
-                  return (
-                    <Pressable
-                      key={g}
-                      onPress={() => { setGender(g); clearErr('gender'); }}
-                      style={({ pressed }) => [
-                        s.genderChip,
-                        {
-                          borderRadius: SIZES.radius.tile,
-                          borderColor: on ? COLORS.primary : fieldErrors.gender ? COLORS.error : COLORS.hairline,
-                          borderWidth: on ? 1.5 : 1,
-                          backgroundColor: COLORS.canvasElevated,
-                          paddingVertical: SIZES.padding.md,
-                          opacity: pressed ? 0.75 : 1,
-                        },
-                      ]}
-                    >
-                      <Ionicons name={GENDER_ICONS[g] as any} size={SIZES.icon.sm} color={on ? COLORS.primary : COLORS.inkTertiary} />
-                      <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkSecondary }]}>{g}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {!!fieldErrors.gender && (
-                <View style={s.msgRow}>
-                  <Ionicons name="alert-circle" size={12} color={COLORS.error} />
-                  <Text style={[asText(FONTS.micro), { color: COLORS.error, fontSize: 10 }]}>{fieldErrors.gender}</Text>
-                </View>
-              )}
-            </View>
-
-            <FormField
-              label="Door no. / street"
-              indicator="required"
-              icon="home-outline"
-              value={doorStreet}
-              placeholder="12A, Gandhi Nagar, 2nd Street"
-              autoCapitalize="words"
-              onChangeText={(v) => { setDoorStreet(v); clearErr('doorStreet'); }}
-              error={fieldErrors.doorStreet}
-            />
-            <FormField
-              label="Pincode"
-              indicator="required"
-              icon="location-outline"
-              value={pincode}
-              placeholder="6-digit pincode"
-              keyboardType="numeric"
-              maxLength={6}
-              onChangeText={(v) => {
-                const p = v.replace(/[^0-9]/g, '').slice(0, 6);
-                setPincode(p);
-                clearErr('pincode');
-                if (p.length === 6) fetchPincode(p);
-              }}
-              error={fieldErrors.pincode}
-              rightIcon={
-                pincodeLoading
-                  ? 'hourglass-outline'
-                  : area
-                  ? 'checkmark-circle-outline'
-                  : undefined
-              }
-            />
-
-            {addressRows.length > 0 && (
-              <SummaryCard
-                eyebrow="Detected address"
-                rows={
-                  pincodeOptions.length > 1
-                    ? [
-                        ...addressRows,
-                        {
-                          label: 'Change area',
-                          value: `${pincodeOptions.length} options`,
-                          onPress: () => setShowPincodeModal(true),
-                        },
-                      ]
-                    : addressRows
-                }
+        {step === 1 ? (
+          <>
+            {/* ── Customer info ── */}
+            <View style={{ marginTop: SIZES.layout.sectionTight }}>
+              <SectionHeading
+                eyebrow="Required"
+                title="Your details"
+                caption="Used for billing and delivery of your DigiGold"
               />
-            )}
-          </View>
-        </View>
+              <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
+                <FormField
+                  label="Full name"
+                  indicator="required"
+                  icon="person-outline"
+                  value={name}
+                  placeholder="As printed on your ID"
+                  autoCapitalize="words"
+                  onChangeText={(v) => { setName(v); clearErr('name'); }}
+                  error={fieldErrors.name}
+                />
+                <FormField
+                  label="Mobile number"
+                  indicator="required"
+                  icon="call-outline"
+                  value={mobile}
+                  placeholder="10-digit mobile"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  onChangeText={(v) => { setMobile(v.replace(/[^0-9]/g, '')); clearErr('mobile'); }}
+                  error={fieldErrors.mobile}
+                />
+                <FormField
+                  label="Email address"
+                  indicator="required"
+                  icon="mail-outline"
+                  value={email}
+                  placeholder="your@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  onChangeText={(v) => { setEmail(v); clearErr('email'); }}
+                  error={fieldErrors.email}
+                />
+                <FormField
+                  label="Aadhaar number"
+                  indicator="required"
+                  icon="card-outline"
+                  value={aadhaar}
+                  placeholder="12-digit Aadhaar"
+                  keyboardType="numeric"
+                  maxLength={12}
+                  onChangeText={(v) => { setAadhaar(v.replace(/[^0-9]/g, '')); clearErr('aadhaar'); }}
+                  error={fieldErrors.aadhaar}
+                />
+                <FormField
+                  label="PAN number"
+                  indicator="optional"
+                  icon="document-text-outline"
+                  value={pan}
+                  placeholder="ABCDE1234F"
+                  maxLength={10}
+                  autoCapitalize="characters"
+                  onChangeText={(v) => { setPan(v.toUpperCase()); clearErr('pan'); }}
+                  error={fieldErrors.pan}
+                  hint="Leave blank if not available"
+                />
+                <FormField
+                  asButton
+                  onPress={openDobPicker}
+                  label="Date of birth"
+                  indicator="required"
+                  icon="calendar-outline"
+                  value={dobLabel}
+                  placeholder="Select date of birth"
+                  rightIcon="chevron-down"
+                  onRightIconPress={openDobPicker}
+                  badge={dobSet ? `${dobAge}y` : undefined}
+                  badgeTone={dobSet && dobAge >= 18 ? 'success' : 'error'}
+                  error={fieldErrors.dob ?? (dobSet && dobAge < 18 ? 'Age must be 18 or older' : undefined)}
+                  hint={!dobSet ? 'You must be 18 or older' : undefined}
+                />
 
-        {/* ── Nominee ── */}
-        <View style={{ marginTop: SIZES.layout.section }}>
-          <SectionHeading
-            eyebrow="Required"
-            title="Nominee"
-            caption="Mandatory for DigiGold enrolment"
-          />
-          <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
-            <FormField
-              label="Nominee name"
-              indicator="required"
-              icon="people-outline"
-              value={nominee}
-              placeholder="Nominee's full name"
-              autoCapitalize="words"
-              onChangeText={(v) => { setNominee(v); clearErr('nominee'); }}
-              error={fieldErrors.nominee}
-            />
-            <FormField
-              label="Relationship"
-              indicator="optional"
-              icon="heart-outline"
-              value={nomRel}
-              placeholder="Spouse, son, daughter…"
-              autoCapitalize="words"
-              onChangeText={setNomRel}
-            />
-            <FormField
-              label="Nominee mobile"
-              indicator="optional"
-              icon="call-outline"
-              value={nomMobile}
-              placeholder="10-digit mobile"
-              keyboardType="phone-pad"
-              maxLength={10}
-              onChangeText={(v) => { setNomMobile(v.replace(/[^0-9]/g, '')); clearErr('nomMobile'); }}
-              error={fieldErrors.nomMobile}
-            />
-          </View>
-        </View>
+                <View>
+                  <View style={s.labelRow}>
+                    <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}>
+                      Gender
+                      <Text style={{ color: COLORS.metalGold }}> *</Text>
+                    </Text>
+                  </View>
+                  <View style={[s.genderRow, { marginTop: 6 }]}>
+                    {GENDER_OPTIONS.map((g) => {
+                      const on = gender === g;
+                      return (
+                        <Pressable
+                          key={g}
+                          onPress={() => { setGender(g); clearErr('gender'); }}
+                          style={({ pressed }) => [
+                            s.genderChip,
+                            {
+                              borderRadius: SIZES.radius.tile,
+                              borderColor: on ? COLORS.primary : fieldErrors.gender ? COLORS.error : COLORS.hairline,
+                              borderWidth: on ? 1.5 : 1,
+                              backgroundColor: COLORS.canvasElevated,
+                              paddingVertical: SIZES.padding.md,
+                              opacity: pressed ? 0.75 : 1,
+                            },
+                          ]}
+                        >
+                          <Ionicons name={GENDER_ICONS[g] as any} size={SIZES.icon.sm} color={on ? COLORS.primary : COLORS.inkTertiary} />
+                          <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkSecondary }]}>{g}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {!!fieldErrors.gender && (
+                    <View style={s.msgRow}>
+                      <Ionicons name="alert-circle" size={12} color={COLORS.error} />
+                      <Text style={[asText(FONTS.micro), { color: COLORS.error, fontSize: 10 }]}>{fieldErrors.gender}</Text>
+                    </View>
+                  )}
+                </View>
 
-        {/* Disclaimer */}
-        <View style={[s.note, { marginTop: SIZES.layout.block }]}>
-          <Ionicons name="information-circle-outline" size={SIZES.icon.sm} color={COLORS.inkMuted} />
-          <Text style={[asText(FONTS.micro), { color: COLORS.inkMuted, flex: 1, fontSize: 10 }]}>
-            Rates are indicative and refresh on load. The final price is confirmed at checkout.
-          </Text>
-        </View>
+                <FormField
+                  label="Door no. / street"
+                  indicator="required"
+                  icon="home-outline"
+                  value={doorStreet}
+                  placeholder="12A, Gandhi Nagar, 2nd Street"
+                  autoCapitalize="words"
+                  onChangeText={(v) => { setDoorStreet(v); clearErr('doorStreet'); }}
+                  error={fieldErrors.doorStreet}
+                />
+                <FormField
+                  label="Pincode"
+                  indicator="required"
+                  icon="location-outline"
+                  value={pincode}
+                  placeholder="6-digit pincode"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  onChangeText={(v) => {
+                    const p = v.replace(/[^0-9]/g, '').slice(0, 6);
+                    setPincode(p);
+                    clearErr('pincode');
+                    if (p.length === 6) fetchPincode(p);
+                  }}
+                  error={fieldErrors.pincode}
+                  rightIcon={
+                    pincodeLoading
+                      ? 'hourglass-outline'
+                      : area
+                      ? 'checkmark-circle-outline'
+                      : undefined
+                  }
+                />
+
+                {addressRows.length > 0 && (
+                  <SummaryCard
+                    eyebrow="Detected address"
+                    rows={
+                      pincodeOptions.length > 1
+                        ? [
+                            ...addressRows,
+                            {
+                              label: 'Change area',
+                              value: `${pincodeOptions.length} options`,
+                              onPress: () => setShowPincodeModal(true),
+                            },
+                          ]
+                        : addressRows
+                    }
+                  />
+                )}
+              </View>
+            </View>
+
+            {/* ── Nominee ── */}
+            <View style={{ marginTop: SIZES.layout.section }}>
+              <SectionHeading
+                eyebrow="Required"
+                title="Nominee"
+                caption="Mandatory for DigiGold enrolment"
+              />
+              <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
+                <FormField
+                  label="Nominee name"
+                  indicator="required"
+                  icon="people-outline"
+                  value={nominee}
+                  placeholder="Nominee's full name"
+                  autoCapitalize="words"
+                  onChangeText={(v) => { setNominee(v); clearErr('nominee'); }}
+                  error={fieldErrors.nominee}
+                />
+                <FormField
+                  label="Relationship"
+                  indicator="optional"
+                  icon="heart-outline"
+                  value={nomRel}
+                  placeholder="Spouse, son, daughter…"
+                  autoCapitalize="words"
+                  onChangeText={setNomRel}
+                />
+                <FormField
+                  label="Nominee mobile"
+                  indicator="optional"
+                  icon="call-outline"
+                  value={nomMobile}
+                  placeholder="10-digit mobile"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  onChangeText={(v) => { setNomMobile(v.replace(/[^0-9]/g, '')); clearErr('nomMobile'); }}
+                  error={fieldErrors.nomMobile}
+                />
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => setStep(1)}
+              hitSlop={8}
+              style={[s.backLink, { marginTop: SIZES.layout.sectionTight }]}
+            >
+              <Ionicons name="chevron-back" size={16} color={COLORS.inkTertiary} />
+              <Text style={[asText(FONTS.microBold), { color: COLORS.inkTertiary }]}>Edit your details</Text>
+            </Pressable>
+
+            <View style={{ marginTop: SIZES.margin.lg }}>
+              <GoldAmountInput
+                amountInput={amountInput}
+                weightInput={weightInput}
+                onAmountChange={handleAmountChange}
+                onWeightChange={handleWeightChange}
+                goldRate={goldRate}
+                ratesLoading={loading}
+                breakdownRows={breakdown}
+              />
+            </View>
+          </>
+        )}
       </ScreenCanvas>
 
       {/* ── Pincode area selector ── */}
@@ -938,42 +937,24 @@ export default function BuyGoldScreen() {
         </Modal>
       )}
 
-      {/* Failure modal */}
-      <Modal visible={showFailed} transparent animationType="fade">
-        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}>
-          <View style={[s.resultCard, { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl }]}>
-            <View style={[s.resultIcon, { backgroundColor: COLORS.errorBg }]}>
-              <Ionicons name="close-circle" size={SIZES.icon.xl} color={COLORS.error} />
-            </View>
-            <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
-              Payment failed
-            </Text>
-            <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
-              {error || 'Something went wrong. No amount has been debited. Please try again.'}
-            </Text>
-            <View style={{ marginTop: SIZES.margin.xxl, gap: 10, width: '100%' }}>
-              <PremiumButton label="Try again" onPress={() => { reset(); handleBuy(); }} />
-              <PremiumButton label="Cancel" variant="outline" onPress={() => reset()} />
-            </View>
-          </View>
+      {/* Verifying overlay — shown while checkStatus API call is in flight */}
+      {isVerifying && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[asText(FONTS.microBold), { color: COLORS.inkPrimary }]}>Verifying your payment…</Text>
+          <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>Please wait, do not close the app</Text>
         </View>
-      </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  rail:       { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
-  railItem:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  railMark:   { position: 'absolute', bottom: 0, left: '25%', right: '25%', height: 2, borderRadius: 1 },
-  inputRow:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  convRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1 },
-  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  preset:     { width: '31.5%', alignItems: 'center', justifyContent: 'center', gap: 2 },
-  note:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  rateCard:   { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 14, paddingHorizontal: 16 },
+  rateCoin:   { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  backLink:   { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start' },
+  stepFooter: { borderTopWidth: StyleSheet.hairlineWidth },
   overlay:    { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  resultCard: { width: '100%', alignItems: 'center' },
-  resultIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   sheet:      { width: '100%' },
   sheetHead:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
   poRow:      { flexDirection: 'row', alignItems: 'center', gap: 12 },

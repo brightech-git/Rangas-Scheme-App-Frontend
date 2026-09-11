@@ -46,6 +46,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -70,6 +71,9 @@ import { useMemberScheme } from '../../api/hooks/Member/useMemberScheme';
 import { MemberSchemeGroup } from '../../types/Member/MemberScheme';
 import { useToast } from '../../components/ui/Toast';
 import { useAppSelector } from '../../store/hooks';
+import { classifySchemeKind } from '../../utils/schemeKind';
+import { ratesService } from '../../api/services/ratesService';
+import { RatesResponse } from '../../types/Rates/Rates';
 
 import {
   ScreenCanvas,
@@ -81,6 +85,7 @@ import {
   SectionHeading,
   PremiumButton,
   StatusChip,
+  SkeletonBlock,
   asText,
   money,
   type SummaryRow,
@@ -136,13 +141,46 @@ export default function SchemeJoinScreen() {
   const { groups, loading: groupsLoading } = useMemberScheme(scheme.SchemeId);
 
   const mLabel = METAL_LABEL[scheme.MetalType] ?? scheme.MetalType;
-  const isFixed = scheme.FixedIns === 'Y';
+
+  // Payment shape: 'fixed' picks a monthly group amount, 'lumpsum' is a
+  // single one-time payment, 'flexible' (DigiGold-style) is pay-anytime
+  // by rupees or by gold weight. See utils/schemeKind.ts.
+  const schemeKind = classifySchemeKind(scheme.FixedIns, scheme.Instalment, scheme.WeightLedger);
+  const isFixed    = schemeKind === 'fixed';
+  const isLumpsum  = schemeKind === 'lumpsum';
+  const isFlexible = schemeKind === 'flexible';
 
   // Selected group (FixedIns=Y)
   const [selectedGroup, setSelectedGroup] =
     useState<MemberSchemeGroup | null>(null);
-  // Custom amount (FixedIns=N)
+  // Custom amount (lumpsum)
   const [customAmount, setCustomAmount] = useState('');
+
+  // Amount ⇄ weight entry (flexible / DigiGold-style schemes only)
+  const [rates, setRates] = useState<RatesResponse | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(true);
+  const [mode, setMode] = useState<'amount' | 'weight'>('amount');
+  const [flexInput, setFlexInput] = useState('');
+
+  useEffect(() => {
+    if (!isFlexible) return;
+    ratesService.getRates().then(setRates).catch(() => {}).finally(() => setRatesLoading(false));
+  }, [isFlexible]);
+
+  const goldRate = rates?.gold?.currentRate ?? 0;
+
+  const { amount: flexAmount, weight: flexWeight } = useMemo(() => {
+    const val = parseFloat(flexInput.replace(/[^0-9.]/g, '')) || 0;
+    if (mode === 'amount') return { amount: val, weight: goldRate > 0 ? val / goldRate : 0 };
+    return { amount: val * goldRate, weight: val };
+  }, [flexInput, mode, goldRate]);
+
+  const switchMode = (m: 'amount' | 'weight') => {
+    if (m === mode) return;
+    if (m === 'weight') setFlexInput(flexWeight > 0 ? flexWeight.toFixed(4) : '');
+    else setFlexInput(flexAmount > 0 ? String(Math.round(flexAmount)) : '');
+    setMode(m);
+  };
 
   // Auto-select first group when data loads
   useEffect(() => {
@@ -151,6 +189,8 @@ export default function SchemeJoinScreen() {
 
   const effectiveAmount = isFixed
     ? selectedGroup?.AMOUNT ?? 0
+    : isFlexible
+    ? Math.round(flexAmount)
     : parseInt(customAmount) || 0;
 
   // Customer details
@@ -503,7 +543,13 @@ export default function SchemeJoinScreen() {
   useFocusEffect(
     useCallback(() => {
       if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
-        checkStatus(initiateRef.current.orderId);
+        checkStatus(initiateRef.current.orderId).then((sd) => {
+          if (sd) {
+            AsyncStorage.removeItem(DRAFT_KEY(scheme.SchemeId));
+            reset();
+            navigation.navigate('PaymentResult', { result: sd, context: 'join' });
+          }
+        });
       }
     }, [])
   );
@@ -589,7 +635,13 @@ export default function SchemeJoinScreen() {
           <PageHeader
             eyebrow="Enrolment"
             title="Join scheme"
-            caption={`${scheme.schemeName} · ${scheme.Instalment} instalments · ${mLabel}`}
+            caption={
+              isLumpsum
+                ? `${scheme.schemeName} · One-time payment · ${mLabel}`
+                : isFlexible
+                ? `${scheme.schemeName} · Pay anytime · ${mLabel}`
+                : `${scheme.schemeName} · ${scheme.Instalment} instalments · ${mLabel}`
+            }
             bleedBottom={moderateScale(24)}
           >
             {/* Stage rail */}
@@ -677,9 +729,15 @@ export default function SchemeJoinScreen() {
         }
         footer={
           <BottomActionBar
-            label="Monthly instalment"
+            label={isLumpsum ? 'One-time payment' : isFlexible ? 'Paying now' : 'Monthly instalment'}
             value={effectiveAmount > 0 ? money(effectiveAmount) : '—'}
-            note={`${scheme.Instalment} instalments · ${mLabel}`}
+            note={
+              isLumpsum
+                ? mLabel
+                : isFlexible
+                ? `≈ ${flexWeight.toFixed(4)} g · ${mLabel}`
+                : `${scheme.Instalment} instalments · ${mLabel}`
+            }
             actionLabel={submitLabel}
             onAction={handleSubmit}
             loading={isProcessing}
@@ -696,7 +754,9 @@ export default function SchemeJoinScreen() {
               caption={
                 isFixed
                   ? 'Pick a monthly instalment from the available groups'
-                  : 'Enter the amount you want to save each month'
+                  : isLumpsum
+                  ? 'Enter the one-time amount you want to pay'
+                  : 'Pay any amount, any time — by rupees or by gold weight'
               }
             />
 
@@ -746,9 +806,94 @@ export default function SchemeJoinScreen() {
                     <Ionicons name="chevron-down" size={SIZES.icon.sm} color={COLORS.inkMuted} />
                   </Pressable>
                 )
+              ) : isFlexible ? (
+                <>
+                  <View
+                    style={[
+                      s.flexRail,
+                      { borderColor: COLORS.hairline, borderRadius: SIZES.radius.tile },
+                    ]}
+                  >
+                    {(['amount', 'weight'] as const).map((m, i) => {
+                      const on = m === mode;
+                      return (
+                        <Pressable
+                          key={m}
+                          onPress={() => switchMode(m)}
+                          style={({ pressed }) => [
+                            s.flexRailItem,
+                            {
+                              paddingVertical: SIZES.padding.md,
+                              borderLeftWidth: i === 0 ? 0 : StyleSheet.hairlineWidth,
+                              borderLeftColor: COLORS.hairline,
+                              opacity: pressed ? 0.6 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              asText(FONTS.microBold),
+                              { color: on ? COLORS.primary : COLORS.inkTertiary },
+                            ]}
+                          >
+                            {m === 'amount' ? 'By amount' : 'By weight'}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  <View
+                    style={[
+                      s.flexInputBox,
+                      {
+                        borderRadius: SIZES.radius.panel,
+                        borderColor: flexInput ? COLORS.primary : COLORS.hairline,
+                        borderWidth: flexInput ? 1.5 : 1,
+                        backgroundColor: COLORS.canvasElevated,
+                        paddingHorizontal: SIZES.padding.xl,
+                        paddingVertical: SIZES.padding.lg,
+                      },
+                    ]}
+                  >
+                    {mode === 'amount' && (
+                      <Text style={[asText(FONTS.displaySm), { color: COLORS.inkTertiary }]}>₹</Text>
+                    )}
+                    <TextInput
+                      value={flexInput}
+                      onChangeText={(v) => {
+                        setFlexInput(v.replace(/[^0-9.]/g, ''));
+                        clearErr('amount');
+                      }}
+                      keyboardType="decimal-pad"
+                      placeholder="0"
+                      placeholderTextColor={COLORS.inkMuted}
+                      selectionColor={COLORS.primary}
+                      style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, flex: 1, padding: 0 }]}
+                    />
+                    {mode === 'weight' && (
+                      <Text style={[asText(FONTS.displaySm), { color: COLORS.inkTertiary }]}>g</Text>
+                    )}
+                  </View>
+
+                  {ratesLoading && !rates ? (
+                    <SkeletonBlock width="60%" height={14} />
+                  ) : (
+                    <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>
+                      {mode === 'amount'
+                        ? `You get ${flexWeight.toFixed(4)} g`
+                        : `You pay ${money(Math.round(flexAmount))}`}
+                      {goldRate > 0 ? ` · at ${money(goldRate)} / g` : ''}
+                    </Text>
+                  )}
+
+                  {!!fieldErrors.amount && (
+                    <StatusChip tone="danger" icon="alert-circle" label={fieldErrors.amount} />
+                  )}
+                </>
               ) : (
                 <FormField
-                  label="Monthly amount (₹)"
+                  label="One-time amount (₹)"
                   indicator="required"
                   icon="cash-outline"
                   value={customAmount}
@@ -759,6 +904,7 @@ export default function SchemeJoinScreen() {
                     clearErr('amount');
                   }}
                   error={fieldErrors.amount}
+                  hint="Paid once — no recurring instalments after this"
                 />
               )}
 
@@ -1072,7 +1218,13 @@ export default function SchemeJoinScreen() {
               rows={[
                 { label: 'Scheme', value: scheme.schemeName },
                 { label: 'Metal', value: mLabel },
-                { label: 'Instalments', value: String(scheme.Instalment) },
+                {
+                  label: 'Plan type',
+                  value: isFixed ? 'Fixed' : isLumpsum ? 'One-time' : 'Flexible',
+                },
+                ...(isLumpsum
+                  ? []
+                  : [{ label: 'Instalments', value: String(scheme.Instalment) }]),
                 ...(isFixed && selectedGroup
                   ? [
                       {
@@ -1081,8 +1233,15 @@ export default function SchemeJoinScreen() {
                       },
                     ]
                   : []),
+                ...(isFlexible && goldRate > 0
+                  ? [{ label: 'Gold equivalent', value: `${flexWeight.toFixed(4)} g` }]
+                  : []),
                 {
-                  label: 'Paying now (instalment 1)',
+                  label: isLumpsum
+                    ? 'Paying now (one-time)'
+                    : isFlexible
+                    ? 'Paying now'
+                    : 'Paying now (instalment 1)',
                   value: effectiveAmount > 0 ? money(effectiveAmount) : '—',
                   total: true,
                 },
@@ -1379,6 +1538,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  flexRail: { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
+  flexRailItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  flexInputBox: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   labelRow: { flexDirection: 'row', alignItems: 'center' },
   genderRow: { flexDirection: 'row', gap: 8 },
   genderChip: {

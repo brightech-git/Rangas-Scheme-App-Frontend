@@ -16,7 +16,7 @@ export interface UsePaymentReturn {
   statusData:   PaymentStatusResponse | null;
   error:        string | null;
   initiate:     (body: InitiatePaymentRequest, onInitiated: (url: string, orderId: string) => void) => Promise<void>;
-  checkStatus:  (orderId: string) => Promise<void>;
+  checkStatus:  (orderId: string) => Promise<PaymentStatusResponse | undefined>;
   reset:        () => void;
 }
 
@@ -57,13 +57,20 @@ export function usePayment(): UsePaymentReturn {
   const checkStatus = async (orderId: string) => {
     try {
       const res = await paymentService.getStatus(orderId);
-
       setStatusData(res);
 
-      const s = res.status?.toLowerCase();
-      if (s === 'success' || s === 'captured')          setStatus('success');
-      else if (s === 'failed' || s === 'failure')       { setStatus('failed'); setError(res.message ?? 'Payment failed'); }
-      else                                               setStatus('pending');
+      // API returns orderStatus: 'SUCCESSFUL' | 'UNSUCCESSFUL'
+      // with a legacy status field as fallback
+      const raw = (res.orderStatus ?? res.status ?? '').toUpperCase();
+      if (raw === 'SUCCESSFUL' || raw === 'SUCCESS' || raw === 'CAPTURED') {
+        setStatus('success');
+      } else if (raw === 'UNSUCCESSFUL' || raw === 'FAILED' || raw === 'FAILURE') {
+        setStatus('failed');
+        setError(res.failureMessage ?? res.statusMessage ?? res.message ?? 'Payment was unsuccessful');
+      } else {
+        setStatus('pending');
+      }
+      return res;
     } catch (err: any) {
       setStatus('failed');
       setError(err?.message ?? 'Status check failed');

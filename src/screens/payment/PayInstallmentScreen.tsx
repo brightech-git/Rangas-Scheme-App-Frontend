@@ -2,10 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Pressable,
   StyleSheet,
-  Modal,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -18,8 +16,8 @@ import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { usePayment } from '../../api/hooks/Payment/usePayment';
 import { InitiatePaymentRequest } from '../../types/Payment/Payment';
-import { useToast } from '../../components/ui/Toast';
 import { schemeMetrics } from '../../utils/schemeMetrics';
+import { classifySchemeKind } from '../../utils/schemeKind';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
 
@@ -30,20 +28,16 @@ import {
   BottomActionBar,
   ProgressWidget,
   SectionHeading,
-  PremiumButton,
-  SkeletonBlock,
   asText,
   money,
   prettyDate,
   type SummaryRow,
 } from '../../components/ui/premium';
+import GoldAmountInput from '../../components/ui/appcomponents/GoldAmountInput';
 
 type RouteProps = RouteProp<RootStackParamList, 'PayInstallment'>;
 type NavProps  = NativeStackNavigationProp<RootStackParamList, 'PayInstallment'>;
 type Mode = 'amount' | 'weight';
-
-/** DigiGold — bought in multiple ad-hoc payments, not a fixed instalment count. */
-const DIGI_GOLD_SCHEME_ID = 6;
 
 export default function PayInstallmentScreen() {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
@@ -51,13 +45,18 @@ export default function PayInstallmentScreen() {
   const route      = useRoute<RouteProps>();
   const { ppData } = route.params;
 
-  const { status, initiateData, error, initiate, checkStatus, reset } = usePayment();
-  const toast = useToast();
+  const { status, initiateData, statusData, error, initiate, checkStatus, reset } = usePayment();
 
   const scheme        = ppData.schemeSummary;
   const schemeName    = scheme?.schemeName ?? ppData.pName;
-  const isFixed       = scheme?.fixedIns === 'Y';
-  const isMultiPay    = Number(scheme?.schemeId) === DIGI_GOLD_SCHEME_ID;
+
+  // Payment shape: 'fixed' = locked monthly amount, 'lumpsum' = single
+  // one-time payment, 'flexible' (DigiGold-style) = pay-anytime by
+  // rupees or by gold weight. See utils/schemeKind.ts.
+  const schemeKind    = classifySchemeKind(scheme?.fixedIns, scheme?.instalment, scheme?.weightLedger);
+  const isFixed       = schemeKind === 'fixed';
+  const isLumpsum     = schemeKind === 'lumpsum';
+  const isMultiPay    = schemeKind === 'flexible';
   const paid          = parseInt(scheme?.schemaSummaryTransBalance?.insPaid ?? '0');
   const total         = isMultiPay ? 0 : parseInt(scheme?.instalment ?? '0');
   const nextInstNum   = paid + 1;
@@ -98,7 +97,7 @@ export default function PayInstallmentScreen() {
   const mx          = schemeMetrics(ppData);
   const isReady     = effectiveAmount > 0;
   const isProcessing = status === 'initiating';
-  const showFailed  = status === 'failed';
+  const isVerifying  = status === 'pending';
 
   const buildPayload = (): InitiatePaymentRequest => {
     const pi  = ppData.personalInfo;
@@ -152,30 +151,46 @@ export default function PayInstallmentScreen() {
 
   const statusRef      = React.useRef(status);
   const initiateRef    = React.useRef(initiateData);
-  statusRef.current    = status;
-  initiateRef.current  = initiateData;
+  const statusDataRef   = React.useRef(statusData);
+  statusRef.current     = status;
+  initiateRef.current   = initiateData;
+  statusDataRef.current = statusData;
 
   // Poll status once when returning from the CCAvenue WebView
   useFocusEffect(
     useCallback(() => {
       if (statusRef.current === 'pending' && initiateRef.current?.orderId) {
         console.log('[PayInstallment] Order status check payload:', { orderId: initiateRef.current.orderId });
-        checkStatus(initiateRef.current.orderId);
+        checkStatus(initiateRef.current.orderId).then((sd) => {
+          if (sd) {
+            reset();
+            navigation.navigate('PaymentResult', { result: sd, context: 'installment' });
+          }
+        });
       }
     }, [])
   );
 
   useEffect(() => {
     if (status !== 'success') return;
-    toast.success('Payment Successful 🎉', {
-      message:  `Instalment #${nextInstNum} for ${schemeName} is paid.`,
-      position: 'top',
-      duration: 4000,
-      closable: false,
-    });
     reset();
     navigation.navigate('Main');
   }, [status]);
+
+  const paymentSummaryRows: SummaryRow[] = useMemo(() => [
+    { label: 'Scheme',         value: schemeName },
+    { label: 'Instalment no.', value: `#${nextInstNum}` },
+    { label: 'Method',         value: 'Online payment' },
+    ...(goldRate > 0 ? [{ label: 'Gold equivalent', value: `${effectiveWeight.toFixed(4)} g` }] : []),
+    { label: 'Total payable',  value: money(effectiveAmount), total: true },
+  ], [schemeName, nextInstNum, goldRate, effectiveWeight, effectiveAmount]);
+
+  const breakdownRows: SummaryRow[] = useMemo(() => [
+    { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
+    { label: 'Amount entered',        value: money(effectiveAmount) },
+    { label: 'Gold received',         value: `${effectiveWeight.toFixed(4)} g`, highlight: true },
+    { label: 'Total payable',         value: money(effectiveAmount), total: true },
+  ], [goldRate, effectiveAmount, effectiveWeight]);
 
   const presets = useMemo(() => {
     const base = defaultAmount > 0 ? defaultAmount : 1000;
@@ -197,7 +212,7 @@ export default function PayInstallmentScreen() {
       value:     mx.remaining > 0 ? money(Math.max(0, mx.remaining - effectiveAmount)) : '—',
       highlight: true,
     },
-  ], [scheme, ppData, paid, total, isMultiPay]);
+  ], [scheme, ppData, paid, total, isMultiPay, mx, effectiveAmount]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -211,8 +226,23 @@ export default function PayInstallmentScreen() {
             caption={total > 0 ? `of ${total} total` : undefined}
             bleedBottom={moderateScale(24)}
           >
+            {/* Live rate card — shown for all scheme types */}
+            <View style={[s.rateCard, { marginTop: SIZES.margin.xxl, borderColor: COLORS.heroHairline, borderRadius: SIZES.radius.tile }]}>
+              <View style={[s.rateCoin, { backgroundColor: COLORS.heroAccent }]}>
+                <Ionicons name="star" size={SIZES.icon.sm} color={COLORS.heroTextPrimary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[asText(FONTS.micro), { color: COLORS.heroTextTertiary, fontSize: 10 }]}>
+                  Gold rate · 916 (22K)
+                </Text>
+                <Text style={[asText(FONTS.displaySm), { color: COLORS.heroTextPrimary, marginTop: 2 }]}>
+                  {ratesLoading && !rates ? 'Loading…' : goldRate > 0 ? `${money(goldRate)} / gram` : '—'}
+                </Text>
+              </View>
+            </View>
+
             {isMultiPay ? (
-              <View style={{ marginTop: SIZES.margin.xxl }}>
+              <View style={{ marginTop: SIZES.margin.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>Gold held</Text>
                   <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, fontSize: 10 }]}>
@@ -238,7 +268,7 @@ export default function PayInstallmentScreen() {
                   total={total}
                   label="Scheme progress"
                   note={ppData.nextDueDate ? `Due ${prettyDate(ppData.nextDueDate)}` : undefined}
-                  style={{ marginTop: SIZES.margin.xxl }}
+                  style={{ marginTop: SIZES.margin.lg }}
                 />
               )
             )}
@@ -258,11 +288,17 @@ export default function PayInstallmentScreen() {
       >
         {/* Amount */}
         <View style={{ marginTop: SIZES.layout.sectionTight }}>
-          <SectionHeading
-            eyebrow={isFixed ? 'Fixed scheme' : 'Flexible scheme'}
+          {/* <SectionHeading
+            eyebrow={isFixed ? 'Fixed scheme' : isMultiPay ? 'Flexible scheme' : 'One-time payment'}
             title="Amount"
-            caption={isFixed ? 'Set from your first payment and cannot be changed' : 'Pay any amount for this instalment'}
-          />
+            caption={
+              isFixed
+                ? 'Set from your first payment and cannot be changed'
+                : isMultiPay
+                ? 'Pay any amount, any time — by rupees or by gold weight'
+                : 'Enter the one-time amount you want to pay'
+            }
+          /> */}
 
           {isFixed ? (
             <View style={[s.fixedBox, { marginTop: SIZES.margin.lg, borderRadius: SIZES.radius.panel, borderColor: COLORS.hairline, backgroundColor: COLORS.canvasElevated, padding: SIZES.padding.xxl }]}>
@@ -282,77 +318,19 @@ export default function PayInstallmentScreen() {
               </View>
             </View>
           ) : (
-            <>
-              {/* Mode rail */}
-              <View style={[s.rail, { marginTop: SIZES.margin.lg, borderColor: COLORS.hairline, borderRadius: SIZES.radius.tile }]}>
-                {(['amount', 'weight'] as Mode[]).map((m, i) => {
-                  const on = m === mode;
-                  return (
-                    <Pressable
-                      key={m}
-                      onPress={() => switchMode(m)}
-                      style={({ pressed }) => [s.railItem, { paddingVertical: SIZES.padding.md, borderLeftWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderLeftColor: COLORS.hairline, opacity: pressed ? 0.6 : 1 }]}
-                    >
-                      <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkTertiary }]}>
-                        {m === 'amount' ? 'By amount' : 'By weight'}
-                      </Text>
-                      {on && <View style={[s.railMark, { backgroundColor: COLORS.primary }]} />}
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <View style={[s.inputBox, { marginTop: SIZES.margin.lg, borderRadius: SIZES.radius.panel, borderColor: input ? COLORS.primary : COLORS.hairline, borderWidth: input ? 1.5 : 1, backgroundColor: COLORS.canvasElevated, paddingHorizontal: SIZES.padding.xxl, paddingVertical: SIZES.padding.xl }]}>
-                {mode === 'amount' && (
-                  <Text style={[asText(FONTS.displayLg), { color: COLORS.inkTertiary }]}>₹</Text>
-                )}
-                <TextInput
-                  value={input}
-                  onChangeText={(v) => setInput(v.replace(/[^0-9.]/g, ''))}
-                  keyboardType="decimal-pad"
-                  placeholder="0"
-                  placeholderTextColor={COLORS.inkMuted}
-                  selectionColor={COLORS.primary}
-                  style={[asText(FONTS.displayLg), { color: COLORS.inkPrimary, flex: 1, padding: 0 }]}
-                />
-                {mode === 'weight' && (
-                  <Text style={[asText(FONTS.displaySm), { color: COLORS.inkTertiary }]}>g</Text>
-                )}
-              </View>
-
-              <View style={[s.convRow, { marginTop: SIZES.margin.md, paddingTop: SIZES.padding.md, borderTopColor: COLORS.hairline }]}>
-                {ratesLoading && !rates ? (
-                  <SkeletonBlock width="60%" height={14} />
-                ) : (
-                  <>
-                    <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>
-                      {mode === 'amount' ? 'You get' : 'You pay'}
-                    </Text>
-                    <Text style={[asText(FONTS.numeral), { color: COLORS.primary }]}>
-                      {mode === 'amount' ? `${enteredWeight.toFixed(4)} g` : money(Math.round(enteredAmount))}
-                    </Text>
-                  </>
-                )}
-              </View>
-              <Text style={[asText(FONTS.micro), { color: COLORS.inkMuted, marginTop: 6, fontSize: 10 }]}>
-                At {goldRate > 0 ? `${money(goldRate)} / g` : '—'} · 916 (22K)
-              </Text>
-
-              <View style={[s.presetRow, { marginTop: SIZES.margin.md }]}>
-                {mode === 'amount' && presets.map((p) => {
-                  const on = String(p) === input;
-                  return (
-                    <Pressable
-                      key={p}
-                      onPress={() => setInput(String(p))}
-                      style={({ pressed }) => [s.preset, { borderRadius: SIZES.radius.pill, borderColor: on ? COLORS.primary : COLORS.hairline, borderWidth: on ? 1.5 : 1, backgroundColor: COLORS.canvasElevated, paddingVertical: SIZES.padding.sm, opacity: pressed ? 0.7 : 1 }]}
-                    >
-                      <Text style={[asText(FONTS.microBold), { color: on ? COLORS.primary : COLORS.inkSecondary }]}>{money(p)}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
+            <View style={{ marginTop: SIZES.margin.lg }}>
+              <GoldAmountInput
+                amountInput={mode === 'amount' ? input : (goldRate > 0 && enteredWeight > 0 ? String(Math.round(enteredWeight * goldRate)) : '')}
+                weightInput={mode === 'weight' ? input : (goldRate > 0 && enteredAmount > 0 ? (enteredAmount / goldRate).toFixed(4) : '')}
+                onAmountChange={(v) => { setMode('amount'); setInput(v.replace(/[^0-9.]/g, '')); }}
+                onWeightChange={(v) => { setMode('weight'); setInput(v.replace(/[^0-9.]/g, '')); }}
+                goldRate={goldRate}
+                ratesLoading={ratesLoading}
+                breakdownRows={isReady ? breakdownRows : undefined}
+                presets={presets}
+                onPresetPress={(p) => { setMode('amount'); setInput(String(p)); }}
+              />
+            </View>
           )}
         </View>
 
@@ -362,61 +340,30 @@ export default function PayInstallmentScreen() {
           <SummaryCard rows={schemeRows} style={{ marginTop: SIZES.margin.lg }} />
         </View>
 
-        {/* Payment summary */}
-        {isReady && (
+        {/* Payment summary — only for fixed scheme */}
+        {isFixed && isReady && (
           <View style={{ marginTop: SIZES.layout.section }}>
             <SectionHeading eyebrow="Confirm" title="Payment summary" />
-            <SummaryCard
-              style={{ marginTop: SIZES.margin.lg }}
-              rows={[
-                { label: 'Scheme',         value: schemeName },
-                { label: 'Instalment no.', value: `#${nextInstNum}` },
-                { label: 'Method',         value: 'Online payment' },
-                ...(goldRate > 0
-                  ? [{ label: 'Gold equivalent', value: `${effectiveWeight.toFixed(4)} g` }]
-                  : []),
-                { label: 'Total payable',  value: money(effectiveAmount), total: true },
-              ]}
-            />
+            <SummaryCard style={{ marginTop: SIZES.margin.lg }} rows={paymentSummaryRows} />
           </View>
         )}
       </ScreenCanvas>
-
-      {/* Failure sheet */}
-      <Modal visible={showFailed} transparent animationType="fade">
-        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60 }]}>
-          <View style={[s.sheet, { backgroundColor: COLORS.canvasElevated, borderTopLeftRadius: SIZES.radius.sheet, borderTopRightRadius: SIZES.radius.sheet, paddingHorizontal: SIZES.layout.gutter, paddingTop: SIZES.padding.xxl, paddingBottom: SIZES.padding.xxxl }]}>
-            <View style={[s.grabber, { backgroundColor: COLORS.hairlineBold }]} />
-            <View style={[s.failMark, { borderRadius: SIZES.radius.tile, backgroundColor: COLORS.errorBg, marginTop: SIZES.margin.xl }]}>
-              <Ionicons name="close" size={SIZES.icon.xl} color={COLORS.error} />
-            </View>
-            <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl }]}>Payment failed</Text>
-            <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, lineHeight: 19 }]}>
-              {error || 'Something went wrong. No amount has been debited. Please try again.'}
-            </Text>
-            <View style={{ marginTop: SIZES.margin.xxl, gap: 10 }}>
-              <PremiumButton label="Try again" onPress={() => { reset(); handlePay(); }} />
-              <PremiumButton label="Cancel" variant="outline" onPress={() => { reset(); navigation.goBack(); }} />
-            </View>
-          </View>
+      {/* Verifying overlay — shown while checkStatus API call is in flight */}
+      {isVerifying && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[asText(FONTS.microBold), { color: COLORS.inkPrimary }]}>Verifying your payment…</Text>
+          <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>Please wait, do not close the app</Text>
         </View>
-      </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
+  rateCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 14, paddingHorizontal: 16 },
+  rateCoin:  { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   fixedBox:  { borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 14 },
   lockChip:  { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  rail:      { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
-  railItem:  { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  railMark:  { position: 'absolute', bottom: 0, left: '25%', right: '25%', height: 2, borderRadius: 1 },
-  inputBox:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  convRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1 },
-  presetRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  preset:    { flexGrow: 1, flexBasis: '22%', alignItems: 'center' },
   overlay:   { flex: 1, justifyContent: 'flex-end' },
-  sheet:     { width: '100%' },
-  grabber:   { width: 40, height: 4, borderRadius: 2, alignSelf: 'center' },
-  failMark:  { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
 });
