@@ -81,6 +81,7 @@ export interface PPData {
   totalAmount: number;
   totalAmountWithBonus: number;
   bonusAmount: number;
+  bonusWeight: number;
   bonusPercent: number;
   fromDays: number;
   toDays: number;

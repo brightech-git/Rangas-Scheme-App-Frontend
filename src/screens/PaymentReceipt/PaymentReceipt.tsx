@@ -48,6 +48,7 @@ export default function PaymentReceipt() {
   const [downloading, setDownloading] = useState(false);
 
   const method = paymentMode(payment);
+  const hasGold = ppData.schemeSummary?.weightLedger === 'Y';
   const weight = parseFloat(String(payment.weight ?? '0')) || 0;
   const groupRegNo = `${ppData.groupCode ?? 'N/A'}-${ppData.regNo ?? 'N/A'}`;
   const pi = ppData.personalInfo;
@@ -214,7 +215,7 @@ export default function PaymentReceipt() {
               <Text style={[st.th, { flex: 0.5, color: COLORS.textOnPrimary }]}>S.No</Text>
               <Text style={[st.th, { flex: 1.8, color: COLORS.textOnPrimary }]}>Group-Reg No</Text>
               <Text style={[st.th, { flex: 1, color: COLORS.textOnPrimary }]}>Installment</Text>
-              {weight > 0 && <Text style={[st.th, { flex: 1, color: COLORS.textOnPrimary }]}>Weight</Text>}
+              {hasGold && <Text style={[st.th, { flex: 1, color: COLORS.textOnPrimary }]}>Weight (g)</Text>}
               <Text style={[st.th, { flex: 1.2, color: COLORS.textOnPrimary }]}>Rate</Text>
               <Text style={[st.th, { flex: 1.2, color: COLORS.textOnPrimary }]}>Amount</Text>
             </View>
@@ -222,7 +223,7 @@ export default function PaymentReceipt() {
               <Text style={[st.td, { flex: 0.5, color: COLORS.textPrimary }]}>1</Text>
               <Text style={[st.td, { flex: 1.8, color: COLORS.textPrimary }]}>{groupRegNo}</Text>
               <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>#{payment.installment}</Text>
-              {weight > 0 && <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>{weight.toFixed(3)}</Text>}
+              {hasGold && <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>{weight > 0 ? weight.toFixed(3) : '—'}</Text>}
               <Text style={[st.td, { flex: 1.2, color: COLORS.textPrimary }]}>
                 {payment.rate ? parseFloat(String(payment.rate)).toLocaleString('en-IN') : '—'}
               </Text>

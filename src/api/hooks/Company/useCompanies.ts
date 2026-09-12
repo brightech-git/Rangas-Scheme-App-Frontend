@@ -15,6 +15,7 @@ export const useCompanies = () => {
     try {
       const data = await companyService.getAll();
       const list = Array.isArray(data) ? data : [];
+      console.log('Company/Contact response:', JSON.stringify(list, null, 2));
       list.sort((a, b) => (a.DISPLAYORDER ?? 0) - (b.DISPLAYORDER ?? 0));
       setCompanies(list);
     } catch (err: any) {

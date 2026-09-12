@@ -14,6 +14,8 @@ type Props = {
   onWeightChange: (v: string) => void;
   goldRate: number;
   ratesLoading?: boolean;
+  // minimum amount from scheme COMMAMT
+  minAmount?: number;
   // optional breakdown rows shown below the inputs
   breakdownRows?: SummaryRow[];
   // optional preset quick-select amounts (shown when provided)
@@ -28,11 +30,14 @@ export default function GoldAmountInput({
   onWeightChange,
   goldRate,
   ratesLoading,
+  minAmount,
   breakdownRows,
   presets,
   onPresetPress,
 }: Props) {
   const { COLORS, FONTS, SIZES } = useTheme();
+  const enteredAmount = parseFloat(amountInput) || 0;
+  const belowMin = minAmount != null && enteredAmount > 0 && enteredAmount < minAmount;
 
   return (
     <>
@@ -82,6 +87,14 @@ export default function GoldAmountInput({
           ? `At ${money(goldRate)} / g · 916 (22K)`
           : '—'}
       </Text>
+
+      {minAmount != null && (
+        <Text style={[asText(FONTS.micro), { color: belowMin ? COLORS.error : COLORS.inkMuted, marginTop: 4, fontSize: 10 }]}>
+          {belowMin
+            ? `Minimum amount is ${money(minAmount)}`
+            : `Min. amount: ${money(minAmount)}`}
+        </Text>
+      )}
 
       {/* Quick-select presets */}
       {presets && presets.length > 0 && onPresetPress && (

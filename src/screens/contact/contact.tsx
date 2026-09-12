@@ -21,6 +21,7 @@ import { useTheme } from '../../theme';
 import PoweredByFooter from '../../components/ui/PoweredByFooter';
 import { useCompanies } from '../../api/hooks/Company/useCompanies';
 import { Company } from '../../types/Company/Company';
+import { useAppSelector } from '../../store/hooks';
 
 // ── Company helpers ───────────────────────────────────────────────
 type Branch = { label: string; address: string; mapsQuery: string };
@@ -111,14 +112,15 @@ export default function ContactScreen() {
 
   const { companies, loading: companiesLoading, error: companiesError } = useCompanies();
 
-  // Social / store links from the first company that has any (only show present ones)
-  const socialLinks = socialLinksOf(companies.find(c => socialLinksOf(c).length > 0) ?? companies[0]);
+  const user = useAppSelector((s) => s.auth.user);
 
-  const [cName,    setCName]    = useState('');
-  const [cEmail,   setCEmail]   = useState('');
-  const [cPhone,   setCPhone]   = useState('');
+  const [cName,    setCName]    = useState(user?.username      ?? '');
+  const [cEmail,   setCEmail]   = useState(user?.email         ?? '');
+  const [cPhone,   setCPhone]   = useState(user?.contactNumber ?? '');
   const [cMessage, setCMessage] = useState('');
   const [sent,     setSent]     = useState(false);
+
+  const socialLinks = socialLinksOf(companies.find(c => socialLinksOf(c).length > 0) ?? companies[0]);
 
   const isFormValid = cName.trim().length > 1 && cEmail.includes('@') && cMessage.trim().length > 5;
 

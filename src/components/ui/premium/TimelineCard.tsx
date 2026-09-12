@@ -208,10 +208,7 @@ function TimelineCard({
                           },
                         ]}
                       >
-                        <Ionicons name="eye-outline" size={13} color={fg} />
-                        <Text style={[asText(FONTS.microBold), s.actionLabel, { color: fg }]}>
-                          View
-                        </Text>
+                        <Ionicons name="eye-outline" size={15} color={fg} />
                       </Pressable>
                     )}
                     {!!e.onDownload && (

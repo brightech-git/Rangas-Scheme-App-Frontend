@@ -17,6 +17,8 @@ export interface ApiScheme {
   ADDNEWMEMBER: YN;
   GroupCodeForAllAmount: YN;
   MetalType: MetalType | string;
+  COMMAMT?: number;
+  OLDSCHEMEID?: string | null;
 }
 
 export interface SchemesResponse {

@@ -114,6 +114,7 @@ function MySchemeHoldings(
           eyebrow={`REG ${item.regNo} · ${item.groupCode ?? ''}`.trim()}
           metal="G"
           metalLabel="GOLD"
+          onPress={() => navigation.navigate('ViewInstallment', { ppData: item })}
           status={{
             label: mx.state.charAt(0).toUpperCase() + mx.state.slice(1),
             tone:
@@ -129,7 +130,7 @@ function MySchemeHoldings(
               ? { label: 'Weight', value: grams(mx.weight, 3) }
               : { label: 'Remaining', value: String( money(mx.remaining)) },
             isMultiPay
-              ? { label: 'bonusAmount', value: String(item.bonusAmount ?? 0) }
+              ? { label: 'Bonus weight', value: grams(item.bonusWeight ?? 0, 3) }
               : {
                   label: 'Maturity',
                   value: item.maturityDate ? fmtDate(item.maturityDate) : '—',

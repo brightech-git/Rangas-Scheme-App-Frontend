@@ -15,6 +15,7 @@ export const useSchemeSliders = () => {
     schemeSliderService
       .getSliders()
       .then((res) => {
+        // console.log('Banner response:', res);
         setSliders(res.sliders);
       })
       .catch((err) => setError(err.message))

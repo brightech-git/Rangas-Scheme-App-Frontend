@@ -18,6 +18,7 @@ import { usePayment } from '../../api/hooks/Payment/usePayment';
 import { InitiatePaymentRequest } from '../../types/Payment/Payment';
 import { schemeMetrics } from '../../utils/schemeMetrics';
 import { classifySchemeKind } from '../../utils/schemeKind';
+import { useSchemes } from '../../api/hooks/Schemes/useSchemes';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
 
@@ -49,6 +50,11 @@ export default function PayInstallmentScreen() {
 
   const scheme        = ppData.schemeSummary;
   const schemeName    = scheme?.schemeName ?? ppData.pName;
+
+  const { schemes } = useSchemes();
+  const commAmt = schemes.find(
+    (s) => String(s.SchemeId) === String(scheme?.schemeId)
+  )?.COMMAMT ?? 0;
 
   // Payment shape: 'fixed' = locked monthly amount, 'lumpsum' = single
   // one-time payment, 'flexible' (DigiGold-style) = pay-anytime by
@@ -95,7 +101,7 @@ export default function PayInstallmentScreen() {
     : enteredWeight;
 
   const mx          = schemeMetrics(ppData);
-  const isReady     = effectiveAmount > 0;
+  const isReady     = effectiveAmount > 0 && (commAmt <= 0 || effectiveAmount >= commAmt);
   const isProcessing = status === 'initiating';
   const isVerifying  = status === 'pending';
 
@@ -332,6 +338,7 @@ export default function PayInstallmentScreen() {
                 onWeightChange={(v) => { setMode('weight'); setInput(v.replace(/[^0-9.]/g, '')); }}
                 goldRate={goldRate}
                 ratesLoading={ratesLoading}
+                minAmount={commAmt > 0 ? commAmt : undefined}
                 breakdownRows={isReady ? breakdownRows : undefined}
                 presets={presets}
                 onPresetPress={(p) => { setMode('amount'); setInput(String(p)); }}

@@ -306,6 +306,23 @@ export default function ProfileScreen() {
           )}
         </AppCard>
 
+        {/* ── LEGAL & SUPPORT ──────────────────────────────────── */}
+        <SectionLabel title="Legal & support" />
+        <AppCard padding="none" radius="xl" style={SHADOWS.lift}>
+          <ListRow icon="information-circle-outline" label="About Us"
+            gradient={COLORS.gradient?.orangePrimary ?? [COLORS.primary, COLORS.primaryDark]}
+            onPress={() => navigation.navigate('AboutUs')} />
+          <ListRow icon="help-circle-outline" label="FAQ"
+            gradient={COLORS.gradient?.goldDark ?? [COLORS.secondary, COLORS.secondaryDark]}
+            onPress={() => navigation.navigate('FAQ')} />
+          <ListRow icon="document-text-outline" label="Terms & Conditions"
+            gradient={COLORS.gradient?.orangeDeep ?? [COLORS.primaryDark, COLORS.primary]}
+            onPress={() => navigation.navigate('TermsAndConditions')} />
+          <ListRow icon="shield-checkmark-outline" label="Privacy Policy" last
+            gradient={COLORS.gradient?.orangePrimary ?? [COLORS.primary, COLORS.primaryDark]}
+            onPress={() => navigation.navigate('PrivacyPolicy')} />
+        </AppCard>
+
         {/* ── ACCOUNT ──────────────────────────────────────────── */}
         <SectionLabel title="Account" />
         <AppCard padding="none" radius="xl" style={SHADOWS.lift}>

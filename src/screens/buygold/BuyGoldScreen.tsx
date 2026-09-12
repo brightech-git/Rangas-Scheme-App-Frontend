@@ -13,6 +13,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -152,6 +153,7 @@ export default function BuyGoldScreen() {
   const loginMobile = user?.contactNumber ?? '';
   const loginEmail  = user?.email         ?? '';
 
+  // ── Address ──
   const [doorStreet, setDoorStreet] = useState('');
   const [area,       setArea]       = useState('');
   const [city,       setCity]       = useState('');
@@ -164,12 +166,77 @@ export default function BuyGoldScreen() {
   const clearErr = (key: string) =>
     setFieldErrors((p) => { const n = { ...p }; delete n[key]; return n; });
 
+  // ── KYC details ──
+  const [aadhaar, setAadhaar] = useState('');
+  const [pan,     setPan]     = useState('');
+  const [gender,  setGender]  = useState('');
+
+  const today = new Date();
+  const [dobDay,   setDobDay]   = useState(today.getDate());
+  const [dobMonth, setDobMonth] = useState(today.getMonth() + 1);
+  const [dobYear,  setDobYear]  = useState(today.getFullYear() - 25);
+  const [dobSet,   setDobSet]   = useState(false);
+  const [showDob,  setShowDob]  = useState(false);
+  const [tempDob,  setTempDob]  = useState<Date>(new Date(today.getFullYear() - 25, 0, 1));
+
+  // ── Nominee ──
+  const [nominee,   setNominee]   = useState('');
+  const [nomRel,    setNomRel]    = useState('');
+  const [nomMobile, setNomMobile] = useState('');
+
+  // Load shared personal draft (same key as SchemeJoinScreen)
+  useEffect(() => {
+    AsyncStorage.getItem('SCHEME_JOIN_PERSONAL').then((raw) => {
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (d.doorStreet) setDoorStreet(d.doorStreet);
+        if (d.pincode)    setPincode(d.pincode);
+        if (d.area)       setArea(d.area);
+        if (d.city)       setCity(d.city);
+        if (d.district)   setDistrict(d.district);
+        if (d.stateVal)   setStateVal(d.stateVal);
+        if (d.gender)     setGender(d.gender);
+        if (d.dobDay)     setDobDay(d.dobDay);
+        if (d.dobMonth)   setDobMonth(d.dobMonth);
+        if (d.dobYear)    setDobYear(d.dobYear);
+        if (d.dobSet)     setDobSet(d.dobSet);
+        if (d.aadhaar)    setAadhaar(d.aadhaar);
+        if (d.pan)        setPan(d.pan);
+        if (d.nominee)    setNominee(d.nominee);
+        if (d.nomRel)     setNomRel(d.nomRel);
+        if (d.nomMobile)  setNomMobile(d.nomMobile);
+      } catch {}
+    });
+  }, []);
+
+  // Save shared personal draft on every change
+  useEffect(() => {
+    AsyncStorage.setItem('SCHEME_JOIN_PERSONAL', JSON.stringify({
+      doorStreet, pincode, area, city, district, stateVal,
+      gender, dobDay, dobMonth, dobYear, dobSet,
+      aadhaar, pan, nominee, nomRel, nomMobile,
+    }));
+  }, [doorStreet, pincode, area, city, district, stateVal, gender, dobDay, dobMonth, dobYear, dobSet, aadhaar, pan, nominee, nomRel, nomMobile]);
+
   useEffect(() => {
     if (!user) return;
     if (user.address1 && !doorStreet) setDoorStreet(user.address1);
     if (user.city     && !city)       setCity(user.city);
     if (user.state    && !stateVal)   setStateVal(user.state);
     if (user.pincode  && !pincode)    setPincode(user.pincode);
+    if (user.gender   && !gender)     setGender(user.gender);
+    if (user.dateOfBirth && !dobSet) {
+      try {
+        const d = new Date(user.dateOfBirth);
+        if (!isNaN(d.getTime())) {
+          setDobDay(d.getDate());
+          setDobMonth(d.getMonth() + 1);
+          setDobYear(d.getFullYear());
+          setDobSet(true);
+        }
+      } catch {}
+    }
   }, [user]);
 
   // ── Pincode → auto-fill area / city / district / state ──
@@ -205,10 +272,7 @@ export default function BuyGoldScreen() {
         }
         clearErr('pincode');
       } else {
-        setFieldErrors((p) => ({
-          ...p,
-          pincode: 'Invalid pincode — no results found',
-        }));
+        setFieldErrors((p) => ({ ...p, pincode: 'Invalid pincode — no results found' }));
       }
     } catch {
       setFieldErrors((p) => ({ ...p, pincode: 'Could not fetch pincode data' }));
@@ -225,21 +289,6 @@ export default function BuyGoldScreen() {
     if (stateVal) rows.push({ label: 'State', value: stateVal });
     return rows;
   }, [area, city, district, stateVal]);
-
-  // ── KYC details ──
-  const [aadhaar, setAadhaar] = useState('');
-  const [pan,     setPan]     = useState('');
-  const [gender,  setGender]  = useState('');
-
-  const today = new Date();
-  const [dobDay,   setDobDay]   = useState(today.getDate());
-  const [dobMonth, setDobMonth] = useState(today.getMonth() + 1);
-  const [dobYear,  setDobYear]  = useState(today.getFullYear() - 25);
-  const [dobSet,   setDobSet]   = useState(false);
-  const [showDob,  setShowDob]  = useState(false);
-  const [tempDob,  setTempDob]  = useState<Date>(
-    new Date(today.getFullYear() - 25, 0, 1),
-  );
 
   const dobLabel = dobSet
     ? `${String(dobDay).padStart(2, '0')} ${MONTHS[dobMonth - 1]} ${dobYear}`
@@ -272,28 +321,6 @@ export default function BuyGoldScreen() {
     }
   };
 
-  // ── Nominee ──
-  const [nominee,   setNominee]   = useState('');
-  const [nomRel,    setNomRel]    = useState('');
-  const [nomMobile, setNomMobile] = useState('');
-
-  // ── Auto-populate KYC from logged-in user profile ──
-  useEffect(() => {
-    if (!user) return;
-    if (user.gender && !gender) setGender(user.gender);
-    if (user.dateOfBirth && !dobSet) {
-      try {
-        const d = new Date(user.dateOfBirth);
-        if (!isNaN(d.getTime())) {
-          setDobDay(d.getDate());
-          setDobMonth(d.getMonth() + 1);
-          setDobYear(d.getFullYear());
-          setDobSet(true);
-        }
-      } catch {}
-    }
-  }, [user]);
-
   const isValidMobile = (v: string) => /^[6-9]\d{9}$/.test(v.trim());
   const isValidEmail  = (v: string) => v.includes('@') && v.includes('.');
   const isValidAadhaar = (v: string) => /^\d{12}$/.test(v.trim());
@@ -312,7 +339,7 @@ export default function BuyGoldScreen() {
     nominee.trim().length > 1 &&
     (nomMobile === '' || isValidMobile(nomMobile));
 
-  const isReady = amount > 0 && isCustomerValid;
+  const isReady = amount > 0 && isCustomerValid && (!(scheme?.COMMAMT) || amount >= scheme.COMMAMT);
 
   const validateCustomerFields = (): Record<string, string> => {
     const fe: Record<string, string> = {};
@@ -740,6 +767,7 @@ export default function BuyGoldScreen() {
                 onWeightChange={handleWeightChange}
                 goldRate={goldRate}
                 ratesLoading={loading}
+                minAmount={scheme?.COMMAMT ? scheme.COMMAMT : undefined}
                 breakdownRows={breakdown}
               />
             </View>

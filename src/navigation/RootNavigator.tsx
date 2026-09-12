@@ -55,6 +55,10 @@ export type RootStackParamList = {
   PaymentReceipt:          { ppData: PPData; payment: PaymentHistory };
   PaymentResult:           { result: PaymentStatusResponse; context?: string };
   DeleteAccount:           undefined;
+  PrivacyPolicy:           undefined;
+  TermsAndConditions:      undefined;
+  AboutUs:                 undefined;
+  FAQ:                     undefined;
 };
 
 type InitialRoute = 'Onboarding' | 'Register' | 'Login' | 'CreateMpin' | 'MpinLogin' | 'Main';
@@ -155,6 +159,10 @@ export default function RootNavigator() {
         <Stack.Screen name="PaymentReceipt"  component={PaymentReceiptScreen}          options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="PaymentResult"  component={Screens.PaymentResultScreen}   options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="DeleteAccount"   component={Screens.DeleteAccountScreen}   options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="PrivacyPolicy"        component={Screens.PrivacyPolicyScreen}        options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="TermsAndConditions"   component={Screens.TermsConditionsScreen}      options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="AboutUs"               component={Screens.AboutUsScreen}              options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="FAQ"                   component={Screens.FAQScreen}                  options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
     </>

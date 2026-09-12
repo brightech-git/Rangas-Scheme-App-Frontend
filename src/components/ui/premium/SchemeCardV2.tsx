@@ -132,10 +132,10 @@ function SchemeCardV2({
         {wordmark}
       </Text>
 
-      <View style={{ padding: SIZES.padding.xl, paddingLeft: SIZES.padding.xl + 4 }}>
+      <View style={{ padding: SIZES.padding.xl, paddingTop: SIZES.padding.md, paddingBottom: 0, paddingLeft: SIZES.padding.xl + 4 }}>
         {/* ── Head ── */}
         <View style={s.headRow}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, paddingRight: status ? 8 : 0 }}>
             {!!eyebrow && (
               <Text
                 numberOfLines={1}
@@ -146,17 +146,19 @@ function SchemeCardV2({
             )}
             <Text
               numberOfLines={2}
+              ellipsizeMode="tail"
               style={[
                 asText(FONTS.displaySm),
-                { color: COLORS.inkPrimary, marginTop: eyebrow ? 2 : 0 },
+                { color: COLORS.inkPrimary, marginTop: eyebrow ? 7 : 0 },
               ]}
             >
               {title}
             </Text>
           </View>
-
           {!!status && (
-            <StatusChip label={status.label} tone={status.tone} dot />
+            <View style={{ position: 'absolute', top: 0, right: 0,}}>
+              <StatusChip label={status.label} tone={status.tone} dot />
+            </View>
           )}
         </View>
 
@@ -300,7 +302,7 @@ const s = StyleSheet.create({
     letterSpacing: -2,
     opacity: 0.85,
   },
-  headRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', position: 'relative' },
   flexRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: StyleSheet.hairlineWidth },
   statStrip: { flexDirection: 'row', borderTopWidth: 1 },
   vRule: { width: 1, alignSelf: 'stretch', marginHorizontal: 12 },

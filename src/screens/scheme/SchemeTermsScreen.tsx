@@ -1,43 +1,15 @@
-// src/screens/scheme/SchemeTermsScreen.tsx
-//
-// ─────────────────────────────────────────────────────────────────
-// LAYOUT
-//   Hero states which scheme is being agreed to, with its key facts as
-//   a hairline strip. The body reads like a legal document: scheme
-//   terms as a SummaryCard of fact rows first (what actually differs
-//   between schemes), then the general clauses as a numbered rail with
-//   a reading-progress indicator.
-//
-//   Consent moved OUT of the footer stack into its own PaymentTile
-//   above the pinned bar, so the checkbox is a deliberate target
-//   rather than fine print wedged against the CTA.
-//
-// WHY THIS IS BETTER UX
-//   • Scheme-specific facts are tabulated instead of prose bullets, so
-//     "how many instalments, fixed or flexible, is enrolment open" is
-//     answerable in one glance.
-//   • A scroll-progress rule shows how much of the agreement remains,
-//     which the previous unbounded list did not.
-//   • The join control is pinned and always visible with its disabled
-//     reason stated inline, instead of appearing only at the bottom.
-//
-// REUSED (unchanged business logic)
-//   Route param `scheme` (ApiScheme), METAL_LABEL, navigation target
-//   SchemeJoin. The COMMON_TERMS copy is preserved verbatim.
-//
-// NEW UI COMPONENTS
-//   ScreenCanvas, PageHeader, SummaryCard, PaymentTile,
-//   BottomActionBar, SectionHeading, StatusChip
-// ─────────────────────────────────────────────────────────────────
-
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  Pressable,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -45,216 +17,228 @@ import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { METAL_LABEL } from '../../types/Scheme/Scheme';
 import { classifySchemeKind } from '../../utils/schemeKind';
+import { useAppContent } from '../../api/hooks/AppContent/useAppContent';
 
 import {
-  ScreenCanvas,
   PageHeader,
-  SummaryCard,
   PaymentTile,
   BottomActionBar,
-  SectionHeading,
+  SummaryCard,
   StatusChip,
   asText,
-  clamp01,
   type SummaryRow,
 } from '../../components/ui/premium';
 
 type RouteProps = RouteProp<RootStackParamList, 'SchemeTerms'>;
-type NavProps = NativeStackNavigationProp<RootStackParamList, 'SchemeTerms'>;
+type NavProps   = NativeStackNavigationProp<RootStackParamList, 'SchemeTerms'>;
+type Lang = 'en' | 'ta';
 
-// ── Common T&C (unchanged copy) ──────────────────────────────────
-const COMMON_TERMS = [
-  'All investments are subject to market risks. Please read all scheme-related documents carefully before investing.',
-  'Rangas DigiGold is regulated under applicable laws and guidelines for gold savings schemes.',
-  'Investors must complete KYC verification before joining any scheme. PAN card and Aadhaar details are mandatory.',
-  'The company reserves the right to modify scheme terms with 30 days prior notice to enrolled members.',
-  'In case of default or late payment, a penalty of 2% per month on the outstanding amount will be levied.',
-  'Disputes arising from scheme participation shall be subject to the jurisdiction of courts in Chennai, Tamil Nadu.',
-  'Any misrepresentation of personal information may lead to immediate cancellation of scheme membership without refund.',
-  'Metal purity and weight will be certified by a government-approved hallmarking centre at the time of redemption.',
-  'The scheme maturity value is calculated based on prevailing metal rates on the date of redemption.',
-  'Nominee details must be provided at the time of enrolment and can be updated only once per scheme tenure.',
-  'Digital receipts will be issued for every installment payment. Physical receipts are available on request.',
-  'The company will not be held liable for losses arising due to force majeure events including natural calamities, war, or government directives.',
-];
+// Wraps the API HTML with styles + lang-switch JS so it renders
+// correctly inside a WebView (no external network calls needed).
+// The backend markup ships its own EN/TA toggle buttons
+// (.content-lang-switch / .lang-btn) — those are hidden here in favour
+// of the native pill toggle rendered above the WebView, which drives
+// language switching via injectJavaScript(showLang(...)).
+function buildHtml(rawHtml: string, lang: Lang, isDark: boolean): string {
+  const bg   = isDark ? '#1a1a1a' : '#ffffff';
+  const text = isDark ? '#e5e5e5' : '#1a1a1a';
+  const sub  = isDark ? '#a0a0a0' : '#555555';
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: ${bg}; color: ${text}; font-family: -apple-system, sans-serif;
+         font-size: 14px; line-height: 1.7; padding: 16px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+  h3 { font-size: 14px; font-weight: 600; margin-top: 18px; margin-bottom: 8px; }
+  p  { margin-bottom: 10px; color: ${sub}; }
+  ul { padding-left: 18px; margin-bottom: 10px; }
+  li { margin-bottom: 6px; color: ${sub}; }
+  strong { color: ${text}; }
+  .content-lang-switch { display: none; }
+  .content-content { display: none; }
+</style>
+</head>
+<body>
+${rawHtml}
+<script>
+  function showLang(lang){
+    var contents = document.querySelectorAll('.content-content');
+    contents.forEach(function(el){
+      el.style.display = el.getAttribute('data-lang') === lang ? 'block' : 'none';
+    });
+    setTimeout(postHeight, 60);
+  }
+  function postHeight(){
+    window.ReactNativeWebView.postMessage('height:' + document.body.scrollHeight);
+  }
+  showLang('${lang}');
+  postHeight();
+  setTimeout(postHeight, 300);
+  function switchLang(lang){ showLang(lang); }
+<\/script>
+</body></html>`;
+}
 
 export default function SchemeTermsScreen() {
-  const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const { COLORS, FONTS, SIZES, moderateScale, isDark } = useTheme();
   const navigation = useNavigation<NavProps>();
-  const route = useRoute<RouteProps>();
+  const route      = useRoute<RouteProps>();
   const { scheme } = route.params;
 
   const [accepted, setAccepted] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [lang, setLang]         = useState<Lang>('en');
+  const webViewRef = useRef<any>(null);
 
-  const mLabel = METAL_LABEL[scheme.MetalType] ?? scheme.MetalType;
-  const isFixed = scheme.FixedIns === 'Y';
-  const canJoin = scheme.ADDNEWMEMBER === 'Y';
+  const [webViewHeight, setWebViewHeight] = useState(400);
 
+  const mLabel    = METAL_LABEL[scheme.MetalType] ?? scheme.MetalType;
+  const isFixed   = scheme.FixedIns === 'Y';
+  const canJoin   = scheme.ADDNEWMEMBER === 'Y';
   const schemeKind = classifySchemeKind(scheme.FixedIns, scheme.Instalment, scheme.WeightLedger);
-  const isLumpsum = schemeKind === 'lumpsum';
+  const isLumpsum  = schemeKind === 'lumpsum';
   const isDigiGold = schemeKind === 'flexible';
 
-  // ── Preserved business logic ──
+  // Fetch T&C HTML from API — content ID is the scheme's own code
+  // (SchemeSName), e.g. "SCHEME_DIGI_GOLD".
+  const contentId = String(scheme.SchemeId);
+  const { html: rawHtml, loading, error } = useAppContent(contentId);
+
+  const webHtml = useMemo(
+    () => (rawHtml ? buildHtml(rawHtml, lang, !!isDark) : null),
+    [rawHtml, lang, isDark],
+  );
+
   const handleJoin = useCallback(() => {
     if (!accepted) return;
-    if (isDigiGold) {
-      navigation.navigate('BuyGold', { scheme });
-    } else {
-      navigation.navigate('SchemeJoin', { scheme });
-    }
+    if (isDigiGold) navigation.navigate('BuyGold', { scheme });
+    else            navigation.navigate('SchemeJoin', { scheme });
   }, [accepted, navigation, scheme, isDigiGold]);
 
-  const onScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-      const scrollable = contentSize.height - layoutMeasurement.height;
-      setProgress(scrollable > 0 ? clamp01(contentOffset.y / scrollable) : 1);
-    },
-    [],
-  );
+  const switchLang = (l: Lang) => {
+    setLang(l);
+    webViewRef.current?.injectJavaScript(`switchLang('${l}'); true;`);
+  };
 
-  // ── Scheme-specific facts, tabulated ──
-  const schemeFacts: SummaryRow[] = useMemo(
-    () => [
-      { label: 'Scheme code', value: scheme.SchemeSName },
-      { label: 'Metal', value: mLabel, highlight: true },
-      { label: 'Instalments', value: String(scheme.Instalment) },
-      {
-        label: 'Instalment amount',
-        value: isFixed
-          ? 'Fixed each month'
-          : isLumpsum
-          ? 'One-time payment'
-          : 'Flexible — by amount or weight',
-      },
-      {
-        label: 'Ledger',
-        value:
-          scheme.WeightLedger === 'Y'
-            ? 'Weight + amount tracked'
-            : 'Amount only',
-      },
-      {
-        label: 'Scheme type',
-        value:
-          scheme.SCHEMETYPE === 'A' ? 'Amount-based' : String(scheme.SCHEMETYPE),
-      },
-      {
-        label: 'New enrolment',
-        value: canJoin ? 'Open' : 'Closed',
-      },
-    ],
-    [scheme, mLabel, isFixed, isLumpsum, canJoin],
-  );
-
-  // ── Prose clauses that are genuinely scheme-specific ──
-  const schemeClauses = useMemo(
-    () => [
-      isLumpsum
-        ? `This scheme is a single one-time payment for ${mLabel} savings.`
-        : `This scheme covers ${scheme.Instalment} instalments for ${mLabel} savings.`,
-      isFixed
-        ? 'Instalment type: Fixed – the same amount is paid each month.'
-        : isLumpsum
-        ? 'Instalment type: One-time – paid once in full, no recurring instalments.'
-        : 'Instalment type: Flexible – pay any number of times, by amount or by weight.',
-      `Only ${mLabel.toLowerCase()} purchases are eligible under this scheme.`,
-      'Early exit before completing all instalments may attract a processing fee and forfeiture of accrued scheme benefits.',
-    ],
-    [scheme.Instalment, mLabel, isFixed, isLumpsum],
-  );
+  const schemeFacts: SummaryRow[] = useMemo(() => [
+    { label: 'Scheme code',       value: scheme.SchemeSName },
+    { label: 'Metal',             value: mLabel, highlight: true },
+    { label: 'Instalments',       value: String(scheme.Instalment) },
+    { label: 'Instalment amount', value: isFixed ? 'Fixed each month' : isLumpsum ? 'One-time payment' : 'Flexible — by amount or weight' },
+    { label: 'New enrolment',     value: canJoin ? 'Open' : 'Closed' },
+  ], [scheme, mLabel, isFixed, isLumpsum, canJoin]);
 
   return (
-    <ScreenCanvas
-      overlap={moderateScale(24)}
-      paddingBottom={moderateScale(40)}
-      scrollProps={{ onScroll, scrollEventThrottle: 32 }}
-      header={
-        <PageHeader
-          eyebrow="Before you join"
-          title="Terms & conditions"
-          caption={scheme.schemeName}
-          bleedBottom={moderateScale(24)}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+
+        {/* ── Scrollable body: Header + Terms + Scheme card ── */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: SIZES.padding.xxl }}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Fact strip */}
-          <View
-            style={[
-              s.factStrip,
-              {
-                marginTop: SIZES.margin.xxl,
-                paddingTop: SIZES.padding.lg,
-                borderTopColor: COLORS.heroHairline,
-              },
-            ]}
+          {/* Hero header inside scroll */}
+          <PageHeader
+            eyebrow="Before you join"
+            title="Terms & conditions"
+            caption={scheme.schemeName}
+            bleedBottom={moderateScale(24)}
           >
-            {[
-              { label: 'Instalments', value: String(scheme.Instalment) },
-              {
-                label: 'Amount',
-                value: isFixed ? 'Fixed' : isLumpsum ? 'One-time' : 'Flexible',
-              },
-              { label: 'Metal', value: mLabel },
-            ].map((f, i) => (
-              <React.Fragment key={f.label}>
-                {i > 0 && (
-                  <View
-                    style={[s.vRule, { backgroundColor: COLORS.heroHairline }]}
-                  />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      asText(FONTS.micro),
-                      { color: COLORS.heroTextMuted, fontSize: 10 },
-                    ]}
-                  >
-                    {f.label}
+            <View style={[s.factStrip, { marginTop: SIZES.margin.xxl, paddingTop: SIZES.padding.lg, borderTopColor: COLORS.heroHairline }]}>
+              {[
+                { label: 'Instalments', value: String(scheme.Instalment) },
+                { label: 'Amount',      value: isFixed ? 'Fixed' : isLumpsum ? 'One-time' : 'Flexible' },
+                { label: 'Metal',       value: mLabel },
+              ].map((f, i) => (
+                <React.Fragment key={f.label}>
+                  {i > 0 && <View style={[s.vRule, { backgroundColor: COLORS.heroHairline }]} />}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, fontSize: 10 }]}>{f.label}</Text>
+                    <Text numberOfLines={1} style={[asText(FONTS.numeralSm), { color: COLORS.heroTextPrimary, marginTop: 3 }]}>{f.value}</Text>
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          </PageHeader>
+
+          {/* Language toggle */}
+          <View style={[s.langRow, { paddingHorizontal: SIZES.layout.gutter, marginTop: SIZES.margin.lg, marginBottom: SIZES.margin.md }]}>
+            {(['en', 'ta'] as Lang[]).map((l) => {
+              const on = lang === l;
+              return (
+                <Pressable
+                  key={l}
+                  onPress={() => switchLang(l)}
+                  style={[s.langBtn, {
+                    borderRadius: SIZES.radius.pill,
+                    borderColor: on ? COLORS.primary : COLORS.hairline,
+                    borderWidth: on ? 1.5 : 1,
+                    backgroundColor: on ? COLORS.primary : COLORS.canvasElevated,
+                    paddingVertical: SIZES.padding.sm,
+                    paddingHorizontal: SIZES.padding.xl,
+                  }]}
+                >
+                  <Text style={[asText(FONTS.microBold), { color: on ? COLORS.textOnPrimary : COLORS.inkSecondary }]}>
+                    {l === 'en' ? 'English' : 'தமிழ்'}
                   </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      asText(FONTS.numeralSm),
-                      { color: COLORS.heroTextPrimary, marginTop: 3 },
-                    ]}
-                  >
-                    {f.value}
-                  </Text>
-                </View>
-              </React.Fragment>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
 
-          {/* Reading progress */}
-          <View
-            style={[
-              s.progressTrack,
-              {
-                marginTop: SIZES.margin.xl,
-                backgroundColor: COLORS.heroHairline,
-              },
-            ]}
-          >
-            <View
-              style={{
-                width: `${progress * 100}%`,
-                height: '100%',
-                borderRadius: 1.5,
-                backgroundColor: COLORS.heroAccent,
-              }}
-            />
+          {/* Terms WebView — auto-height, no internal scroll */}
+          <View style={[
+            s.webViewWrap,
+            {
+              height: loading ? 200 : webViewHeight,
+              marginHorizontal: SIZES.layout.gutter,
+              borderRadius: SIZES.radius.panel,
+              borderColor: COLORS.hairline,
+              backgroundColor: COLORS.canvasElevated,
+            },
+          ]}>
+            {loading && (
+              <View style={s.center}>
+                <ActivityIndicator color={COLORS.primary} />
+                <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 8 }]}>Loading terms…</Text>
+              </View>
+            )}
+            {error && !loading && (
+              <View style={s.center}>
+                <Text style={[asText(FONTS.micro), { color: COLORS.error, textAlign: 'center' }]}>{error}</Text>
+              </View>
+            )}
+            {webHtml && (
+              <WebView
+                ref={webViewRef}
+                source={{ html: webHtml }}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
+                scrollEnabled={false}
+                showsVerticalScrollIndicator={false}
+                onMessage={(e) => {
+                  const msg = e.nativeEvent.data;
+                  if (msg.startsWith('height:')) {
+                    const h = parseInt(msg.replace('height:', ''), 10);
+                    if (h > 0) setWebViewHeight(h + 32);
+                  }
+                }}
+              />
+            )}
           </View>
-          <Text
-            style={[
-              asText(FONTS.micro),
-              { color: COLORS.heroTextMuted, marginTop: 6, fontSize: 10 },
-            ]}
-          >
-            {Math.round(progress * 100)}% read
-          </Text>
-        </PageHeader>
-      }
-      footer={
+
+          {/* Scheme card below terms */}
+          <View style={{ paddingHorizontal: SIZES.layout.gutter, marginTop: SIZES.margin.xl }}>
+            <SummaryCard rows={schemeFacts} />
+            {!canJoin && (
+              <StatusChip tone="warning" icon="lock-closed-outline" label="This scheme is not accepting new members" style={{ marginTop: SIZES.margin.lg }} />
+            )}
+          </View>
+        </ScrollView>
+
+        {/* ── Footer ── */}
         <BottomActionBar
           actionLabel={!canJoin ? 'Enrolment closed' : isDigiGold ? 'Buy DigiGold' : 'Join scheme'}
           onAction={handleJoin}
@@ -264,120 +248,22 @@ export default function SchemeTermsScreen() {
               marker="check"
               selected={accepted}
               title="I accept the terms & conditions"
-              subtitle={`I have read and agree to all terms and general guidelines of ${scheme.schemeName}.`}
+              subtitle={`I have read and agree to all terms of ${scheme.schemeName}.`}
               onPress={() => setAccepted((p) => !p)}
               disabled={!canJoin}
             />
           }
         />
-      }
-    >
-      {/* ── Scheme specifics ── */}
-      <View style={{ marginTop: SIZES.layout.sectionTight }}>
-        <SectionHeading
-          eyebrow="This scheme"
-          title="Specifics"
-          caption="What differs from other schemes"
-        />
-        <SummaryCard rows={schemeFacts} style={{ marginTop: SIZES.margin.lg }} />
       </View>
-
-      {!canJoin && (
-        <StatusChip
-          tone="warning"
-          icon="lock-closed-outline"
-          label="This scheme is not accepting new members"
-          style={{ marginTop: SIZES.margin.lg }}
-        />
-      )}
-
-      {/* ── Scheme clauses ── */}
-      <View style={{ marginTop: SIZES.layout.section }}>
-        <SectionHeading eyebrow="Scheme rules" title="Conditions" />
-        <View style={{ marginTop: SIZES.margin.lg, gap: 12 }}>
-          {schemeClauses.map((c, i) => (
-            <View key={i} style={s.clauseRow}>
-              <View style={[s.bullet, { backgroundColor: COLORS.metalGold }]} />
-              <Text
-                style={[
-                  asText(FONTS.micro),
-                  { color: COLORS.inkSecondary, flex: 1, lineHeight: 19 },
-                ]}
-              >
-                {c}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* ── General terms ── */}
-      <View style={{ marginTop: SIZES.layout.section }}>
-        <SectionHeading
-          eyebrow="Applies to all schemes"
-          title="General terms"
-          count={COMMON_TERMS.length}
-        />
-
-        <View
-          style={[
-            s.legalBlock,
-            {
-              marginTop: SIZES.margin.lg,
-              borderRadius: SIZES.radius.panel,
-              borderColor: COLORS.hairline,
-              backgroundColor: COLORS.canvasElevated,
-            },
-          ]}
-        >
-          {COMMON_TERMS.map((term, idx) => (
-            <View
-              key={idx}
-              style={[
-                s.legalRow,
-                {
-                  paddingHorizontal: SIZES.padding.xl,
-                  paddingVertical: SIZES.padding.lg,
-                  borderTopWidth: idx === 0 ? 0 : StyleSheet.hairlineWidth,
-                  borderTopColor: COLORS.hairline,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  asText(FONTS.micro),
-                  {
-                    color: COLORS.inkMuted,
-                    width: 22,
-                    fontSize: 10,
-                    lineHeight: 19,
-                  },
-                ]}
-              >
-                {String(idx + 1).padStart(2, '0')}
-              </Text>
-              <Text
-                style={[
-                  asText(FONTS.micro),
-                  { color: COLORS.inkSecondary, flex: 1, lineHeight: 19 },
-                ]}
-              >
-                {term}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </ScreenCanvas>
+    </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  factStrip: { flexDirection: 'row', borderTopWidth: 1 },
-  vRule: { width: 1, alignSelf: 'stretch', marginHorizontal: 12 },
-  progressTrack: { height: 3, borderRadius: 1.5, overflow: 'hidden' },
-  clauseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  bullet: { width: 5, height: 5, borderRadius: 2.5, marginTop: 7 },
-  legalBlock: { borderWidth: 1, overflow: 'hidden' },
-  legalRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  factStrip:  { flexDirection: 'row', borderTopWidth: 1 },
+  vRule:      { width: 1, alignSelf: 'stretch', marginHorizontal: 12 },
+  langRow:    { flexDirection: 'row', gap: 8 },
+  langBtn:    { alignItems: 'center' },
+  webViewWrap:{ borderWidth: 1, overflow: 'hidden' },
+  center:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
 });

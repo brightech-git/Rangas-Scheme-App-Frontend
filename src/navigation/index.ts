@@ -25,3 +25,7 @@ export { default as PortfolioScreen } from '../screens/portfolio/PortfolioScreen
 export { default as TransactionsScreen } from '../screens/transactions/TransactionsScreen';
 export { default as DeleteAccountScreen } from '../screens/profile/DeleteAccountScreen';
 export { default as PaymentResultScreen } from '../screens/payment/PaymentResultScreen';
+export { default as PrivacyPolicyScreen } from '../screens/legal/PrivacyPolicyScreen';
+export { default as TermsConditionsScreen } from '../screens/legal/TermsConditionsScreen';
+export { default as AboutUsScreen } from '../screens/legal/AboutUsScreen';
+export { default as FAQScreen } from '../screens/legal/FAQScreen';

@@ -89,6 +89,10 @@ export const APP = {
   CONFIG: '/app-config/all',
 };
 
+export const APP_CONTENT = {
+  GET: (id: string) => `/app-content/${id}`,
+};
+
 export const NOTIFICATIONS = {
   // Templates
   SAVE_MESSAGE:           '/notifications/saveMessage',

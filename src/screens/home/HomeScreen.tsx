@@ -187,7 +187,7 @@ export default function HomeScreen() {
     [mySchemes],
   );
 
-  const G = SIZES.layout.gutter;
+  const G = SIZES.layout.gutterTight;
   const RAIL_CARD_W = Math.min(SCREEN_W - G * 2 - moderateScale(36), 360);
 
   const gold = rates?.gold;
@@ -352,13 +352,12 @@ export default function HomeScreen() {
           }
         />
 
-        <View style={{ marginTop: SIZES.margin.lg }}>
+        <View style={{ marginTop: SIZES.margin.lg, marginHorizontal: -G }}>
           <MySchemeHoldings
             ref={holdingsRef}
-            variant="rail"
+            variant="list"
             limit={3}
             excludeCompleted
-            cardWidth={RAIL_CARD_W}
             emptyTitle="No schemes yet"
             emptyBody="Join a savings scheme to start building your gold position."
             emptyActionLabel="Browse schemes"

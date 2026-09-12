@@ -76,19 +76,14 @@ function StatusChip({
     >
       {dot ? (
         <View style={[s.dot, { backgroundColor: c.fg }]} />
-      ) : icon ? (
-        <Ionicons name={icon as any} size={SIZES.icon.xs} color={c.fg} />
-      ) : null}
-
-      <Text
-        numberOfLines={1}
-        style={[
-          asText(FONTS.microBold),
-          { color: c.fg, letterSpacing: 0.4 },
-        ]}
-      >
-        {label}
-      </Text>
+      ) : (
+        <>
+          {icon && <Ionicons name={icon as any} size={SIZES.icon.xs} color={c.fg} />}
+          <Text numberOfLines={1} style={[asText(FONTS.microBold), { color: c.fg, letterSpacing: 0.4 }]}>
+            {label}
+          </Text>
+        </>
+      )}
     </View>
   );
 }
@@ -99,6 +94,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 5,
+    
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
 });
