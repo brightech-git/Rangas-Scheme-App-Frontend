@@ -71,14 +71,28 @@ export default function ViewInstallmentScreen() {
       if (downloadingId) return;
       setDownloadingId(id);
       setDownloadedId(null);
-      const result = await downloadPaymentReceipt({ ppData, payment: p }, company ?? undefined);
+      // Pass the screen's live theme colors so the generated PDF follows
+      // the current theme instead of the static fallback in PaymentReceiptPDF.ts.
+      const result = await downloadPaymentReceipt({ ppData, payment: p }, company ?? undefined, {
+        primary: COLORS.primary,
+        primaryDark: COLORS.primaryDark,
+        primaryPale: COLORS.primaryPale,
+        accentTint: COLORS.canvas,
+        border: COLORS.border,
+        borderLight: COLORS.borderLight,
+        surfaceMuted: COLORS.gray100,
+        textPrimary: COLORS.textPrimary,
+        textSecondary: COLORS.textSecondary,
+        textMuted: COLORS.textTertiary,
+        success: COLORS.success,
+      });
       setDownloadingId(null);
       if (result.success) {
         setDownloadedId(id);
         setTimeout(() => setDownloadedId((cur) => (cur === id ? null : cur)), 2200);
       }
     },
-    [downloadingId, ppData, company],
+    [downloadingId, ppData, company, COLORS],
   );
 
   const [tab, setTab] = useState<TabKey>('overview');
@@ -106,13 +120,15 @@ export default function ViewInstallmentScreen() {
   }, [mx.state]);
 
   // Fallback palette keys so a missing token never renders invisible text.
+  // Fallbacks resolve to live theme tokens (not hardcoded hex) so a future
+  // theme color change still cascades here even if the primary key is absent.
   const c = COLORS as Record<string, unknown>;
   const str = (v: unknown, fallback: string): string => (typeof v === 'string' ? v : fallback);
-  const tabTrack = str(c.surfaceMuted ?? c.surface ?? c.card, 'rgba(0,0,0,0.05)');
-  const tabActive = str(c.card ?? c.surface, '#FFFFFF');
-  const tabTextOn = str(c.text ?? c.textPrimary, '#14110C');
-  const tabTextOff = str(c.textMuted ?? c.muted, '#8A8578');
-  const accent = str(c.gold ?? c.primary, '#B08D46');
+  const tabTrack = str(c.surfaceMuted ?? c.surface ?? c.card, COLORS.gray100);
+  const tabActive = str(c.card ?? c.surface, COLORS.white);
+  const tabTextOn = str(c.text ?? c.textPrimary, COLORS.textPrimary);
+  const tabTextOff = str(c.textMuted ?? c.muted, COLORS.textTertiary);
+  const accent = str(c.gold ?? c.primary, COLORS.goldPrimary);
 
   /* ---------------- Overview ---------------- */
 

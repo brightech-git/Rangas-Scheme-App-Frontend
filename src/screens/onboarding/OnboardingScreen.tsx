@@ -45,19 +45,21 @@ const SLIDE_COPY = [
   { eyebrow: 'Begin', title: 'Start your\ngold journey.', body: 'Join thousands already building their wealth, one gram at a time.' },
 ];
 
-function GoldThread({ count, current }: { count: number; current: number }) {
+function GoldThread({ count, current, color, inactiveColor }: { count: number; current: number; color: string; inactiveColor: string }) {
   return (
     <View style={thread.row}>
       {Array.from({ length: count }).map((_, idx) => (
-        <View key={idx} style={[thread.seg, idx <= current && thread.segOn]} />
+        <View
+          key={idx}
+          style={[thread.seg, { backgroundColor: idx <= current ? color : inactiveColor }]}
+        />
       ))}
     </View>
   );
 }
 const thread = StyleSheet.create({
   row: { flexDirection: 'row', gap: 5, marginBottom: 18 },
-  seg: { flex: 1, height: 2.5, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)' },
-  segOn: { backgroundColor: '#F5B800' },
+  seg: { flex: 1, height: 2.5, borderRadius: 2 },
 });
 
 const OnboardingScreen = ({ navigation }: any) => {
@@ -107,7 +109,7 @@ const OnboardingScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.primaryDark }]} edges={['top']}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
       <FlatList
@@ -137,12 +139,12 @@ const OnboardingScreen = ({ navigation }: any) => {
 
       {/* Top bar: brand mark + Skip, sitting in the 10% top safe zone */}
       <View style={[styles.topBar, { top: insets.top + 12 }]}>
-        <Text style={[asText(FONTS.eyebrow), styles.brandMark]}>
-          RANGAS <Text style={styles.brandMarkAccent}>DigiGold</Text>
+        <Text style={[asText(FONTS.eyebrow), styles.brandMark, { color: COLORS.heroTextSecondary }]}>
+          RANGAS <Text style={{ color: COLORS.secondary }}>DigiGold</Text>
         </Text>
         {!isLast && (
-          <Pressable onPress={handleSkip} hitSlop={10} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip</Text>
+          <Pressable onPress={handleSkip} hitSlop={10} style={[styles.skipBtn, { borderColor: COLORS.heroHairlineBold }]}>
+            <Text style={[styles.skipText, { color: COLORS.textOnPrimary }]}>Skip</Text>
           </Pressable>
         )}
       </View>
@@ -166,7 +168,7 @@ const OnboardingScreen = ({ navigation }: any) => {
           </>
         )} */}
 
-        <GoldThread count={count} current={currentIndex} /> 
+        <GoldThread count={count} current={currentIndex} color={COLORS.secondary} inactiveColor={COLORS.heroGlassBold} />
 
         <GoldArrowButton
           label={isLast ? 'Get Started' : 'Continue'}
@@ -175,8 +177,8 @@ const OnboardingScreen = ({ navigation }: any) => {
 
         {isLast && (
           <Pressable onPress={handleSignIn} hitSlop={8} style={styles.signInBtn}>
-            <Text style={styles.signInText}>
-              Already a member? <Text style={styles.signInTextAccent}>Sign In</Text>
+            <Text style={[styles.signInText, { color: COLORS.heroTextMuted }]}>
+              Already a member? <Text style={[styles.signInTextAccent, { color: COLORS.secondary }]}>Sign In</Text>
             </Text>
           </Pressable>
         )}
@@ -194,8 +196,16 @@ const OnboardingScreen = ({ navigation }: any) => {
 
 export default OnboardingScreen;
 
+// Colors are intentionally absent from every entry below.
+// StyleSheet.create() runs once at import time, before useTheme() exists —
+// a hex literal here is FROZEN and can never react to a theme change.
+// Every color is applied live via inline style overrides at each usage
+// site above (COLORS.xxx from useTheme()), which DO re-evaluate on every
+// render. Only truly non-brand, always-white/neutral text on the dark
+// hero photo (skipText) and generic white-on-photo scrims are left as
+// plain white/rgba here, since those are not brand-palette colors.
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#3d0101' },
+  container: { flex: 1 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   slide: { width, height },
   goldVeil: { position: 'absolute', top: 0, left: 0, right: 0, height: '30%' },
@@ -208,16 +218,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  brandMark: { color: 'rgba(255,255,255,0.78)', letterSpacing: 1.4 },
-  brandMarkAccent: { color: '#F5D666' },
+  brandMark: { letterSpacing: 1.4 },
   skipBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.32)',
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 16,
   },
-  skipText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  skipText: { fontSize: 12, fontWeight: '600' },
 
   bottomPanel: {
     position: 'absolute',
@@ -228,7 +236,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: '10%',
   },
   eyebrow: {
-    color: '#F5D666',
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 2,
@@ -238,13 +245,11 @@ const styles = StyleSheet.create({
     fontFamily: 'PlayfairDisplay-Medium',
     fontSize: 27,
     lineHeight: 34,
-    color: '#FFFFFF',
     marginBottom: 14,
   },
   rule: {
     width: 46,
     height: 2,
-    backgroundColor: '#F5B800',
     opacity: 0.9,
     marginBottom: 14,
     borderRadius: 2,
@@ -252,7 +257,6 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 13.5,
     lineHeight: 21,
-    color: 'rgba(255,255,255,0.8)',
     fontWeight: '300',
     marginBottom: 22,
     maxWidth: '92%',
@@ -260,12 +264,10 @@ const styles = StyleSheet.create({
 
   signInBtn: { marginTop: 16, alignSelf: 'center' },
   signInText: {
-    color: 'rgba(255,255,255,0.68)',
     fontSize: 13.5,
     fontWeight: '500',
   },
   signInTextAccent: {
-    color: '#F5D666',
     fontWeight: '600',
   },
 

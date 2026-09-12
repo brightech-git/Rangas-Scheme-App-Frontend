@@ -14,6 +14,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../theme';
 import { asText, PremiumButton } from '../../components/ui/premium';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store/store';
+import { logoutUser } from '../../store/authSlice';
 
 type Props = {
   mode: 'update' | 'maintenance';
@@ -25,6 +28,13 @@ type Props = {
 
 export default function UpdateScreen({ mode, latestVersion, storeUrl, maintenanceMsg, logo }: Props) {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const handleUpdate = async () => {
+    await dispatch(logoutUser());
+    console.log('User logged out for app update');
+    if (storeUrl) Linking.openURL(storeUrl);
+  };
 
   const fade  = useRef(new Animated.Value(0)).current;
   const rise  = useRef(new Animated.Value(20)).current;
@@ -139,7 +149,7 @@ export default function UpdateScreen({ mode, latestVersion, storeUrl, maintenanc
             <PremiumButton
               label="Update Now"
               variant="gold"
-              onPress={() => Linking.openURL(storeUrl)}
+              onPress={handleUpdate}
             />
             <Text style={[asText(FONTS.micro), {
               color: COLORS.heroTextMuted,

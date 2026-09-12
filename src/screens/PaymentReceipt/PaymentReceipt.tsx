@@ -60,7 +60,22 @@ export default function PaymentReceipt() {
   const handleDownload = async () => {
     if (downloading) return;
     setDownloading(true);
-    await downloadPaymentReceipt({ ppData, payment }, company);
+    // Pass the screen's live theme colors through so the generated PDF
+    // follows the current theme instead of the static fallback palette
+    // baked into PaymentReceiptPDF.ts.
+    await downloadPaymentReceipt({ ppData, payment }, company, {
+      primary: COLORS.primary,
+      primaryDark: COLORS.primaryDark,
+      primaryPale: COLORS.primaryPale,
+      accentTint: COLORS.canvas,
+      border: COLORS.border,
+      borderLight: COLORS.borderLight,
+      surfaceMuted: COLORS.gray100,
+      textPrimary: COLORS.textPrimary,
+      textSecondary: COLORS.textSecondary,
+      textMuted: COLORS.textTertiary,
+      success: COLORS.success,
+    });
     setDownloading(false);
   };
 
@@ -196,12 +211,12 @@ export default function PaymentReceipt() {
           {/* Payment table */}
           <View style={[st.table, { borderColor: COLORS.border }]}>
             <View style={[st.tableHeader, { backgroundColor: COLORS.primary }]}>
-              <Text style={[st.th, { flex: 0.5 }]}>S.No</Text>
-              <Text style={[st.th, { flex: 1.8 }]}>Group-Reg No</Text>
-              <Text style={[st.th, { flex: 1 }]}>Installment</Text>
-              {weight > 0 && <Text style={[st.th, { flex: 1 }]}>Weight</Text>}
-              <Text style={[st.th, { flex: 1.2 }]}>Rate</Text>
-              <Text style={[st.th, { flex: 1.2 }]}>Amount</Text>
+              <Text style={[st.th, { flex: 0.5, color: COLORS.textOnPrimary }]}>S.No</Text>
+              <Text style={[st.th, { flex: 1.8, color: COLORS.textOnPrimary }]}>Group-Reg No</Text>
+              <Text style={[st.th, { flex: 1, color: COLORS.textOnPrimary }]}>Installment</Text>
+              {weight > 0 && <Text style={[st.th, { flex: 1, color: COLORS.textOnPrimary }]}>Weight</Text>}
+              <Text style={[st.th, { flex: 1.2, color: COLORS.textOnPrimary }]}>Rate</Text>
+              <Text style={[st.th, { flex: 1.2, color: COLORS.textOnPrimary }]}>Amount</Text>
             </View>
             <View style={[st.tableRow, { borderTopColor: COLORS.border }]}>
               <Text style={[st.td, { flex: 0.5, color: COLORS.textPrimary }]}>1</Text>
@@ -319,7 +334,9 @@ const st = StyleSheet.create({
 
   table: { borderWidth: 1, borderRadius: 10, overflow: 'hidden', marginBottom: 16 },
   tableHeader: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8 },
-  th: { color: '#fff', fontSize: 10, fontWeight: '700', textAlign: 'center', textTransform: 'uppercase' },
+  // color applied live via inline override above (COLORS.textOnPrimary) —
+  // StyleSheet.create() is frozen at import time and can't react to theme.
+  th: { fontSize: 10, fontWeight: '700', textAlign: 'center', textTransform: 'uppercase' },
   tableRow: { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 8, borderTopWidth: 1 },
   td: { fontSize: 12, textAlign: 'center' },
 

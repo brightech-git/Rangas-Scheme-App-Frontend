@@ -69,6 +69,7 @@ export default function RootNavigator() {
 
   useEffect(() => {
     (async () => {
+      // await AsyncStorageHelper.clearAll(); // clear old data from AsyncStorage if any
       const onboarded = await AsyncStorageHelper.isOnboarded();
       const token     = await AsyncStorageHelper.getToken();
       const mpinSet   = await AsyncStorageHelper.isMpinSet();

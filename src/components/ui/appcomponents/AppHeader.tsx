@@ -87,8 +87,18 @@ export default function AppHeader({
         <Animated.View style={[styles.iconCircle, { backgroundColor: iconBg, transform: [{ scale: s }] }]}>
           <Ionicons name={action.iconName as any} size={moderateScale(20)} color={iconColor} />
           {!!action.badge && action.badge > 0 && (
-            <View style={[styles.badgeDot, { borderColor: bg === 'transparent' ? COLORS.primary : bg }]}>
-              <Text style={styles.badgeText}>{action.badge > 99 ? '99+' : action.badge}</Text>
+            <View
+              style={[
+                styles.badgeDot,
+                {
+                  backgroundColor: COLORS.primaryDark,
+                  borderColor: bg === 'transparent' ? COLORS.primary : bg,
+                },
+              ]}
+            >
+              <Text style={[styles.badgeText, { color: COLORS.white }]}>
+                {action.badge > 99 ? '99+' : action.badge}
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -191,8 +201,13 @@ const styles = StyleSheet.create({
   title:     { textAlign: 'center' },
   subtitle:  { textAlign: 'center', marginTop: 1 },
   iconCircle:{ width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  badgeDot:  { position: 'absolute', top: 2, right: 2, minWidth: 15, height: 15, borderRadius: 8, backgroundColor: '#7A0303', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5 },
-  badgeText: { color: '#FFFFFF', fontSize: 8, fontWeight: '800' },
+  // Colors intentionally omitted here — StyleSheet.create() runs once at
+  // import time, before useTheme() exists, so any color literal here can
+  // never react to a theme change. Colors are applied live via inline
+  // style overrides at each usage site above instead (COLORS.primaryDark /
+  // COLORS.white), which DO re-evaluate on every render.
+  badgeDot:  { position: 'absolute', top: 2, right: 2, minWidth: 15, height: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5 },
+  badgeText: { fontSize: 8, fontWeight: '800' },
   glowCircleLg: { position: 'absolute', width: 160, height: 160, borderRadius: 80, top: -60, right: -40 },
   glowCircleSm: { position: 'absolute', width: 90,  height: 90,  borderRadius: 45, bottom: -40, left: -20 },
   goldStrip: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 },

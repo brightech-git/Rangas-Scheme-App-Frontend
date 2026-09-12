@@ -12,19 +12,30 @@ import { PPData, PaymentHistory } from '../types/Account/PhoneDetails';
 import { Company } from '../types/Company/Company';
 
 // ── Brand palette — Rangas DigiGold (mirrors src/theme/theme.js) ──
+// This is a static fallback ONLY. This file builds a raw HTML string for
+// expo-print, outside React, so it cannot call useTheme() itself — there
+// is no live theme here. The correct live-updating path is: the calling
+// screen (which DOES have useTheme()) passes its current COLORS in via
+// the `brand` param on downloadPaymentReceipt(), and buildReceiptHtml
+// uses that. This constant only fires if a caller forgets to pass colors,
+// so the receipt never renders with missing/invisible styling — but if
+// you change src/theme/theme.js, update this fallback too so an
+// unwired caller doesn't quietly drift back to the old palette.
 const BRAND = {
-  primary:      '#AA0404',
-  primaryDark:  '#7A0303',
-  primaryPale:  '#FBF1E8',
-  accentTint:   '#F6E9DD',
-  border:       '#E7D4C4',
+  primary:      '#6B1638',
+  primaryDark:  '#4D1029',
+  primaryPale:  '#FBF4E6',
+  accentTint:   '#F7EEE4',
+  border:       '#E9D4BC',
   borderLight:  '#F1E4D6',
   surfaceMuted: '#F3ECE6',
-  textPrimary:  '#3A2A22',
+  textPrimary:  '#2E1B12',
   textSecondary:'#5C4536',
   textMuted:    '#8A6F5D',
   success:      '#356B42',
 };
+
+export type ReceiptBrand = typeof BRAND;
 
 export interface ReceiptData {
   ppData:  PPData;
@@ -59,8 +70,14 @@ async function logoBase64(): Promise<string> {
 }
 
 // ── HTML receipt template ──────────────────────────────────────────
-function buildReceiptHtml(data: ReceiptData, company: Company | undefined, logoB64: string): string {
+function buildReceiptHtml(
+  data: ReceiptData,
+  company: Company | undefined,
+  logoB64: string,
+  brand: ReceiptBrand = BRAND,
+): string {
   const { ppData, payment } = data;
+  const BRAND = brand; // shadow the module-level fallback with the live theme, if passed
 
   const companyName    = company?.COMPANYNAME?.trim() || 'Rangas DigiGold';
   const companyPhone   = company?.PHONE?.trim() || '';
@@ -273,10 +290,15 @@ async function openReceiptFile(uri: string): Promise<boolean> {
 export async function downloadPaymentReceipt(
   data: ReceiptData,
   company?: Company,
+  /** Pass the screen's live `COLORS` (from useTheme()) so the PDF follows
+   *  the current theme. Falls back to the static BRAND snapshot above if
+   *  the caller doesn't pass one — see the note on BRAND for why. */
+  brand?: Partial<ReceiptBrand>,
 ): Promise<GenerateReceiptResult> {
   try {
     const logoB64 = await logoBase64();
-    const html = buildReceiptHtml(data, company, logoB64);
+    const resolvedBrand: ReceiptBrand = { ...BRAND, ...brand };
+    const html = buildReceiptHtml(data, company, logoB64, resolvedBrand);
     const { uri } = await Print.printToFileAsync({ html });
 
     if (!uri) throw new Error('PDF generation failed');

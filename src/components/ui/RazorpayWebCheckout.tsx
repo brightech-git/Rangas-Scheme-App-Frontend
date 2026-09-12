@@ -40,8 +40,11 @@ export interface RazorpayWebCheckoutRef {
   open: (options: Record<string, any>) => Promise<RazorpaySuccessPayment>;
 }
 
-// Build the HTML page that opens Razorpay checkout
-function buildHtml(options: Record<string, any>): string {
+// Build the HTML page that opens Razorpay checkout.
+// `loaderColor` is passed in from the component's live theme (COLORS.textSecondary)
+// so this stays in sync with the app's brand palette even though it's a raw
+// HTML string rendered inside a WebView, not a React Native style.
+function buildHtml(options: Record<string, any>, loaderColor: string): string {
   const safeOptions = JSON.stringify(options);
   return `
 <!DOCTYPE html>
@@ -61,7 +64,7 @@ function buildHtml(options: Record<string, any>): string {
     }
     .loader {
       text-align: center;
-      color: #74563C;
+      color: ${loaderColor};
       font-size: 14px;
     }
     .dot { display: inline-block; animation: bounce 1.2s infinite; }
@@ -138,7 +141,7 @@ const RazorpayWebCheckout = forwardRef<RazorpayWebCheckoutRef>((_, ref) => {
       return new Promise<RazorpaySuccessPayment>((resolve, reject) => {
         resolveRef.current = resolve;
         rejectRef.current  = reject;
-        setHtml(buildHtml(options));
+        setHtml(buildHtml(options, COLORS.textSecondary));
         setLoading(true);
         setVisible(true);
       });

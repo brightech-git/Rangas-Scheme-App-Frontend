@@ -90,6 +90,7 @@ function GoldArrowButton({
               height: moderateScale(54),
               borderRadius: moderateScale(34),
               alignSelf: "center",
+              borderColor: COLORS.borderGold,
             },
           ]}
         >
@@ -122,6 +123,7 @@ function GoldArrowButton({
                   height: discSize,
                   borderRadius: discSize / 2,
                   marginLeft: moderateScale(12),
+                  shadowColor: COLORS.goldPrimary,
                 },
               ]}
             >
@@ -149,7 +151,6 @@ const s = StyleSheet.create({
     justifyContent: "center",
 
     borderWidth: 1,
-    borderColor: "rgba(245, 184, 0, 0.75)",
 
     overflow: "hidden",
   },
@@ -166,7 +167,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
 
-    shadowColor: "#F5B800",
     shadowOffset: {
       width: 0,
       height: 3,
