@@ -282,8 +282,6 @@ export default function SchemeJoinScreen() {
         const d = JSON.parse(raw);
         if (d.aadhaar) setAadhaar(d.aadhaar);
         if (d.pan) setPan(d.pan);
-        if (d.empId) setEmpId(d.empId);
-        if (d.empName) setEmpName(d.empName);
         if (d.doorStreet) setDoorStreet(d.doorStreet);
         if (d.pincode) setPincode(d.pincode);
         if (d.area) setArea(d.area);
@@ -355,14 +353,14 @@ export default function SchemeJoinScreen() {
   // ── AsyncStorage: save draft ────────
   useEffect(() => {
     const draft = {
-      aadhaar, pan, empId, empName,
+      aadhaar, pan,
       doorStreet, pincode, area, city, district, stateVal,
       gender, dobDay, dobMonth, dobYear, dobSet,
       nominee, nomRel, nomMobile,
     };
     AsyncStorage.setItem(PERSONAL_KEY, JSON.stringify(draft));
   }, [
-    aadhaar, pan, empId, empName,
+    aadhaar, pan,
     doorStreet, pincode, area, city, district, stateVal,
     gender, dobDay, dobMonth, dobYear, dobSet,
     nominee, nomRel, nomMobile,

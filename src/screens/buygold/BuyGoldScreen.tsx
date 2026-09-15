@@ -223,8 +223,6 @@ export default function BuyGoldScreen() {
         if (d.dobSet)     setDobSet(d.dobSet);
         if (d.aadhaar)    setAadhaar(d.aadhaar);
         if (d.pan)        setPan(d.pan);
-        if (d.empId)      setEmpId(d.empId);
-        if (d.empName)    setEmpName(d.empName);
         if (d.nominee)    setNominee(d.nominee);
         if (d.nomRel)     setNomRel(d.nomRel);
         if (d.nomMobile)  setNomMobile(d.nomMobile);
@@ -232,14 +230,16 @@ export default function BuyGoldScreen() {
     });
   }, []);
 
-  // Save shared personal draft on every change
+  // Save shared personal draft on every change — Emp ID is intentionally
+  // excluded: it must default to '999' every time and only reflect a
+  // choice actively made in the current session, not a remembered one.
   useEffect(() => {
     AsyncStorage.setItem('SCHEME_JOIN_PERSONAL', JSON.stringify({
       doorStreet, pincode, area, city, district, stateVal,
       gender, dobDay, dobMonth, dobYear, dobSet,
-      aadhaar, pan, empId, empName, nominee, nomRel, nomMobile,
+      aadhaar, pan, nominee, nomRel, nomMobile,
     }));
-  }, [doorStreet, pincode, area, city, district, stateVal, gender, dobDay, dobMonth, dobYear, dobSet, aadhaar, pan, empId, empName, nominee, nomRel, nomMobile]);
+  }, [doorStreet, pincode, area, city, district, stateVal, gender, dobDay, dobMonth, dobYear, dobSet, aadhaar, pan, nominee, nomRel, nomMobile]);
 
   useEffect(() => {
     if (!user) return;
