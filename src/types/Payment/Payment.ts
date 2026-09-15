@@ -50,6 +50,7 @@ export interface PaymentNMCreateSchemeSummary {
   upDateTime2:  string;
   openingDate:  string;
   userId2:      string;
+  iEmp?:        string;
 }
 
 export interface PaymentNMSchemeCollectInsert {

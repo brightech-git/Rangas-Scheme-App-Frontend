@@ -472,7 +472,7 @@ export default function SchemeJoinScreen() {
           dob:         dobFormatted,
           email:       loginEmail,
           upDateTime:  dt,
-          userId:      empId.trim() || '999',
+          userId:      '9999',
           appVer:      'APP',
         },
         createSchemeSummary: {
@@ -482,7 +482,8 @@ export default function SchemeJoinScreen() {
           joinDate:    dt,
           upDateTime2: dt,
           openingDate: dt,
-          userId2:     empId.trim() || '999',
+          userId2:     '9999',
+          iEmp:        empId.trim() || '999',
         },
         schemeCollectInsert: {
           amount:  effectiveAmount,
