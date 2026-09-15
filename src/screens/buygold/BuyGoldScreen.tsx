@@ -43,6 +43,7 @@ import {
   type SummaryRow,
 } from '../../components/ui/premium';
 import GoldAmountInput from '../../components/ui/appcomponents/GoldAmountInput';
+import EmpIdField from '../../components/ui/appcomponents/EmpIdField';
 
 type Nav   = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BuyGold'>;
@@ -171,6 +172,25 @@ export default function BuyGoldScreen() {
   const [pan,     setPan]     = useState('');
   const [gender,  setGender]  = useState('');
 
+  // ── Emp ID — staff-only, hidden from regular members. Tapping the
+  // "Your details" section heading 5 times in quick succession reveals it.
+  const [empId, setEmpId] = useState('999');
+  const [empName, setEmpName] = useState('');
+  const [showEmpId, setShowEmpId] = useState(false);
+  const empIdTapCount = useRef(0);
+  const empIdTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleDetailsHeadingTap = () => {
+    if (showEmpId) return;
+    empIdTapCount.current += 1;
+    if (empIdTapTimer.current) clearTimeout(empIdTapTimer.current);
+    if (empIdTapCount.current >= 5) {
+      setShowEmpId(true);
+      empIdTapCount.current = 0;
+      return;
+    }
+    empIdTapTimer.current = setTimeout(() => { empIdTapCount.current = 0; }, 600);
+  };
+
   const today = new Date();
   const [dobDay,   setDobDay]   = useState(today.getDate());
   const [dobMonth, setDobMonth] = useState(today.getMonth() + 1);
@@ -203,6 +223,8 @@ export default function BuyGoldScreen() {
         if (d.dobSet)     setDobSet(d.dobSet);
         if (d.aadhaar)    setAadhaar(d.aadhaar);
         if (d.pan)        setPan(d.pan);
+        if (d.empId)      setEmpId(d.empId);
+        if (d.empName)    setEmpName(d.empName);
         if (d.nominee)    setNominee(d.nominee);
         if (d.nomRel)     setNomRel(d.nomRel);
         if (d.nomMobile)  setNomMobile(d.nomMobile);
@@ -215,9 +237,9 @@ export default function BuyGoldScreen() {
     AsyncStorage.setItem('SCHEME_JOIN_PERSONAL', JSON.stringify({
       doorStreet, pincode, area, city, district, stateVal,
       gender, dobDay, dobMonth, dobYear, dobSet,
-      aadhaar, pan, nominee, nomRel, nomMobile,
+      aadhaar, pan, empId, empName, nominee, nomRel, nomMobile,
     }));
-  }, [doorStreet, pincode, area, city, district, stateVal, gender, dobDay, dobMonth, dobYear, dobSet, aadhaar, pan, nominee, nomRel, nomMobile]);
+  }, [doorStreet, pincode, area, city, district, stateVal, gender, dobDay, dobMonth, dobYear, dobSet, aadhaar, pan, empId, empName, nominee, nomRel, nomMobile]);
 
   useEffect(() => {
     if (!user) return;
@@ -413,7 +435,7 @@ export default function BuyGoldScreen() {
           dob:         dobFormatted,
           email:       loginEmail,
           upDateTime:  dt,
-          userId:      '9999',
+          userId:      empId.trim() || '999',
           appVer:      'APP',
         },
         createSchemeSummary: {
@@ -423,7 +445,7 @@ export default function BuyGoldScreen() {
           joinDate:    dt,
           upDateTime2: dt,
           openingDate: dt,
-          userId2:     '9999',
+          userId2:     empId.trim() || '999',
         },
         schemeCollectInsert: {
           amount:  finalAmount,
@@ -570,11 +592,13 @@ export default function BuyGoldScreen() {
           <>
             {/* ── Customer info ── */}
             <View style={{ marginTop: SIZES.layout.sectionTight }}>
-              <SectionHeading
-                eyebrow="Required"
-                title="Your details"
-                caption="Used for billing and delivery of your DigiGold"
-              />
+              <Pressable onPress={handleDetailsHeadingTap}>
+                <SectionHeading
+                  eyebrow="Required"
+                  title="Your details"
+                  caption="Used for billing and delivery of your DigiGold"
+                />
+              </Pressable>
               <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
                 <FormField
                   label="Aadhaar number"
@@ -599,6 +623,13 @@ export default function BuyGoldScreen() {
                   error={fieldErrors.pan}
                   hint="Leave blank if not available"
                 />
+                {showEmpId && (
+                  <EmpIdField
+                    empId={empId}
+                    empName={empName}
+                    onSelect={(emp) => { setEmpId(emp.empId); setEmpName(emp.empName); }}
+                  />
+                )}
                 <FormField
                   asButton
                   onPress={openDobPicker}

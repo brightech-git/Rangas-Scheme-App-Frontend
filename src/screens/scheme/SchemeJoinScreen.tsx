@@ -75,6 +75,7 @@ import { useAppSelector } from '../../store/hooks';
 import { classifySchemeKind } from '../../utils/schemeKind';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
+import EmpIdField from '../../components/ui/appcomponents/EmpIdField';
 
 import {
   ScreenCanvas,
@@ -207,6 +208,7 @@ export default function SchemeJoinScreen() {
   const [aadhaar, setAadhaar] = useState('');
   const [pan, setPan] = useState('');
   const [empId, setEmpId] = useState('999');
+  const [empName, setEmpName] = useState('');
   // Staff-only field — hidden from regular members. Tapping the "Step 2"
   // heading 5 times in quick succession reveals the Emp ID input.
   const [showEmpId, setShowEmpId] = useState(false);
@@ -281,6 +283,7 @@ export default function SchemeJoinScreen() {
         if (d.aadhaar) setAadhaar(d.aadhaar);
         if (d.pan) setPan(d.pan);
         if (d.empId) setEmpId(d.empId);
+        if (d.empName) setEmpName(d.empName);
         if (d.doorStreet) setDoorStreet(d.doorStreet);
         if (d.pincode) setPincode(d.pincode);
         if (d.area) setArea(d.area);
@@ -352,14 +355,14 @@ export default function SchemeJoinScreen() {
   // ── AsyncStorage: save draft ────────
   useEffect(() => {
     const draft = {
-      aadhaar, pan, empId,
+      aadhaar, pan, empId, empName,
       doorStreet, pincode, area, city, district, stateVal,
       gender, dobDay, dobMonth, dobYear, dobSet,
       nominee, nomRel, nomMobile,
     };
     AsyncStorage.setItem(PERSONAL_KEY, JSON.stringify(draft));
   }, [
-    aadhaar, pan, empId,
+    aadhaar, pan, empId, empName,
     doorStreet, pincode, area, city, district, stateVal,
     gender, dobDay, dobMonth, dobYear, dobSet,
     nominee, nomRel, nomMobile,
@@ -988,14 +991,10 @@ export default function SchemeJoinScreen() {
               />
 
               {showEmpId && (
-                <FormField
-                  label="Emp ID"
-                  indicator="optional"
-                  icon="person-outline"
-                  value={empId}
-                  placeholder="999"
-                  keyboardType="numeric"
-                  onChangeText={(v) => setEmpId(v.replace(/[^0-9]/g, ''))}
+                <EmpIdField
+                  empId={empId}
+                  empName={empName}
+                  onSelect={(emp) => { setEmpId(emp.empId); setEmpName(emp.empName); }}
                 />
               )}
 

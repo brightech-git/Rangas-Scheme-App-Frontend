@@ -59,6 +59,10 @@ export const COMPANY = {
   ALL: '/company/all',
 };
 
+export const EMPLOYEES = {
+  SEARCH: (empId: string) => `/employees?empId=${encodeURIComponent(empId)}`,
+};
+
 export const LOGIN_CHECK = {
   REGISTER: '/logincheck/register',
   LIST:     '/logincheck/list',
