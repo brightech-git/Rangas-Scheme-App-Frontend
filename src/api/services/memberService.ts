@@ -13,10 +13,15 @@ export const memberService = {
     }),
 
   /** Create a new member after a successful Razorpay payment */
-  createMember: (data: NMData) =>
-    callApi<NMData, Record<string, any>>({
+  createMember: (data: NMData) => {
+    console.log('[memberService] createMember payload:', JSON.stringify(data, null, 2));
+    return callApi<NMData, Record<string, any>>({
       method: 'post',
       url:    MEMBER.CREATE,
       data,
-    }),
+    }).then((res) => {
+      console.log('[memberService] createMember response:', JSON.stringify(res, null, 2));
+      return res;
+    });
+  },
 };

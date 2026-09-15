@@ -94,7 +94,6 @@ export default function HomeScreen() {
   // ── Data (identical calls to before) ──
   const { schemes, loading: schemesLoading, refetch: refetchSchemes } =
     useSchemes();
-    console.log("Available schemes",schemes)
   const {
     mySchemes,
     loading: mySchemesLoading,

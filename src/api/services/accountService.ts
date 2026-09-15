@@ -13,10 +13,15 @@ export const accountService = {
     }),
 
   /** Record a scheme installment payment (backend returns a plain string message) */
-  insertEntry: (body: AccountInsertData) =>
-    callApi<AccountInsertData, string>({
+  insertEntry: (body: AccountInsertData) => {
+    console.log('[accountService] insertEntry payload:', JSON.stringify(body, null, 2));
+    return callApi<AccountInsertData, string>({
       method: 'post',
       url:    ACCOUNT.INSERT,
       data:   body,
-    }),
+    }).then((res) => {
+      console.log('[accountService] insertEntry response:', JSON.stringify(res, null, 2));
+      return res;
+    });
+  },
 };

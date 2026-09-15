@@ -17,7 +17,9 @@ axiosInstance.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem('@auth_token');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
-    // console.log("Attached token to request headers:", token);
+    // console.log('[axiosInstance] Bearer token attached:', token.slice(0, 20) + '...');
+  } else {
+    console.log('[axiosInstance] No token found in AsyncStorage');
   }
   return config;
 });
