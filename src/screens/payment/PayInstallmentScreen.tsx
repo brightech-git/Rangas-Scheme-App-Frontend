@@ -90,7 +90,7 @@ export default function PayInstallmentScreen() {
 
   const switchMode = (m: Mode) => {
     if (m === mode) return;
-    if (m === 'weight') setInput(enteredWeight > 0 ? enteredWeight.toFixed(3) : '');
+    if (m === 'weight') setInput(enteredWeight > 0 ? enteredWeight.toFixed(4) : '');
     else setInput(enteredAmount > 0 ? String(Math.round(enteredAmount)) : '');
     setMode(m);
   };
@@ -189,42 +189,53 @@ export default function PayInstallmentScreen() {
     }, [])
   );
 
-  const paymentSummaryRows: SummaryRow[] = useMemo(() => [
-    { label: 'Scheme',         value: schemeName },
-    { label: 'Instalment no.', value: `#${nextInstNum}` },
-    { label: 'Method',         value: 'Online payment' },
-    ...(goldRate > 0 ? [{ label: 'Gold equivalent', value: `${effectiveWeight.toFixed(3)} g` }] : []),
-    { label: 'Total payable',  value: money(effectiveAmount), total: true },
-  ], [schemeName, nextInstNum, goldRate, effectiveWeight, effectiveAmount]);
+  const paymentSummaryRows: SummaryRow[] = useMemo(() => {
+    const rows: SummaryRow[] = [];
+    if (schemeName) rows.push({ label: 'Scheme', value: schemeName });
+    if (nextInstNum > 0) rows.push({ label: 'Instalment no.', value: `#${nextInstNum}` });
+    rows.push({ label: 'Method', value: 'Online payment' });
+    if (goldRate > 0 && effectiveWeight > 0) {
+      rows.push({ label: 'Gold equivalent', value: `${effectiveWeight.toFixed(4)} g` });
+    }
+    if (effectiveAmount > 0) {
+      rows.push({ label: 'Total payable', value: money(effectiveAmount), total: true });
+    }
+    return rows;
+  }, [schemeName, nextInstNum, goldRate, effectiveWeight, effectiveAmount]);
 
-  const breakdownRows: SummaryRow[] = useMemo(() => [
-    { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
-    { label: 'Amount entered',        value: money(effectiveAmount) },
-    { label: 'Gold received',         value: `${effectiveWeight.toFixed(3)} g`, highlight: true },
-    { label: 'Total payable',         value: money(effectiveAmount), total: true },
-  ], [goldRate, effectiveAmount, effectiveWeight]);
+  const breakdownRows: SummaryRow[] = useMemo(() => {
+    const rows: SummaryRow[] = [];
+    if (goldRate > 0) rows.push({ label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` });
+    if (effectiveAmount > 0) rows.push({ label: 'Amount entered', value: money(effectiveAmount) });
+    if (effectiveWeight > 0) rows.push({ label: 'Gold received', value: `${effectiveWeight.toFixed(4)} g`, highlight: true });
+    if (effectiveAmount > 0) rows.push({ label: 'Total payable', value: money(effectiveAmount), total: true });
+    return rows;
+  }, [goldRate, effectiveAmount, effectiveWeight]);
 
   const presets = useMemo(() => {
     const base = defaultAmount > 0 ? defaultAmount : 1000;
     return Array.from(new Set([base, base * 2, base * 3, base * 5])).filter((n) => n > 0);
   }, [defaultAmount]);
 
-  const schemeRows: SummaryRow[] = useMemo(() => [
-    { label: 'Scheme code',       value: scheme?.schemeSName ?? ppData.groupCode },
-    { label: 'Registration no.',  value: String(ppData.regNo) },
-    ...(isMultiPay
-      ? []
-      : [{ label: 'Instalments paid', value: `${paid} of ${total}` }]),
-    { label: 'Next due',          value: prettyDate(ppData.nextDueDate) },
-    { label: 'Maturity',          value: prettyDate(ppData.maturityDate) },
-    { label: 'Paid to date',      value: money(mx.invested) },
-    { label: 'Total commitment',  value: mx.committed > 0 ? money(mx.committed) : '—' },
-    {
-      label:     'Still to pay after this',
-      value:     mx.remaining > 0 ? money(Math.max(0, mx.remaining - effectiveAmount)) : '—',
-      highlight: true,
-    },
-  ], [scheme, ppData, paid, total, isMultiPay, mx, effectiveAmount]);
+  const schemeRows: SummaryRow[] = useMemo(() => {
+    const rows: SummaryRow[] = [];
+    const schemeCode = scheme?.schemeSName ?? ppData.groupCode;
+    if (schemeCode) rows.push({ label: 'Scheme code', value: schemeCode });
+    if (ppData.regNo) rows.push({ label: 'Registration no.', value: String(ppData.regNo) });
+    if (!isMultiPay && total > 0) rows.push({ label: 'Instalments paid', value: `${paid} of ${total}` });
+    if (ppData.nextDueDate) rows.push({ label: 'Next due', value: prettyDate(ppData.nextDueDate) });
+    if (ppData.maturityDate) rows.push({ label: 'Maturity', value: prettyDate(ppData.maturityDate) });
+    if (mx.invested > 0) rows.push({ label: 'Paid to date', value: money(mx.invested) });
+    if (mx.committed > 0) rows.push({ label: 'Total commitment', value: money(mx.committed) });
+    if (mx.remaining > 0) {
+      rows.push({
+        label:     'Still to pay after this',
+        value:     money(Math.max(0, mx.remaining - effectiveAmount)),
+        highlight: true,
+      });
+    }
+    return rows;
+  }, [scheme, ppData, paid, total, isMultiPay, mx, effectiveAmount]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -262,7 +273,7 @@ export default function PayInstallmentScreen() {
                   </Text>
                 </View>
                 <Text style={[asText(FONTS.numeral), { color: COLORS.heroAccent, marginTop: 4 }]}>
-                  {mx.weight > 0 ? `${mx.weight.toFixed(3)} g` : '0.000 g'}
+                  {mx.weight > 0 ? `${mx.weight.toFixed(4)} g` : '0.0000 g'}
                 </Text>
                 <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 2, fontSize: 10 }]}>
                   {goldRate > 0 && mx.weight > 0
@@ -321,7 +332,7 @@ export default function PayInstallmentScreen() {
                   {ratesLoading && !rates
                     ? 'Calculating gold equivalent…'
                     : goldRate > 0
-                    ? `≈ ${effectiveWeight.toFixed(3)} g at ${money(goldRate)} / g`
+                    ? `≈ ${effectiveWeight.toFixed(4)} g at ${money(goldRate)} / g`
                     : '—'}
                 </Text>
               </View>
@@ -333,7 +344,7 @@ export default function PayInstallmentScreen() {
             <View style={{ marginTop: SIZES.margin.lg }}>
               <GoldAmountInput
                 amountInput={mode === 'amount' ? input : (goldRate > 0 && enteredWeight > 0 ? String(Math.round(enteredWeight * goldRate)) : '')}
-                weightInput={mode === 'weight' ? input : (goldRate > 0 && enteredAmount > 0 ? (enteredAmount / goldRate).toFixed(3) : '')}
+                weightInput={mode === 'weight' ? input : (goldRate > 0 && enteredAmount > 0 ? (enteredAmount / goldRate).toFixed(4) : '')}
                 onAmountChange={(v) => { setMode('amount'); setInput(v.replace(/[^0-9.]/g, '')); }}
                 onWeightChange={(v) => { setMode('weight'); setInput(v.replace(/[^0-9.]/g, '')); }}
                 goldRate={goldRate}

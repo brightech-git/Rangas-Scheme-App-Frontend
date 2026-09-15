@@ -114,8 +114,6 @@ function buildReceiptHtml(
       display:flex; align-items:center; justify-content:center; margin-right:12px;
       color:#fff; font-weight:700; font-size:18px; }
   .company-name { color:${BRAND.primaryDark}; font-size:18px; font-weight:700; letter-spacing:0.3px; }
-  .contact { background:${BRAND.accentTint}; padding:12px 14px; border-radius:8px; margin-bottom:16px; }
-  .contact div { color:${BRAND.textSecondary}; font-size:11px; line-height:18px; }
   .divider { height:2px; background:${BRAND.primary}; margin:16px 0; border-radius:1px; }
   .title { font-size:19px; font-weight:700; color:${BRAND.primaryDark}; text-align:center;
            letter-spacing:1px; margin-bottom:18px; text-transform:uppercase; }
@@ -148,6 +146,8 @@ function buildReceiptHtml(
   .footer { margin-top:22px; padding-top:14px; border-top:1px solid ${BRAND.borderLight}; text-align:center; }
   .footer .f1 { font-size:12px; font-weight:600; color:${BRAND.textSecondary}; margin-bottom:4px; }
   .footer .f2 { font-size:10px; color:${BRAND.textMuted}; font-style:italic; }
+  .footer .f-company { margin-top:12px; }
+  .footer .f3 { font-size:10px; color:${BRAND.textMuted}; line-height:15px; }
 </style>
 </head>
 <body>
@@ -158,14 +158,6 @@ function buildReceiptHtml(
         : `<div class="logo-placeholder">${companyName.charAt(0)}</div>`}
       <div class="company-name">${companyName}</div>
     </div>
-
-    ${(companyPhone || companyEmail || companyAddress1 || companyAddress2) ? `
-    <div class="contact">
-      ${companyPhone   ? `<div>📞 ${companyPhone}</div>`   : ''}
-      ${companyEmail   ? `<div>✉ ${companyEmail}</div>`    : ''}
-      ${companyAddress1 ? `<div>📍 ${companyAddress1}</div>` : ''}
-      ${companyAddress2 ? `<div>📍 ${companyAddress2}</div>` : ''}
-    </div>` : ''}
 
     <div class="divider"></div>
     <div class="title">Payment Receipt</div>
@@ -227,7 +219,7 @@ function buildReceiptHtml(
           <td>1</td>
           <td>${groupRegNo}</td>
           <td>#${payment.installment}</td>
-          ${weight > 0 ? `<td>${weight.toFixed(3)}</td>` : ''}
+          ${weight > 0 ? `<td>${weight.toFixed(4)}</td>` : ''}
           <td>${payment.rate ? parseFloat(String(payment.rate)).toLocaleString('en-IN') : '—'}</td>
           <td>${formatCurrency(payment.amount)}</td>
         </tr>
@@ -250,6 +242,13 @@ function buildReceiptHtml(
     <div class="footer">
       <div class="f1">Thank you for being our valued customer</div>
       <div class="f2">This is a computer generated receipt</div>
+      ${(companyName || companyAddress1 || companyAddress2 || companyPhone || companyEmail) ? `
+      <div class="f-company">
+        <div class="f3" style="font-weight:600;">${companyName}</div>
+        ${companyAddress1 ? `<div class="f3">${companyAddress1}</div>` : ''}
+        ${companyAddress2 ? `<div class="f3">${companyAddress2}</div>` : ''}
+        ${(companyPhone || companyEmail) ? `<div class="f3">${[companyPhone, companyEmail].filter(Boolean).join('  ·  ')}</div>` : ''}
+      </div>` : ''}
     </div>
   </div>
 </body>

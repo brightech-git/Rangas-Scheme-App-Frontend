@@ -121,26 +121,6 @@ export default function PaymentReceipt() {
             </View>
           </View>
 
-          {(company?.EMAIL || company?.ADDRESS1 || company?.ADDRESS2 || company?.ADDRESS3 || company?.ADDRESS4) && (
-            <View style={[st.contactBox, { backgroundColor: COLORS.primaryPale }]}>
-              {!!company?.EMAIL && (
-                <Text style={[st.contactTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                  ✉ {company.EMAIL}
-                </Text>
-              )}
-              {!!company?.ADDRESS1 && (
-                <Text style={[st.contactTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]} numberOfLines={1}>
-                  📍 {[company.ADDRESS1, company.ADDRESS2].filter(Boolean).join(', ')}
-                </Text>
-              )}
-              {!!(company?.ADDRESS3 || company?.ADDRESS4) && (
-                <Text style={[st.contactTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]} numberOfLines={1}>
-                  📍 {[company.ADDRESS3, company.ADDRESS4].filter(Boolean).join(', ')}
-                </Text>
-              )}
-            </View>
-          )}
-
           <View style={[st.divider, { backgroundColor: COLORS.primary }]} />
 
           <Text style={[st.title, { color: COLORS.primaryDark, fontFamily: FONTS.family.bold }]}>PAYMENT RECEIPT</Text>
@@ -223,7 +203,7 @@ export default function PaymentReceipt() {
               <Text style={[st.td, { flex: 0.5, color: COLORS.textPrimary }]}>1</Text>
               <Text style={[st.td, { flex: 1.8, color: COLORS.textPrimary }]}>{groupRegNo}</Text>
               <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>#{payment.installment}</Text>
-              {hasGold && <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>{weight > 0 ? weight.toFixed(3) : '—'}</Text>}
+              {hasGold && <Text style={[st.td, { flex: 1, color: COLORS.textPrimary }]}>{weight > 0 ? weight.toFixed(4) : '—'}</Text>}
               <Text style={[st.td, { flex: 1.2, color: COLORS.textPrimary }]}>
                 {payment.rate ? parseFloat(String(payment.rate)).toLocaleString('en-IN') : '—'}
               </Text>
@@ -277,6 +257,29 @@ export default function PaymentReceipt() {
             <Text style={[st.footerSub, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
               This is a computer generated receipt
             </Text>
+
+            {!!(company?.COMPANYNAME || company?.ADDRESS1 || company?.ADDRESS2 || company?.ADDRESS3 || company?.ADDRESS4 || company?.PHONE || company?.EMAIL) && (
+              <View style={st.footerCompany}>
+                <Text style={[st.footerCompanyName, { color: COLORS.textSecondary, fontFamily: FONTS.family.semiBold }]}>
+                  {company?.COMPANYNAME?.trim() || 'Rangas DigiGold'}
+                </Text>
+                {!!(company?.ADDRESS1 || company?.ADDRESS2) && (
+                  <Text style={[st.footerCompanyTxt, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
+                    {[company?.ADDRESS1, company?.ADDRESS2].filter(Boolean).join(', ')}
+                  </Text>
+                )}
+                {!!(company?.ADDRESS3 || company?.ADDRESS4) && (
+                  <Text style={[st.footerCompanyTxt, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
+                    {[company?.ADDRESS3, company?.ADDRESS4].filter(Boolean).join(', ')}
+                  </Text>
+                )}
+                {!!(company?.PHONE || company?.EMAIL) && (
+                  <Text style={[st.footerCompanyTxt, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
+                    {[company?.PHONE, company?.EMAIL].filter(Boolean).join('  ·  ')}
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         </View>
 
@@ -313,9 +316,6 @@ const st = StyleSheet.create({
   companyMeta: { fontSize: 11, marginTop: 1 },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
   statusPillTxt: { fontSize: 10, letterSpacing: 0.4 },
-
-  contactBox: { borderRadius: 10, padding: 10, marginBottom: 14 },
-  contactTxt: { fontSize: 11, lineHeight: 17 },
 
   divider: { height: 2, borderRadius: 1, marginBottom: 16 },
   title: { fontSize: 17, textAlign: 'center', letterSpacing: 1, marginBottom: 16 },
@@ -358,6 +358,9 @@ const st = StyleSheet.create({
   footer: { borderTopWidth: 1, paddingTop: 14, alignItems: 'center' },
   footerTxt: { fontSize: 12, marginBottom: 4 },
   footerSub: { fontSize: 10, fontStyle: 'italic' },
+  footerCompany: { marginTop: 12, alignItems: 'center' },
+  footerCompanyName: { fontSize: 11, marginBottom: 3 },
+  footerCompanyTxt: { fontSize: 10, textAlign: 'center', lineHeight: 15 },
 
   downloadBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

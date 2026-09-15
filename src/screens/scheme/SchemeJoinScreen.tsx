@@ -1175,37 +1175,36 @@ export default function SchemeJoinScreen() {
             <SectionHeading eyebrow="Review" title="Enrolment summary" />
             <SummaryCard
               style={{ marginTop: SIZES.margin.lg }}
-              rows={[
-                { label: 'Scheme', value: scheme.schemeName },
-                { label: 'Metal', value: mLabel },
-                {
+              rows={(() => {
+                const rows: SummaryRow[] = [];
+                if (scheme.schemeName) rows.push({ label: 'Scheme', value: scheme.schemeName });
+                if (mLabel) rows.push({ label: 'Metal', value: mLabel });
+                rows.push({
                   label: 'Plan type',
                   value: isFixed ? 'Fixed' : isLumpsum ? 'One-time' : 'Flexible',
-                },
-                ...(isLumpsum
-                  ? []
-                  : [{ label: 'Instalments', value: String(scheme.Instalment) }]),
-                ...(isFixed && selectedGroup
-                  ? [
-                      {
-                        label: 'Group',
-                        value: String(selectedGroup.GROUPCODE),
-                      },
-                    ]
-                  : []),
-                ...(isFlexible && goldRate > 0
-                  ? [{ label: 'Gold equivalent', value: `${flexWeight.toFixed(4)} g` }]
-                  : []),
-                {
-                  label: isLumpsum
-                    ? 'Paying now (one-time)'
-                    : isFlexible
-                    ? 'Paying now'
-                    : 'Paying now (instalment 1)',
-                  value: effectiveAmount > 0 ? money(effectiveAmount) : '—',
-                  total: true,
-                },
-              ]}
+                });
+                if (!isLumpsum && scheme.Instalment) {
+                  rows.push({ label: 'Instalments', value: String(scheme.Instalment) });
+                }
+                if (isFixed && selectedGroup) {
+                  rows.push({ label: 'Group', value: String(selectedGroup.GROUPCODE) });
+                }
+                if (isFlexible && goldRate > 0 && flexWeight > 0) {
+                  rows.push({ label: 'Gold equivalent', value: `${flexWeight.toFixed(4)} g` });
+                }
+                if (effectiveAmount > 0) {
+                  rows.push({
+                    label: isLumpsum
+                      ? 'Paying now (one-time)'
+                      : isFlexible
+                      ? 'Paying now'
+                      : 'Paying now (instalment 1)',
+                    value: money(effectiveAmount),
+                    total: true,
+                  });
+                }
+                return rows;
+              })()}
             />
           </View>
 
@@ -1350,7 +1349,7 @@ export default function SchemeJoinScreen() {
                 <PaymentTile
                   icon="cash-outline"
                   title={`${money(g.AMOUNT)} / month`}
-                  subtitle={`Group ${g.GROUPCODE} · Reg no. ${g.REGNO ?? g.CURRENTREGNO}`}
+                  subtitle={undefined}
                   selected={selectedGroup?.GROUPCODE === g.GROUPCODE}
                   tag={i === 0 ? 'POPULAR' : undefined}
                   onPress={() => {

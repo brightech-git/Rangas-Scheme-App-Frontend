@@ -318,9 +318,12 @@ export default function ProfileScreen() {
           <ListRow icon="document-text-outline" label="Terms & Conditions"
             gradient={COLORS.gradient?.orangeDeep ?? [COLORS.primaryDark, COLORS.primary]}
             onPress={() => navigation.navigate('TermsAndConditions')} />
-          <ListRow icon="shield-checkmark-outline" label="Privacy Policy" last
+          <ListRow icon="shield-checkmark-outline" label="Privacy Policy"
             gradient={COLORS.gradient?.orangePrimary ?? [COLORS.primary, COLORS.primaryDark]}
             onPress={() => navigation.navigate('PrivacyPolicy')} />
+          <ListRow icon="cash-outline" label="Refund Policy" last
+            gradient={COLORS.gradient?.goldDark ?? [COLORS.secondary, COLORS.secondaryDark]}
+            onPress={() => navigation.navigate('RefundPolicy')} />
         </AppCard>
 
         {/* ── ACCOUNT ──────────────────────────────────────────── */}

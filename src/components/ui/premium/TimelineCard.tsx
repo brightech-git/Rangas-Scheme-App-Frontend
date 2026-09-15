@@ -25,6 +25,8 @@ export type TimelineEntry = {
   timestamp?: string;
   tone?: TimelineTone;
   icon?: string;
+  /** Extra label/value facts shown inline on the row (e.g. Rate, Weight, Instalment) */
+  stats?: { label: string; value: string }[];
   onPress?: () => void;
   /** View the full receipt — renders an explicit "eye" action button */
   onView?: () => void;
@@ -179,6 +181,24 @@ function TimelineCard({
                 </View>
               </View>
 
+              {!!e.stats?.length && (
+                <View style={s.statsRow}>
+                  {e.stats.map((st, si) => (
+                    <View key={si} style={s.statItem}>
+                      <Text style={[asText(FONTS.micro), { color: dim, fontSize: 9 }]}>
+                        {st.label}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={[asText(FONTS.microBold), { color: fg, fontSize: 11, marginTop: 1 }]}
+                      >
+                        {st.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               <View style={s.footerRow}>
                 {!!e.timestamp && (
                   <Text
@@ -262,6 +282,8 @@ const s = StyleSheet.create({
   spine: { flex: 1, width: StyleSheet.hairlineWidth, marginVertical: 4 },
   content: { flex: 1, paddingTop: 3 },
   contentRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 8 },
+  statItem: { minWidth: 64 },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',

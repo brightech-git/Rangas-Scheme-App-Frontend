@@ -59,6 +59,7 @@ export type RootStackParamList = {
   TermsAndConditions:      undefined;
   AboutUs:                 undefined;
   FAQ:                     undefined;
+  RefundPolicy:            undefined;
 };
 
 type InitialRoute = 'Onboarding' | 'Register' | 'Login' | 'CreateMpin' | 'MpinLogin' | 'Main';
@@ -163,6 +164,7 @@ export default function RootNavigator() {
         <Stack.Screen name="TermsAndConditions"   component={Screens.TermsConditionsScreen}      options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="AboutUs"               component={Screens.AboutUsScreen}              options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="FAQ"                   component={Screens.FAQScreen}                  options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="RefundPolicy"          component={Screens.RefundPolicyScreen}         options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
     </>

@@ -153,7 +153,7 @@ export default function RatesScreen() {
                 { color: on ? COLORS.heroTextPrimary : COLORS.heroTextMuted },
               ]}
             >
-              {m} {m === 'Gold' ? '916' : '999'}
+              {m} {m === 'Gold' ? '916' : ''}
             </Text>
             {on && <View style={[s.railMark, { backgroundColor: tint }]} />}
           </Pressable>
@@ -187,7 +187,7 @@ export default function RatesScreen() {
                     { color: COLORS.heroTextTertiary },
                   ]}
                 >
-                  {activeMetal} · {metal.purity} · {metal.unit}
+                  {activeMetal}{activeMetal === 'Gold' ? ` · ${metal.purity}` : ''} · {metal.unit}
                 </Text>
 
                 <View style={s.figureRow}>
@@ -204,7 +204,7 @@ export default function RatesScreen() {
                     surface="hero"
                     tone={isUp ? 'success' : 'danger'}
                     icon={isUp ? 'trending-up' : 'trending-down'}
-                    label={`${isUp ? '+' : ''}${metal.changePct.toFixed(2)}%`}
+                    label={`${isUp ? '+' : '−'}${money(Math.abs(metal.change))}`}
                     style={{ marginBottom: moderateScale(10) }}
                   />
                 </View>
@@ -318,7 +318,7 @@ export default function RatesScreen() {
           </View>
         ) : (
           ledger.map((entry, i) => {
-            const up = entry.changePct >= 0;
+            const up = entry.change >= 0;
             return (
               <View
                 key={entry.dateRaw}
@@ -362,8 +362,8 @@ export default function RatesScreen() {
                       { color: up ? COLORS.success : COLORS.error },
                     ]}
                   >
-                    {up ? '+' : ''}
-                    {entry.changePct.toFixed(2)}%
+                    {up ? '+' : '−'}
+                    {money(Math.abs(entry.change))}
                   </Text>
                 </View>
               </View>

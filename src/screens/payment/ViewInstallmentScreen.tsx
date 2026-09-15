@@ -164,22 +164,24 @@ export default function ViewInstallmentScreen() {
       .filter((v) => v && String(v).trim())
       .join(', ');
     const address = [street, region].filter(Boolean).join('\n');
+    const mobile = [pi?.mobile, pi?.mobile2].filter(Boolean).join(' · ');
 
-    const rows: SummaryRow[] = [
-      { label: 'Member', value: text(ppData.pName) },
-      { label: 'Member ID', value: text(pi?.personalId) },
-      { label: 'Registration no.', value: text(ppData.regNo) },
-      { label: 'Group code', value: text(ppData.groupCode) },
-      { label: 'Scheme', value: text(scheme?.schemeName) },
-      { label: 'Joined', value: ppData.joinDate ? prettyDate(ppData.joinDate) : '—' },
-      { label: 'Matures', value: ppData.maturityDate ? prettyDate(ppData.maturityDate) : '—' },
-      { label: 'Next due', value: ppData.nextDueDate ? prettyDate(ppData.nextDueDate) : '—' },
-      {
-        label: 'Mobile',
-        value: [pi?.mobile, pi?.mobile2].filter(Boolean).join(' · ') || '—',
-      },
-      { label: 'Address', value: address || '—', multiline: true },
-    ];
+    const rows: SummaryRow[] = [];
+    const put = (label: string, raw: unknown, value?: string, opts?: Partial<SummaryRow>) => {
+      if (raw === undefined || raw === null || String(raw).trim() === '') return;
+      rows.push({ label, value: value ?? String(raw), ...opts });
+    };
+
+    put('Member', ppData.pName);
+    put('Member ID', pi?.personalId);
+    put('Registration no.', ppData.regNo);
+    put('Group code', ppData.groupCode);
+    put('Scheme', scheme?.schemeName);
+    put('Joined', ppData.joinDate, ppData.joinDate ? prettyDate(ppData.joinDate) : undefined);
+    put('Matures', ppData.maturityDate, ppData.maturityDate ? prettyDate(ppData.maturityDate) : undefined);
+    put('Next due', ppData.nextDueDate, ppData.nextDueDate ? prettyDate(ppData.nextDueDate) : undefined);
+    put('Mobile', mobile);
+    put('Address', address, address, { multiline: true });
 
     return rows;
   }, [ppData, scheme]);
@@ -190,22 +192,27 @@ export default function ViewInstallmentScreen() {
     () =>
       (ppData.paymentHistoryList ?? []).map((p, i) => {
         const id = p.receiptNo ?? `receipt-${i}`;
+        const stats: { label: string; value: string }[] = [
+          { label: 'Instalment', value: `#${p.installment}` },
+          { label: 'Amount Paid', value: money(toNum(p.amount)) },
+        ];
+        if (toNum(p.rate) > 0) stats.push({ label: 'Rate', value: money(toNum(p.rate)) });
+        if (hasGold && toNum(p.weight) > 0) stats.push({ label: 'Weight', value: `${toNum(p.weight).toFixed(4)} g` });
+
         return {
           id,
           title: `Instalment #${p.installment}`,
           meta: `Receipt ${text(p.receiptNo)}${p.chqBank ? ` · ${p.chqBank}` : ''}`,
-          value: money(toNum(p.amount)),
-          subValue: p.weight ? `${p.weight} g` : undefined,
           timestamp: p.updateTime ? prettyDate(p.updateTime) : '',
           tone: 'success' as const,
           icon: 'checkmark-circle-outline',
-          onView: () => navigation.navigate('PaymentReceipt', { ppData, payment: p }),
+          stats,
           onDownload: () => handleDownload(p, id),
           downloadLoading: downloadingId === id,
           downloadDone: downloadedId === id,
         };
       }),
-    [ppData, navigation, handleDownload, downloadingId, downloadedId],
+    [ppData, hasGold, handleDownload, downloadingId, downloadedId],
   );
 
   const visibleEntries = showAllHistory
@@ -251,7 +258,7 @@ export default function ViewInstallmentScreen() {
                   total={total}
                   label="Scheme progress"
                   note={
-                    ppData.nextDueDate
+                    (scheme?.schemeId !== '6' && ppData.nextDueDate)
                       ? `Next due ${prettyDate(ppData.nextDueDate)}`
                       : ppData.lastPaidDate
                         ? `Last paid ${prettyDate(ppData.lastPaidDate)}`
@@ -312,8 +319,8 @@ export default function ViewInstallmentScreen() {
               {hasGold ? (
                 <MetricCard
                   label="Gold accrued"
-                  value={`${text(scheme?.totalWeight ?? '0')} g`}
-                  caption={`Last ${text(scheme?.lastWeight ?? '0')} g`}
+                  value={`${toNum(scheme?.totalWeight ?? '0').toFixed(4)} g`}
+                  caption={`Last ${toNum(scheme?.lastWeight ?? '0').toFixed(4)} g`}
                   icon="sparkles-outline"
                   tone="positive"
                   flex={1}
@@ -350,7 +357,7 @@ export default function ViewInstallmentScreen() {
                     color={COLORS.inkTertiary}
                   />
                   <Text style={[s.hintText, { color: COLORS.inkTertiary }]}>
-                    Use View to open a receipt, or Download to save it as a PDF
+                    Tap Download to save a receipt as a PDF
                   </Text>
                 </View>
                 <TimelineCard entries={visibleEntries} />
@@ -381,7 +388,7 @@ export default function ViewInstallmentScreen() {
         <BottomActionBar
           label={`NEXT INSTALMENT (#${paid + 1})`}
           value={money(mx.perInstalment)}
-          note={ppData.nextDueDate ? `Due ${prettyDate(ppData.nextDueDate)}` : 'Ready to pay'}
+          note={(scheme?.schemeId !== '6' && ppData.nextDueDate) ? `Due ${prettyDate(ppData.nextDueDate)}` : 'Ready to pay'}
           actionLabel="Pay instalment"
           onAction={() => navigation.navigate('PayInstallment', { ppData })}
         />

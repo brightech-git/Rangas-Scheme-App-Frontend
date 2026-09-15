@@ -18,7 +18,6 @@ import { useTheme } from '../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { createMpin } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useToast } from '../../components/ui/Toast';
 import { initNotifications } from '../../utils/NotificationService';
 import {
   AuthShell,
@@ -35,7 +34,6 @@ export default function CreateMpinScreen() {
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((s) => s.mpin);
-  const toast = useToast();
   const { SIZES } = useTheme();
 
   const boxesRef = useRef<MpinBoxesRef>(null);
@@ -74,7 +72,6 @@ export default function CreateMpinScreen() {
     } else {
       const msg = res.payload as string;
       if (msg?.toLowerCase().includes('already')) {
-        toast.warning('MPIN Already Set', { message: 'Redirecting to MPIN login...' });
         navigation.replace('MpinLogin');
       } else {
         setError(msg || 'Unable to create MPIN. Please try again.');

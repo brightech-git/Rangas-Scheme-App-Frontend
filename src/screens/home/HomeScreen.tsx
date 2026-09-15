@@ -94,6 +94,7 @@ export default function HomeScreen() {
   // ── Data (identical calls to before) ──
   const { schemes, loading: schemesLoading, refetch: refetchSchemes } =
     useSchemes();
+    console.log("Available schemes",schemes)
   const {
     mySchemes,
     loading: mySchemesLoading,
@@ -204,7 +205,9 @@ export default function HomeScreen() {
         metal={item.MetalType}
         metalLabel={METAL_LABEL[item.MetalType] ?? 'Gold'}
         stats={[
-          { label: 'Instalments', value: String(item.Instalment) },
+          item.SchemeId === 6
+            ? { label: 'Purity', value: (item.MetalType === 'S' ? silver?.purity : gold?.purity) ?? '—' }
+            : { label: 'Instalments', value: String(item.Instalment) },
           {
             label: 'Type',
             value: item.FixedIns === 'Y' ? 'Fixed' : 'Flexible',
@@ -219,7 +222,7 @@ export default function HomeScreen() {
         onPress={() => navigation.navigate('SchemeTerms', { scheme: item })}
       />
     ),
-    [RAIL_CARD_W, navigation],
+    [RAIL_CARD_W, navigation, gold, silver],
   );
 
   return (
@@ -355,7 +358,8 @@ export default function HomeScreen() {
         <View style={{ marginTop: SIZES.margin.lg, marginHorizontal: -G }}>
           <MySchemeHoldings
             ref={holdingsRef}
-            variant="list"
+            variant="rail"
+            cardWidth={RAIL_CARD_W}
             limit={3}
             excludeCompleted
             emptyTitle="No schemes yet"

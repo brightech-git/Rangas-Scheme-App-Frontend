@@ -90,7 +90,7 @@ function GoldRateWidget({
               numberOfLines={1}
               style={[asText(FONTS.microBold), { color: dim, fontSize: 10 }]}
             >
-              {String(metal).toUpperCase()}{!!purity ? ` · ${purity}` : ''}
+              {String(metal).toUpperCase()}{isGold && !!purity ? ` · ${purity}` : ''}
             </Text>
           </View>
 

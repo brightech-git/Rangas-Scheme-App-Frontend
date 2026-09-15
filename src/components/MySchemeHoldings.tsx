@@ -111,7 +111,7 @@ function MySchemeHoldings(
           width={cardWidth}
           variant="holding"
           title={item.schemeSummary?.schemeName ?? item.pName}
-          eyebrow={`REG ${item.regNo} · ${item.groupCode ?? ''}`.trim()}
+          eyebrow={`(${item.groupCode ?? ''}-${item.regNo ?? ''})${(item.pName ?? '').length > 20 ? `${(item.pName ?? '').slice(0, 20)}...` : item.pName ?? ''}`.trim()}
           metal="G"
           metalLabel="GOLD"
           onPress={() => navigation.navigate('ViewInstallment', { ppData: item })}
@@ -121,20 +121,20 @@ function MySchemeHoldings(
               mx.state === 'active'
                 ? 'success'
                 : mx.state === 'completed'
-                ? 'info'
-                : 'warning',
+                  ? 'info'
+                  : 'warning',
           }}
           stats={[
             { label: 'Paid', value: money(mx.invested) },
             item.schemeSummary?.weightLedger === 'Y'
-              ? { label: 'Weight', value: grams(mx.weight, 3) }
-              : { label: 'Remaining', value: String( money(mx.remaining)) },
+              ? { label: 'Weight', value: grams(mx.weight, 4) }
+              : { label: 'Remaining', value: String(money(mx.remaining)) },
             isMultiPay
-              ? { label: 'Bonus weight', value: grams(item.bonusWeight ?? 0, 3) }
+              ? { label: 'Bonus weight', value: grams(item.bonusWeight ?? 0, 4) }
               : {
-                  label: 'Maturity',
-                  value: item.maturityDate ? fmtDate(item.maturityDate) : '—',
-                },
+                label: 'Maturity',
+                value: item.maturityDate ? fmtDate(item.maturityDate) : '—',
+              },
           ]}
           paid={mx.paid}
           total={isMultiPay ? 0 : mx.total}
@@ -145,12 +145,12 @@ function MySchemeHoldings(
                 ? `Last bought ${fmtDate(item.lastPaidDate)}`
                 : undefined
               : isFullyPaid
-              ? 'All instalments paid'
-              : item.nextDueDate
-              ? `Due ${fmtDate(item.nextDueDate)}`
-              : item.maturityDate
-              ? `Matures ${fmtDate(item.maturityDate)}`
-              : undefined
+                ? 'All instalments paid'
+                : item.nextDueDate
+                  ? `Due ${fmtDate(item.nextDueDate)}`
+                  : item.maturityDate
+                    ? `Matures ${fmtDate(item.maturityDate)}`
+                    : undefined
           }
           actionLabel="View instalments"
           onAction={() => navigation.navigate('ViewInstallment', { ppData: item })}

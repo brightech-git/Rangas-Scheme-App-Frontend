@@ -29,3 +29,4 @@ export { default as PrivacyPolicyScreen } from '../screens/legal/PrivacyPolicySc
 export { default as TermsConditionsScreen } from '../screens/legal/TermsConditionsScreen';
 export { default as AboutUsScreen } from '../screens/legal/AboutUsScreen';
 export { default as FAQScreen } from '../screens/legal/FAQScreen';
+export { default as RefundPolicyScreen } from '../screens/legal/RefundPolicyScreen';

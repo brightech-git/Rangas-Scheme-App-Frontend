@@ -24,7 +24,6 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { verifyMpin } from "../../store/mpinSlice";
 import { logoutUser, restoreSession } from "../../store/authSlice";
 import { RootStackParamList } from "../../navigation/RootNavigator";
-import { useToast } from "../../components/ui/Toast";
 import { initNotifications } from "../../utils/NotificationService";
 import { loginCheckService } from "../../api/services/loginCheckService";
 import {
@@ -51,7 +50,6 @@ export default function VerifyMpinScreen() {
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((s) => s.mpin);
   const user = useAppSelector((s) => s.auth.user);
-  const toast = useToast();
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
 
   const boxesRef = useRef<MpinBoxesRef>(null);
@@ -83,10 +81,6 @@ export default function VerifyMpinScreen() {
   const onVerifiedSuccess = useCallback(async () => {
     if (verifiedRef.current) return;
     verifiedRef.current = true;
-    toast.success("Welcome back!", {
-      message: `Hello, ${user?.username ?? "User"} 👋`,
-      position: "top",
-    });
     if (user?.username && user?.contactNumber) {
       loginCheckService
         .register({ username: user.username, mobileNumber: user.contactNumber })
@@ -94,7 +88,7 @@ export default function VerifyMpinScreen() {
     }
     await initNotifications().catch(() => {});
     navigation.replace("Main");
-  }, [navigation, toast, user?.username, user?.contactNumber]);
+  }, [navigation, user?.username, user?.contactNumber]);
 
   const handleComplete = useCallback(
     async (value: string) => {
@@ -110,6 +104,10 @@ export default function VerifyMpinScreen() {
             ? res.payload
             : "Incorrect MPIN. Please try again.";
         setPin("");
+        // `loading` (which disables/un-editables the input) only flips back
+        // to false on this same render pass -- focusing a frame later gives
+        // the TextInput time to become editable again first.
+        setTimeout(() => boxesRef.current?.focus(), 50);
         setFailCount((prev) => {
           const next = prev + 1;
           if (next >= MAX_ATTEMPTS) {
@@ -152,10 +150,6 @@ export default function VerifyMpinScreen() {
       if (!ok) return;
       const storedMpin = await BiometricHelper.getMpin();
       if (!storedMpin) {
-        toast.info("Enter your MPIN once", {
-          message: "Biometric unlock will be ready next time",
-          position: "top",
-        });
         return;
       }
       const res = await dispatch(verifyMpin(storedMpin));
@@ -163,15 +157,11 @@ export default function VerifyMpinScreen() {
         await onVerifiedSuccess();
       } else {
         await BiometricHelper.clearMpin();
-        toast.error("Please enter your MPIN", {
-          message: "Biometric unlock needs to be set up again",
-          position: "top",
-        });
       }
     } finally {
       setBioBusy(false);
     }
-  }, [bioBusy, bioLabel, dispatch, isLocked, onVerifiedSuccess, toast]);
+  }, [bioBusy, bioLabel, dispatch, isLocked, onVerifiedSuccess]);
 
   // Detect biometric support on mount; auto-prompt if enabled & an MPIN is stored
   useEffect(() => {

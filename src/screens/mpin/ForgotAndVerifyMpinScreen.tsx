@@ -24,7 +24,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { forgotMpinSendOtp, forgotMpinVerify } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import AppOTPInput, { AppOTPInputRef } from '../../components/ui/appcomponents/AppOTPInput';
-import { useToast } from '../../components/ui/Toast';
+
 import {
   WaveAuthShell,
   PremiumButton,
@@ -42,8 +42,7 @@ export default function ForgotAndVerifyMpinScreen() {
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((s) => s.mpin);
-  const toast = useToast();
-  const { COLORS, FONTS, SIZES,fontScale } = useTheme();
+  const { COLORS, FONTS, SIZES, fontScale } = useTheme();
 
   const otpRef = useRef<AppOTPInputRef>(null);
   const boxesRef = useRef<MpinBoxesRef>(null);
@@ -84,11 +83,9 @@ export default function ForgotAndVerifyMpinScreen() {
     try {
       const res = await dispatch(forgotMpinSendOtp());
       if (forgotMpinSendOtp.fulfilled.match(res)) {
-        toast.success('OTP Sent!', { message: 'Check your registered mobile' });
         setStep('verify');
         setAutoDetecting(Platform.OS === 'android');
       } else {
-        toast.error('Failed', { message: res.payload as string });
       }
     } finally {
       submittingRef.current = false;
@@ -116,7 +113,6 @@ export default function ForgotAndVerifyMpinScreen() {
         const msg = (res.payload as string) || 'Unable to reset MPIN';
         setOtpError(true);
         setOtpErrMsg(msg);
-        toast.error('Failed', { message: msg });
         otpRef.current?.clear();
         setOtpCode('');
         setNewMpin('');
@@ -137,10 +133,9 @@ export default function ForgotAndVerifyMpinScreen() {
       setOtpErrMsg('');
       setAutoDetecting(Platform.OS === 'android');
       const res = await dispatch(forgotMpinSendOtp());
-      if (forgotMpinSendOtp.fulfilled.match(res)) {
-        toast.success('OTP Resent!', { message: 'New code sent to your registered mobile' });
-      } else {
-        toast.error('Resend Failed', { message: res.payload as string });
+      if (!forgotMpinSendOtp.fulfilled.match(res)) {
+        setOtpError(true);
+        setOtpErrMsg(res.payload as string);
       }
     } finally {
       submittingRef.current = false;

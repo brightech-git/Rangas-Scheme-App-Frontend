@@ -1,370 +1,233 @@
 // src/screens/contact/contact.tsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Linking,
-  Platform,
-  KeyboardAvoidingView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { IMAGE_BASE_URL } from '@env';
 import AppHeader from '../../components/ui/appcomponents/AppHeader';
 import { useTheme } from '../../theme';
 import PoweredByFooter from '../../components/ui/PoweredByFooter';
 import { useCompanies } from '../../api/hooks/Company/useCompanies';
 import { Company } from '../../types/Company/Company';
-import { useAppSelector } from '../../store/hooks';
 
-// ── Company helpers ───────────────────────────────────────────────
-type Branch = { label: string; address: string; mapsQuery: string };
+const fallbackLogo = require('../../assets/company/logo.png');
+const FALLBACK_WEBSITE = 'www.rangasjewellery.com';
+
+type Branch = { label: string; lines: string[]; mapsQuery: string };
+
+type SocialLink = { icon: keyof typeof Ionicons.glyphMap; url: string };
 
 const buildBranches = (c: Company): Branch[] => {
-  const branches: Branch[] = [];
-  const b1 = [c.ADDRESS1, c.ADDRESS2].map(x => (x ?? '').trim()).filter(Boolean).join(', ');
-  const b2 = [c.ADDRESS3, c.ADDRESS4].map(x => (x ?? '').trim()).filter(Boolean).join(', ');
-  if (b1) branches.push({ label: 'Branch 1', address: b1, mapsQuery: `${c.COMPANYNAME} ${b1}` });
-  if (b2) branches.push({ label: 'Branch 2', address: b2, mapsQuery: `${c.COMPANYNAME} ${b2}` });
-  return branches;
+  const lines1 = [c.ADDRESS1, c.ADDRESS2].map(x => (x ?? '').trim()).filter(Boolean);
+  const lines2 = [c.ADDRESS3, c.ADDRESS4].map(x => (x ?? '').trim()).filter(Boolean);
+  const out: Branch[] = [];
+  if (lines1.length) out.push({ label: 'Branch 1', lines: lines1, mapsQuery: `${c.COMPANYNAME} ${lines1.join(', ')}` });
+  if (lines2.length) out.push({ label: 'Branch 2', lines: lines2, mapsQuery: `${c.COMPANYNAME} ${lines2.join(', ')}` });
+  return out;
 };
 
-const telHref  = (phone: string) => `tel:${phone.replace(/[^0-9+]/g, '')}`;
-const mapsHref = (query: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+const buildPhones = (phone: string) =>
+  phone.split(/[,/]/).map(p => p.trim()).filter(Boolean);
 
-// Build the list of social / store links that actually have a value.
-type LinkItem = { key: string; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; url: string };
-const socialLinksOf = (c?: Company): LinkItem[] => {
-  if (!c) return [];
-  // NOTE: these are official third-party brand colours, deliberately NOT
-  // themed. WhatsApp green / Instagram magenta etc. are how users identify
-  // the destination — recolouring them to the Cinnamon palette would hurt
-  // recognition and misrepresent those brands. Everything else on this
-  // screen is theme-driven.
-  const defs: { key: keyof Company; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-    { key: 'WHATSAPPLINK',       label: 'WhatsApp',   icon: 'logo-whatsapp',         color: '#25D366' },
-    { key: 'FACEBOOKLINK',       label: 'Facebook',   icon: 'logo-facebook',         color: '#1877F2' },
-    { key: 'INSTALINK',          label: 'Instagram',  icon: 'logo-instagram',        color: '#E4405F' },
-    { key: 'TWITTERLINK',        label: 'Twitter',    icon: 'logo-twitter',          color: '#1DA1F2' },
-    { key: 'YOUTUBELINK',        label: 'YouTube',    icon: 'logo-youtube',          color: '#FF0000' },
-    { key: 'GOOGLEBUSINESSLINK', label: 'Google',     icon: 'logo-google',           color: '#4285F4' },
-    { key: 'APPSTORELINK',       label: 'App Store',  icon: 'logo-apple',            color: '#0A84FF' },
-    { key: 'ANDROIDLINK',        label: 'Play Store', icon: 'logo-google-playstore', color: '#34A853' },
-  ];
-  return defs
-    .map(d => ({ key: String(d.key), label: d.label, icon: d.icon, color: d.color, url: ((c[d.key] as string | undefined) ?? '').trim() }))
-    .filter(d => d.url.length > 0);
+const buildSocialLinks = (c: Company): SocialLink[] => {
+  const links: SocialLink[] = [];
+  if (c.WHATSAPPLINK)       links.push({ icon: 'logo-whatsapp',  url: c.WHATSAPPLINK });
+  if (c.FACEBOOKLINK)       links.push({ icon: 'logo-facebook',  url: c.FACEBOOKLINK });
+  if (c.INSTALINK)          links.push({ icon: 'logo-instagram', url: c.INSTALINK });
+  if (c.TWITTERLINK)        links.push({ icon: 'logo-twitter',   url: c.TWITTERLINK });
+  if (c.YOUTUBELINK)        links.push({ icon: 'logo-youtube',   url: c.YOUTUBELINK });
+  if (c.GOOGLEBUSINESSLINK) links.push({ icon: 'logo-google',    url: c.GOOGLEBUSINESSLINK });
+  if (c.APPSTORELINK)       links.push({ icon: 'logo-apple-appstore', url: c.APPSTORELINK });
+  if (c.ANDROIDLINK)        links.push({ icon: 'logo-google-playstore', url: c.ANDROIDLINK });
+  return links;
 };
 
-// ── Form field helper ─────────────────────────────────────────────
-function FormField({
-  label, icon, value, placeholder, onChangeText, multiline = false, keyboardType = 'default', colors, fonts,
-}: {
-  label: string; icon: keyof typeof Ionicons.glyphMap; value: string;
-  placeholder: string; onChangeText: (v: string) => void;
-  multiline?: boolean; keyboardType?: 'default' | 'email-address' | 'phone-pad';
-  colors: any; fonts: any;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={fStyles.wrap}>
-      <Text style={[fStyles.label, { color: colors.textSecondary, fontFamily: fonts.family.medium }]}>{label}</Text>
-      <View style={[
-        fStyles.box,
-        {
-          borderColor: focused ? colors.primary : colors.borderLight,
-          backgroundColor: focused ? colors.primary + '05' : colors.card,
-          height: multiline ? 100 : 50,
-          alignItems: multiline ? 'flex-start' : 'center',
-        }
-      ]}>
-        <Ionicons name={icon} size={18} color={focused ? colors.primary : colors.textTertiary} style={[fStyles.icon, multiline && { marginTop: 14 }]} />
-        <TextInput
-          style={[fStyles.input, { color: colors.textPrimary, fontFamily: fonts.family.regular }, multiline && { textAlignVertical: 'top', paddingTop: 14 }]}
-          placeholder={placeholder} placeholderTextColor={colors.textTertiary}
-          value={value} onChangeText={onChangeText} multiline={multiline}
-          numberOfLines={multiline ? 4 : 1} keyboardType={keyboardType}
-          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        />
-      </View>
-    </View>
-  );
-}
-const fStyles = StyleSheet.create({
-  wrap:  { marginBottom: 14 },
-  label: { fontSize: 13, marginBottom: 6 },
-  box:   { flexDirection: 'row', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12 },
-  icon:  { marginRight: 10 },
-  input: { flex: 1, fontSize: 14, height: '100%' },
-});
+const mapsHref = (q: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-// ── Main Screen ──────────────────────────────────────────────────
 export default function ContactScreen() {
-  const { COLORS, FONTS, SIZES, SHADOWS } = useTheme();
+  const { COLORS, FONTS, SIZES } = useTheme();
   const navigation = useNavigation<any>();
+  const { companies, loading, error } = useCompanies();
 
-  const { companies, loading: companiesLoading, error: companiesError } = useCompanies();
+  return (
+    <>
+      <AppHeader title="Contact" showBack onBackPress={() => navigation.navigate('Home')} variant="primary" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[s.content, { paddingHorizontal: 16 }]}>
 
-  const user = useAppSelector((s) => s.auth.user);
+        {loading && <View style={s.center}><ActivityIndicator color={COLORS.primary} /></View>}
+        {!loading && error && companies.length === 0 && (
+          <Text style={[s.errorTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
+            Unable to load company details.
+          </Text>
+        )}
 
-  const [cName,    setCName]    = useState(user?.username      ?? '');
-  const [cEmail,   setCEmail]   = useState(user?.email         ?? '');
-  const [cPhone,   setCPhone]   = useState(user?.contactNumber ?? '');
-  const [cMessage, setCMessage] = useState('');
-  const [sent,     setSent]     = useState(false);
+        {!loading && companies.map((c) => {
+          const branches = buildBranches(c);
+          const social = buildSocialLinks(c);
+          const logoUri = c.LOGO ? `${IMAGE_BASE_URL}${c.LOGO}` : null;
+          const website = c.BASEURL?.trim() || FALLBACK_WEBSITE;
 
-  const socialLinks = socialLinksOf(companies.find(c => socialLinksOf(c).length > 0) ?? companies[0]);
+          return (
+            <View key={c.COMPANYID}>
 
-  const isFormValid = cName.trim().length > 1 && cEmail.includes('@') && cMessage.trim().length > 5;
-
-  const handleSend = () => {
-    if (!isFormValid) return;
-    setSent(true);
-    setTimeout(() => {
-      setSent(false);
-      setCName(''); setCEmail(''); setCPhone(''); setCMessage('');
-    }, 3000);
-  };
-
-  return (<>
-             <AppHeader
-            title="Contact"
-            showBack
-            onBackPress={() => navigation.navigate('Home')}
-            variant="primary"
-          />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[s.content, { paddingHorizontal: SIZES.padding.container }]}>
-
-
-          {/* ── Our Branches (from /api/v1/company/all) ── */}
-          <View style={s.branchSec}>
-            {/* <Text style={[s.sectionHead, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
-              Our Branches
-            </Text> */}
-
-            {companiesLoading ? (
-              <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, alignItems: 'center' }]}>
-                <ActivityIndicator color={COLORS.primary} />
+              {/* ── Logo ── */}
+              <View style={[s.logoCircle, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight }]}>
+                <Image source={logoUri ? { uri: logoUri } : fallbackLogo} style={s.logo} resizeMode="contain" />
               </View>
-            ) : companiesError ? (
-              <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight }]}>
-                <Text style={[s.cardValue, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                  {companiesError}
-                </Text>
-              </View>
-            ) : companies.length === 0 ? (
-              <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight }]}>
-                <Text style={[s.cardValue, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                  No branch details available.
-                </Text>
-              </View>
-            ) : (
-              companies.map((c) => {
-                const branches = buildBranches(c);
-                return (
-                  <View key={c.COMPANYID}>
-                    {/* Company name header */}
-                    <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-                      <View style={s.branchHead}>
-                        <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                          <Ionicons name="business-outline" size={20} color={COLORS.primary} />
-                        </View>
-                        <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]} numberOfLines={2}>
-                          {c.COMPANYNAME}
-                        </Text>
-                      </View>
 
-                      {/* Phone */}
-                      {c.PHONE ? (
-                        <TouchableOpacity style={s.branchRow} onPress={() => Linking.openURL(telHref(c.PHONE!))} activeOpacity={0.7}>
-                          <Ionicons name="call-outline" size={16} color={COLORS.primary} style={s.branchRowIcon} />
-                          <Text style={[s.branchRowTxt, { color: COLORS.primary, fontFamily: FONTS.family.medium }]}>{c.PHONE}</Text>
-                        </TouchableOpacity>
-                      ) : null}
+              {/* Company name */}
+              <Text style={[s.companyName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>
+                {c.COMPANYNAME}
+              </Text>
 
-                      {/* Email */}
-                      {c.EMAIL ? (
-                        <TouchableOpacity style={s.branchRow} onPress={() => Linking.openURL(`mailto:${c.EMAIL}`)} activeOpacity={0.7}>
-                          <Ionicons name="mail-outline" size={16} color={COLORS.primary} style={s.branchRowIcon} />
-                          <Text style={[s.branchRowTxt, { color: COLORS.primary, fontFamily: FONTS.family.medium }]} numberOfLines={1}>{c.EMAIL}</Text>
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-
-                    {/* Branch address cards */}
-                    {branches.map((b, i) => (
-                      <View key={i} style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-                        <View style={s.branchHead}>
-                          <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                            <Ionicons name="location-outline" size={20} color={COLORS.primary} />
-                          </View>
-                          <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{b.label}</Text>
-                        </View>
-                        <View style={s.branchRow}>
-                          <Ionicons name="location-outline" size={16} color={COLORS.textTertiary} style={s.branchRowIcon} />
-                          <Text style={[s.branchRowTxt, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>{b.address}</Text>
-                        </View>
-                        <TouchableOpacity style={[s.branchBtn, { backgroundColor: COLORS.primaryFill }]} onPress={() => Linking.openURL(mapsHref(b.mapsQuery))} activeOpacity={0.85}>
-                          <Ionicons name="navigate-outline" size={14} color={COLORS.textOnPrimary} />
-                          <Text style={[s.branchBtnTxt, { color: COLORS.textOnPrimary, fontFamily: FONTS.family.semiBold }]}>Get Directions</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                );
-              })
-            )}
-          </View>
-
-          {/* Working hours */}
-          {companies.some(c => c.TIMINGS?.trim()) && (
-            <View style={[s.branchCard, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-              <View style={s.branchHead}>
-                <View style={[s.branchIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                  <Ionicons name="time-outline" size={20} color={COLORS.primary} />
-                </View>
-                <Text style={[s.branchName, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>Working Hours</Text>
-              </View>
-              {companies.filter(c => c.TIMINGS?.trim()).map(c => (
-                <Text key={c.COMPANYID} style={[s.cardValue, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                  {c.TIMINGS}
-                </Text>
-              ))}
-            </View>
-          )}
-
-          {/* Social / store links (only those present in the API) */}
-          {socialLinks.length > 0 && (
-            <View style={s.socialSec}>
-              <Text style={[s.socialTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>Connect With Us</Text>
-              <View style={s.socialRow}>
-                {socialLinks.map(sl => (
-                  <TouchableOpacity key={sl.key} style={[s.socialBtn, { backgroundColor: sl.color + '15', borderColor: sl.color + '30' }]} onPress={() => Linking.openURL(sl.url)} activeOpacity={0.8}>
-                    <Ionicons name={sl.icon} size={22} color={sl.color} />
-                    <Text style={[s.socialLbl, { color: sl.color, fontFamily: FONTS.family.medium }]}>{sl.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Contact form */}
-          <View style={[s.formBox, { backgroundColor: COLORS.card, borderColor: COLORS.borderLight, ...SHADOWS.sm }]}>
-            <View style={s.formHead}>
-              <View style={[s.formHeadIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                <Ionicons name="chatbubble-ellipses-outline" size={20} color={COLORS.primary} />
-              </View>
-              <View>
-                <Text style={[s.formTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}>Send a Message</Text>
-                <Text style={[s.formSub, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>We'll reply within 24 hours</Text>
-              </View>
-            </View>
-
-            {sent ? (
-              <View style={[s.sentBox, { backgroundColor: COLORS.success + '12', borderColor: COLORS.success + '30' }]}>
-                <Ionicons name="checkmark-circle" size={36} color={COLORS.success} />
-                <Text style={[s.sentTitle, { color: COLORS.success, fontFamily: FONTS.family.bold }]}>Message Sent!</Text>
-                <Text style={[s.sentSub, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
-                  Thank you for reaching out. We'll get back to you soon.
-                </Text>
-              </View>
-            ) : (
-              <>
-                <FormField label="Your Name *" icon="person-outline" value={cName} placeholder="Full name" onChangeText={setCName} colors={COLORS} fonts={FONTS} />
-                <FormField label="Email *" icon="mail-outline" value={cEmail} placeholder="your@email.com" onChangeText={setCEmail} keyboardType="email-address" colors={COLORS} fonts={FONTS} />
-                <FormField label="Phone" icon="call-outline" value={cPhone} placeholder="Mobile number" onChangeText={setCPhone} keyboardType="phone-pad" colors={COLORS} fonts={FONTS} />
-                <FormField label="Message *" icon="chatbubble-outline" value={cMessage} placeholder="How can we help you?" onChangeText={setCMessage} multiline colors={COLORS} fonts={FONTS} />
+              {/* Phone — each number on its own row */}
+              {!!c.PHONE && buildPhones(c.PHONE).map((num, i) => (
                 <TouchableOpacity
-                  style={[s.sendBtn, { backgroundColor: isFormValid ? COLORS.primary : COLORS.borderLight, ...(isFormValid ? SHADOWS.sm : {}) }]}
-                  onPress={handleSend} disabled={!isFormValid} activeOpacity={0.85}
+                  key={i}
+                  style={s.row}
+                  onPress={() => Linking.openURL(`tel:${num.replace(/[^0-9+]/g, '')}`)}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="send-outline" size={18} color={isFormValid ? COLORS.white : COLORS.textTertiary} />
-                  <Text style={[s.sendBtnTxt, { color: isFormValid ? COLORS.white : COLORS.textTertiary, fontFamily: FONTS.family.bold }]}>
-                    Send Message
-                  </Text>
+                  <View style={[s.rowIcon, { backgroundColor: COLORS.primary + '12' }]}>
+                    <Ionicons name="call-outline" size={15} color={COLORS.primary} />
+                  </View>
+                  <View style={s.rowBody}>
+                    <Text style={[s.rowLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
+                      {i === 0 ? 'Phone' : `Phone ${i + 1}`}
+                    </Text>
+                    <Text style={[s.rowValue, { color: COLORS.primary, fontFamily: FONTS.family.semiBold }]}>{num}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color={COLORS.textTertiary} />
                 </TouchableOpacity>
-              </>
-            )}
-          </View>
+              ))}
 
-          {/* FAQ teaser */}
-          <TouchableOpacity style={[s.faqCard, { backgroundColor: COLORS.primary + '08', borderColor: COLORS.primary + '25' }]}>
-            <Ionicons name="help-circle-outline" size={28} color={COLORS.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={[s.faqTitle, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>Have more questions?</Text>
-              <Text style={[s.faqSub, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>Check our FAQ or visit a branch near you.</Text>
+              {/* Email */}
+              {!!c.EMAIL && (
+                <TouchableOpacity style={s.row} onPress={() => Linking.openURL(`mailto:${c.EMAIL}`)} activeOpacity={0.7}>
+                  <View style={[s.rowIcon, { backgroundColor: COLORS.primary + '12' }]}>
+                    <Ionicons name="mail-outline" size={15} color={COLORS.primary} />
+                  </View>
+                  <View style={s.rowBody}>
+                    <Text style={[s.rowLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Email</Text>
+                    <Text style={[s.rowValue, { color: COLORS.primary, fontFamily: FONTS.family.semiBold }]} numberOfLines={1}>{c.EMAIL}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color={COLORS.textTertiary} />
+                </TouchableOpacity>
+              )}
+
+              {/* Website — falls back to the known company site when BASEURL isn't set */}
+              <TouchableOpacity
+                style={s.row}
+                onPress={() => Linking.openURL(/^https?:\/\//i.test(website) ? website : `https://${website}`)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.rowIcon, { backgroundColor: COLORS.primary + '12' }]}>
+                  <Ionicons name="globe-outline" size={15} color={COLORS.primary} />
+                </View>
+                <View style={s.rowBody}>
+                  <Text style={[s.rowLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Website</Text>
+                  <Text style={[s.rowValue, { color: COLORS.primary, fontFamily: FONTS.family.semiBold }]} numberOfLines={1}>{website}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color={COLORS.textTertiary} />
+              </TouchableOpacity>
+
+              {/* Timings */}
+              {!!c.TIMINGS?.trim() && (
+                <View style={s.row}>
+                  <View style={[s.rowIcon, { backgroundColor: COLORS.primary + '12' }]}>
+                    <Ionicons name="time-outline" size={15} color={COLORS.primary} />
+                  </View>
+                  <View style={s.rowBody}>
+                    <Text style={[s.rowLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Working Hours</Text>
+                    <Text style={[s.rowValue, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{c.TIMINGS}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* GST No. */}
+              {!!c.GSTNO?.trim() && (
+                <View style={s.row}>
+                  <View style={[s.rowIcon, { backgroundColor: COLORS.primary + '12' }]}>
+                    <Ionicons name="document-text-outline" size={15} color={COLORS.primary} />
+                  </View>
+                  <View style={s.rowBody}>
+                    <Text style={[s.rowLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>GST No.</Text>
+                    <Text style={[s.rowValue, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{c.GSTNO}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Branch addresses */}
+              {branches.map((b, i) => (
+                <TouchableOpacity key={i} style={[s.row, s.rowTop]} onPress={() => Linking.openURL(mapsHref(b.mapsQuery))} activeOpacity={0.7}>
+                  <View style={[s.rowIcon, { backgroundColor: COLORS.primary + '12' }]}>
+                    <Ionicons name="location-outline" size={15} color={COLORS.primary} />
+                  </View>
+                  <View style={s.rowBody}>
+                    <Text style={[s.rowLabel, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>{b.label}</Text>
+                    {b.lines.map((line, li) => (
+                      <Text key={li} style={[s.rowValue, { color: COLORS.textPrimary, fontFamily: FONTS.family.medium }]}>{line}</Text>
+                    ))}
+                    <Text style={[s.mapsLink, { color: COLORS.primary, fontFamily: FONTS.family.medium }]}>Open in Maps →</Text>
+                  </View>
+                  <Ionicons name="navigate-outline" size={14} color={COLORS.primary} />
+                </TouchableOpacity>
+              ))}
+
+              {/* Social / store links */}
+              {social.length > 0 && (
+                <View style={s.socialRow}>
+                  {social.map((link, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[s.socialBtn, { backgroundColor: COLORS.primary + '12' }]}
+                      onPress={() => Linking.openURL(link.url)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name={link.icon} size={18} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
-          </TouchableOpacity>
+          );
+        })}
 
-          <PoweredByFooter />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <PoweredByFooter />
+      </ScrollView>
     </>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  container:   { flex: 1 },
-  content:     { paddingTop: 20, paddingBottom: 150 },
-  pageHeader:  { marginBottom: 20 },
-  pageTitle:   { fontSize: 28, letterSpacing: -0.5 },
-  pageSub:     { fontSize: 14, marginTop: 4, opacity: 0.7 },
-  // map
-  mapBox:      { borderRadius: 16, borderWidth: 1, paddingVertical: 28, alignItems: 'center', marginBottom: 20 },
-  mapPin:      { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  mapName:     { fontSize: 16, marginBottom: 4 },
-  mapAddr:     { fontSize: 13, marginBottom: 14, opacity: 0.7 },
-  mapBtn:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, gap: 6 },
-  mapBtnTxt:   { fontSize: 13 },
-  // branches (company list)
-  branchSec:    { marginBottom: 16 },
-  sectionHead:  { fontSize: 16, marginBottom: 12 },
-  branchCard:   { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 12 },
-  branchHead:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  branchIcon:   { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  branchName:   { fontSize: 15, flex: 1 },
-  branchRow:    { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 5 },
-  branchRowIcon:{ marginRight: 10, marginTop: 1 },
-  branchRowTxt: { flex: 1, fontSize: 13, lineHeight: 19 },
-  branchBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, marginTop: 12 },
-  branchBtnTxt: { fontSize: 13 },
-  // cards
-  grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  card:        { width: '47%', borderRadius: 14, borderWidth: 1, padding: 14 },
-  cardIcon:    { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  cardLabel:   { fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
-  cardValue:   { fontSize: 13, lineHeight: 19 },
-  cardAction:  { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 4, paddingTop: 8, borderTopWidth: 1 },
-  cardActionTxt:{ fontSize: 12 },
+  content:     { paddingTop: 16, paddingBottom: 100 },
+  // logo
+  logoCircle:  { width: 250, height: 90, borderRadius: 14, borderWidth: 1, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', marginBottom: 16, overflow: 'hidden', padding: 2 },
+  logo:        { width: '100%', height: '100%' },
+  companyName: { fontSize: 17, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
+  // rows
+  row:         { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  rowTop:      { alignItems: 'flex-start' },
+  rowIcon:     { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  rowBody:     { flex: 1 },
+  rowLabel:    { fontSize: 10, marginBottom: 1 },
+  rowValue:    { fontSize: 13, lineHeight: 18 },
+  mapsLink:    { fontSize: 11, marginTop: 3 },
   // social
-  socialSec:   { marginBottom: 24 },
-  socialTitle: { fontSize: 16, marginBottom: 12 },
-  socialRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  socialBtn:   { width: '22%', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 14, borderWidth: 1, gap: 6 },
-  socialLbl:   { fontSize: 10 },
-  // form
-  formBox:     { borderRadius: 18, borderWidth: 1, padding: 18, marginBottom: 16 },
-  formHead:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  formHeadIcon:{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  formTitle:   { fontSize: 16 },
-  formSub:     { fontSize: 12, opacity: 0.7 },
-  sendBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, gap: 8 },
-  sendBtnTxt:  { fontSize: 15 },
-  sentBox:     { borderRadius: 12, borderWidth: 1, padding: 20, alignItems: 'center', gap: 8 },
-  sentTitle:   { fontSize: 18 },
-  sentSub:     { fontSize: 13, textAlign: 'center', lineHeight: 18 },
-  // faq
-  faqCard:     { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 14, borderWidth: 1, gap: 12 },
-  faqTitle:    { fontSize: 14, marginBottom: 2 },
-  faqSub:      { fontSize: 12, opacity: 0.7 },
+  socialRow:   { flexDirection: 'row', gap: 12, marginTop: 12, justifyContent: 'center' },
+  socialBtn:   { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  // misc
+  center:      { paddingVertical: 24, alignItems: 'center' },
+  errorTxt:    { fontSize: 13, textAlign: 'center', marginVertical: 12 },
 });

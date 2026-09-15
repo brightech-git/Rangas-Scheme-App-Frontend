@@ -487,13 +487,15 @@ export default function BuyGoldScreen() {
     }, [])
   );
 
-  // ── Breakdown rows ──
-  const breakdown: SummaryRow[] = useMemo(() => [
-    { label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` },
-    { label: 'Amount entered', value: money(amount) },
-    { label: 'Gold received', value: `${weight.toFixed(3)} g`, highlight: true },
-    { label: 'Total payable', value: money(Math.round(amount)), total: true },
-  ], [goldRate, amount, weight]);
+  // ── Breakdown rows — only show a row when its underlying data is present ──
+  const breakdown: SummaryRow[] = useMemo(() => {
+    const rows: SummaryRow[] = [];
+    if (goldRate > 0) rows.push({ label: 'Live rate · 916 (22K)', value: `${money(goldRate)} / g` });
+    if (amount > 0) rows.push({ label: 'Amount entered', value: money(amount) });
+    if (weight > 0) rows.push({ label: 'Gold received', value: `${weight.toFixed(4)} g`, highlight: true });
+    if (amount > 0) rows.push({ label: 'Total payable', value: money(Math.round(amount)), total: true });
+    return rows;
+  }, [goldRate, amount, weight]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -554,7 +556,7 @@ export default function BuyGoldScreen() {
             <BottomActionBar
               label="Total payable"
               value={money(Math.round(amount))}
-              note={`${weight.toFixed(3)} g of 916 gold`}
+              note={`${weight.toFixed(4)} g of 916 gold`}
               actionLabel={isProcessing ? 'Processing…' : 'Buy gold'}
               actionVariant="gold"
               disabled={!isReady || isProcessing}

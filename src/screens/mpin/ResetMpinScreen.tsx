@@ -18,7 +18,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { resetMpin } from '../../store/mpinSlice';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useToast } from '../../components/ui/Toast';
 import {
   AuthShell,
   MpinBoxes,
@@ -36,7 +35,6 @@ const PIN_LENGTH = 4;
 export default function ResetMpinScreen() {
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
-  const toast = useToast();
   const { loading } = useAppSelector((s) => s.mpin);
 
   const boxesRef = useRef<MpinBoxesRef>(null);
@@ -88,10 +86,9 @@ export default function ResetMpinScreen() {
         setNewMpin('');
         setStep('old');
         setError('Incorrect current MPIN. Please try again.');
-        toast.error('Failed', { message: (res.payload as string) || 'Unable to change MPIN' });
       }
     },
-    [oldMpin, dispatch, toast],
+    [oldMpin, dispatch],
   );
 
   if (step === 'done') {

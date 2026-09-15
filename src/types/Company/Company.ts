@@ -18,10 +18,14 @@ export interface Company {
   TINNO?:       string;
   PANNO?:       string;
   TDSNO?:       string;
+  TANNO?:       string;
+  GSTNO?:       string;
+  STATEID?:     number;
   DISPLAYORDER?: number;
 
   // Branding + social / store links
   LOGO?:               string;
+  BASEURL?:            string;
   WHATSAPPLINK?:       string;
   TWITTERLINK?:        string;
   FACEBOOKLINK?:       string;
