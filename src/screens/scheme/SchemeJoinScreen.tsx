@@ -206,6 +206,23 @@ export default function SchemeJoinScreen() {
   const [gender, setGender] = useState('');
   const [aadhaar, setAadhaar] = useState('');
   const [pan, setPan] = useState('');
+  const [empId, setEmpId] = useState('999');
+  // Staff-only field — hidden from regular members. Tapping the "Step 2"
+  // heading 5 times in quick succession reveals the Emp ID input.
+  const [showEmpId, setShowEmpId] = useState(false);
+  const empIdTapCount = useRef(0);
+  const empIdTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleStep2HeadingTap = () => {
+    if (showEmpId) return;
+    empIdTapCount.current += 1;
+    if (empIdTapTimer.current) clearTimeout(empIdTapTimer.current);
+    if (empIdTapCount.current >= 5) {
+      setShowEmpId(true);
+      empIdTapCount.current = 0;
+      return;
+    }
+    empIdTapTimer.current = setTimeout(() => { empIdTapCount.current = 0; }, 600);
+  };
   const [doorStreet, setDoorStreet] = useState('');
   const [pincode, setPincode] = useState('');
   const [area, setArea] = useState('');
@@ -263,6 +280,7 @@ export default function SchemeJoinScreen() {
         const d = JSON.parse(raw);
         if (d.aadhaar) setAadhaar(d.aadhaar);
         if (d.pan) setPan(d.pan);
+        if (d.empId) setEmpId(d.empId);
         if (d.doorStreet) setDoorStreet(d.doorStreet);
         if (d.pincode) setPincode(d.pincode);
         if (d.area) setArea(d.area);
@@ -334,14 +352,14 @@ export default function SchemeJoinScreen() {
   // ── AsyncStorage: save draft ────────
   useEffect(() => {
     const draft = {
-      aadhaar, pan,
+      aadhaar, pan, empId,
       doorStreet, pincode, area, city, district, stateVal,
       gender, dobDay, dobMonth, dobYear, dobSet,
       nominee, nomRel, nomMobile,
     };
     AsyncStorage.setItem(PERSONAL_KEY, JSON.stringify(draft));
   }, [
-    aadhaar, pan,
+    aadhaar, pan, empId,
     doorStreet, pincode, area, city, district, stateVal,
     gender, dobDay, dobMonth, dobYear, dobSet,
     nominee, nomRel, nomMobile,
@@ -451,7 +469,7 @@ export default function SchemeJoinScreen() {
           dob:         dobFormatted,
           email:       loginEmail,
           upDateTime:  dt,
-          userId:      '9999',
+          userId:      empId.trim() || '999',
           appVer:      'APP',
         },
         createSchemeSummary: {
@@ -461,7 +479,7 @@ export default function SchemeJoinScreen() {
           joinDate:    dt,
           upDateTime2: dt,
           openingDate: dt,
-          userId2:     '9999',
+          userId2:     empId.trim() || '999',
         },
         schemeCollectInsert: {
           amount:  effectiveAmount,
@@ -927,11 +945,13 @@ export default function SchemeJoinScreen() {
 
           {/* ═══ STAGE 2 — DETAILS ═══ */}
           <View style={{ marginTop: SIZES.layout.section }}>
-            <SectionHeading
-              eyebrow="Step 2"
-              title="Your details"
-              caption="Used for KYC verification — please be accurate"
-            />
+            <Pressable onPress={handleStep2HeadingTap}>
+              <SectionHeading
+                eyebrow="Step 2"
+                title="Your details"
+                caption="Used for KYC verification — please be accurate"
+              />
+            </Pressable>
 
             <View style={{ marginTop: SIZES.margin.lg, gap: 18 }}>
               <FormField
@@ -966,6 +986,18 @@ export default function SchemeJoinScreen() {
                 error={fieldErrors.pan}
                 hint="Leave blank if not available"
               />
+
+              {showEmpId && (
+                <FormField
+                  label="Emp ID"
+                  indicator="optional"
+                  icon="person-outline"
+                  value={empId}
+                  placeholder="999"
+                  keyboardType="numeric"
+                  onChangeText={(v) => setEmpId(v.replace(/[^0-9]/g, ''))}
+                />
+              )}
 
               {/* Date of birth */}
               <FormField

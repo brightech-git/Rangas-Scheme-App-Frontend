@@ -1,6 +1,6 @@
 // src/screens/payment/ViewInstallmentScreen.tsx
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,9 +8,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../theme';
-import { useCompanies } from '../../api/hooks/Company/useCompanies';
-import { downloadPaymentReceipt } from '../../utils/PaymentReceiptPDF';
-import { PaymentHistory } from '../../types/Account/PhoneDetails';
 import { schemeMetrics } from '../../utils/schemeMetrics';
 import { classifySchemeKind } from '../../utils/schemeKind';
 import {
@@ -18,7 +15,6 @@ import {
   PageHeader,
   SummaryCard,
   ProgressWidget,
-  TimelineCard,
   MetricCard,
   StatusChip,
   BottomActionBar,
@@ -27,7 +23,6 @@ import {
   money,
   prettyDate,
   type SummaryRow,
-  type TimelineEntry,
 } from '../../components/ui/premium';
 
 type RouteProps = RouteProp<RootStackParamList, 'ViewInstallment'>;
@@ -36,9 +31,9 @@ type NavProps = NativeStackNavigationProp<RootStackParamList, 'ViewInstallment'>
 type TabKey = 'overview' | 'details' | 'history';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'details', label: 'Details' },
   { key: 'history', label: 'History' },
+  { key: 'details', label: 'Details' },
+  { key: 'overview', label: 'Overview' },
 ];
 
 /** History rows shown before the user taps "Show all". */
@@ -51,51 +46,12 @@ const toNum = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-/** Renders a value only when it actually has content. */
-const text = (value: unknown, suffix = ''): string => {
-  const v = String(value ?? '').trim();
-  return v ? `${v}${suffix}` : '—';
-};
-
 export default function ViewInstallmentScreen() {
   const { COLORS, FONTS, SIZES } = useTheme();
   const navigation = useNavigation<NavProps>();
   const { ppData } = useRoute<RouteProps>().params;
-  const { companies } = useCompanies();
-  const company = companies?.[0] ?? null;
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [downloadedId, setDownloadedId] = useState<string | null>(null);
 
-  const handleDownload = useCallback(
-    async (p: PaymentHistory, id: string) => {
-      if (downloadingId) return;
-      setDownloadingId(id);
-      setDownloadedId(null);
-      // Pass the screen's live theme colors so the generated PDF follows
-      // the current theme instead of the static fallback in PaymentReceiptPDF.ts.
-      const result = await downloadPaymentReceipt({ ppData, payment: p }, company ?? undefined, {
-        primary: COLORS.primary,
-        primaryDark: COLORS.primaryDark,
-        primaryPale: COLORS.primaryPale,
-        accentTint: COLORS.canvas,
-        border: COLORS.border,
-        borderLight: COLORS.borderLight,
-        surfaceMuted: COLORS.gray100,
-        textPrimary: COLORS.textPrimary,
-        textSecondary: COLORS.textSecondary,
-        textMuted: COLORS.textTertiary,
-        success: COLORS.success,
-      });
-      setDownloadingId(null);
-      if (result.success) {
-        setDownloadedId(id);
-        setTimeout(() => setDownloadedId((cur) => (cur === id ? null : cur)), 2200);
-      }
-    },
-    [downloadingId, ppData, company, COLORS],
-  );
-
-  const [tab, setTab] = useState<TabKey>('overview');
+  const [tab, setTab] = useState<TabKey>('history');
   const [showAllHistory, setShowAllHistory] = useState(false);
 
   const scheme = ppData.schemeSummary;
@@ -188,37 +144,37 @@ export default function ViewInstallmentScreen() {
 
   /* ---------------- History ---------------- */
 
-  const timelineEntries: TimelineEntry[] = useMemo(
+  type HistoryRow = {
+    id: string;
+    date: string;
+    instalment: string;
+    rate: string;
+    weight: string;
+    amount: string;
+    onView: () => void;
+  };
+
+  const historyRows: HistoryRow[] = useMemo(
     () =>
       (ppData.paymentHistoryList ?? []).map((p, i) => {
         const id = p.receiptNo ?? `receipt-${i}`;
-        const stats: { label: string; value: string }[] = [
-          { label: 'Instalment', value: `#${p.installment}` },
-          { label: 'Amount Paid', value: money(toNum(p.amount)) },
-        ];
-        if (toNum(p.rate) > 0) stats.push({ label: 'Rate', value: money(toNum(p.rate)) });
-        if (hasGold && toNum(p.weight) > 0) stats.push({ label: 'Weight', value: `${toNum(p.weight).toFixed(4)} g` });
-
         return {
           id,
-          title: `Instalment #${p.installment}`,
-          meta: `Receipt ${text(p.receiptNo)}${p.chqBank ? ` · ${p.chqBank}` : ''}`,
-          timestamp: p.updateTime ? prettyDate(p.updateTime) : '',
-          tone: 'success' as const,
-          icon: 'checkmark-circle-outline',
-          stats,
-          onDownload: () => handleDownload(p, id),
-          downloadLoading: downloadingId === id,
-          downloadDone: downloadedId === id,
+          date: p.updateTime ? prettyDate(p.updateTime) : '—',
+          instalment: `#${p.installment}`,
+          rate: toNum(p.rate) > 0 ? money(toNum(p.rate)) : '—',
+          weight: hasGold && toNum(p.weight) > 0 ? `${toNum(p.weight).toFixed(4)} g` : '—',
+          amount: money(toNum(p.amount)),
+          onView: () => navigation.navigate('PaymentReceipt', { ppData, payment: p }),
         };
       }),
-    [ppData, hasGold, handleDownload, downloadingId, downloadedId],
+    [ppData, hasGold, navigation],
   );
 
   const visibleEntries = showAllHistory
-    ? timelineEntries
-    : timelineEntries.slice(0, HISTORY_PREVIEW);
-  const hiddenCount = timelineEntries.length - visibleEntries.length;
+    ? historyRows
+    : historyRows.slice(0, HISTORY_PREVIEW);
+  const hiddenCount = historyRows.length - visibleEntries.length;
 
   return (
     <View style={[s.container, { backgroundColor: COLORS.background }]}>
@@ -296,8 +252,8 @@ export default function ViewInstallmentScreen() {
                   ]}
                 >
                   {label}
-                  {key === 'history' && timelineEntries.length > 0
-                    ? ` (${timelineEntries.length})`
+                  {key === 'history' && historyRows.length > 0
+                    ? ` (${historyRows.length})`
                     : ''}
                 </Text>
               </Pressable>
@@ -357,10 +313,83 @@ export default function ViewInstallmentScreen() {
                     color={COLORS.inkTertiary}
                   />
                   <Text style={[s.hintText, { color: COLORS.inkTertiary }]}>
-                    Tap Download to save a receipt as a PDF
+                    Tap the eye icon to view and download a receipt
                   </Text>
                 </View>
-                <TimelineCard entries={visibleEntries} />
+
+                {/* Premium table card */}
+                <View
+                  style={[
+                    s.tableCard,
+                    {
+                      borderRadius: SIZES.radius.panel,
+                      borderColor: COLORS.hairline,
+                      backgroundColor: COLORS.canvasElevated,
+                    },
+                  ]}
+                >
+                  {/* Header row */}
+                  <View
+                    style={[
+                      s.tableRow,
+                      s.tableHeadRow,
+                      { backgroundColor: COLORS.canvasSunken ?? COLORS.gray100 },
+                    ]}
+                  >
+                    <Text style={[asText(FONTS.eyebrow), { flex: 1.1, color: COLORS.inkTertiary }]}>Date</Text>
+                    <Text style={[asText(FONTS.eyebrow), { flex: 0.8, color: COLORS.inkTertiary }]}>Inst.</Text>
+                    <Text style={[asText(FONTS.eyebrow), { flex: 1.1, color: COLORS.inkTertiary, textAlign: 'right' }]}>Rate</Text>
+                    {hasGold && (
+                      <Text style={[asText(FONTS.eyebrow), { flex: 1.2, color: COLORS.inkTertiary, textAlign: 'right' }]}>Weight</Text>
+                    )}
+                    <Text style={[asText(FONTS.eyebrow), { flex: 1.2, color: COLORS.inkTertiary, textAlign: 'right' }]}>Amount</Text>
+                    <View style={{ width: 32 }} />
+                  </View>
+
+                  {/* Data rows — separated by a hairline, no full grid */}
+                  {visibleEntries.map((row, i) => (
+                    <View
+                      key={row.id}
+                      style={[
+                        s.tableRow,
+                        {
+                          borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth,
+                          borderTopColor: COLORS.hairline,
+                        },
+                      ]}
+                    >
+                      <Text numberOfLines={1} style={[asText(FONTS.micro), { flex: 1.1, color: COLORS.inkTertiary }]}>
+                        {row.date}
+                      </Text>
+                      <Text numberOfLines={1} style={[asText(FONTS.microBold), { flex: 0.8, color: COLORS.inkSecondary }]}>
+                        {row.instalment}
+                      </Text>
+                      <Text numberOfLines={1} style={[asText(FONTS.numeralSm), { flex: 1.1, color: COLORS.inkSecondary, textAlign: 'right' }]}>
+                        {row.rate}
+                      </Text>
+                      {hasGold && (
+                        <Text numberOfLines={1} style={[asText(FONTS.numeralSm), { flex: 1.2, color: accent, fontWeight: '700', textAlign: 'right' }]}>
+                          {row.weight}
+                        </Text>
+                      )}
+                      <Text numberOfLines={1} style={[asText(FONTS.numeral), { flex: 1.2, color: COLORS.success, fontWeight: '800', textAlign: 'right' }]}>
+                        {row.amount}
+                      </Text>
+                      <View style={{ width: 32, alignItems: 'flex-end' }}>
+                        <Pressable
+                          onPress={row.onView}
+                          hitSlop={8}
+                          style={[s.actionPill, { backgroundColor: accent + '1A' }]}
+                          accessibilityRole="button"
+                          accessibilityLabel="View receipt"
+                        >
+                          <Ionicons name="eye-outline" size={16} color={accent} />
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
                 {hiddenCount > 0 && (
                   <Pressable
                     onPress={() => setShowAllHistory(true)}
@@ -400,6 +429,27 @@ export default function ViewInstallmentScreen() {
 const s = StyleSheet.create({
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   hintText: { fontSize: 10, flex: 1 },
+  tableCard: {
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  tableHeadRow: {
+    paddingVertical: 10,
+  },
+  actionPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
   },
