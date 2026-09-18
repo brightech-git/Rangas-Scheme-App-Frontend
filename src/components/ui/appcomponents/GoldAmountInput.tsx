@@ -127,12 +127,12 @@ export default function GoldAmountInput({
       )}
 
       {/* Disclaimer */}
-      <View style={[s.note, { marginTop: SIZES.layout.block }]}>
+      {/* <View style={[s.note, { marginTop: SIZES.layout.block }]}>
         <Ionicons name="information-circle-outline" size={SIZES.icon.sm} color={COLORS.inkMuted} />
         <Text style={[asText(FONTS.micro), { color: COLORS.inkMuted, flex: 1, fontSize: 10 }]}>
           Rates are indicative and refresh on load. The final price is confirmed at checkout.
         </Text>
-      </View>
+      </View> */}
     </>
   );
 }

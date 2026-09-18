@@ -146,11 +146,14 @@ export default function SchemeJoinScreen() {
         newMember: {
           pName:  loginName,
           mobile: loginMobile,
+          userId: '9999',
+          appVer: 'APP',
         } as any,
         createSchemeSummary: {
           schemeId:  scheme.SchemeId,
           groupCode: groupCode,
-          iEmp:      empId || '999',
+          userId2:   '9999',
+          iEmp:      empId.trim() || '999',
         } as any,
         schemeCollectInsert: {
           amount: effectiveAmount,
@@ -440,7 +443,7 @@ export default function SchemeJoinScreen() {
                 if (!isLumpsum && scheme.Instalment) rows.push({ label: 'Instalments', value: String(scheme.Instalment) });
                 if (isFixed && selectedGroup) rows.push({ label: 'Group', value: String(selectedGroup.GROUPCODE) });
                 if (isFlexible && goldRate > 0 && flexWeight > 0) rows.push({ label: 'Gold equivalent', value: `${flexWeight.toFixed(4)} g` });
-                if (empId.trim()) rows.push({ label: 'Employee ID', value: empId.trim() });
+                // if (empId.trim()) rows.push({ label: 'Employee ID', value: empId.trim() });
                 if (effectiveAmount > 0) rows.push({
                   label: isLumpsum ? 'Paying now (one-time)' : isFlexible ? 'Paying now' : 'Paying now (instalment 1)',
                   value: money(effectiveAmount),
