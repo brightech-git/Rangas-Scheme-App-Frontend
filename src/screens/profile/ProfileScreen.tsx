@@ -234,7 +234,7 @@ export default function ProfileScreen() {
       refreshing={refreshing}
       paddingHorizontal={0}
       paddingTop={0}
-      paddingBottom={40}
+      paddingBottom={100}
     >
       {/* ── Header — shared AppHeader (curved + gradient + glass everywhere) ── */}
       <AppHeader
@@ -336,20 +336,21 @@ export default function ProfileScreen() {
                 await dispatch(logoutUser());
                 navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
               })} />
-          <ListRow icon="trash-outline" label="Delete account" danger last
+          <ListRow icon="trash-outline" label="Delete account" danger
             sublabel="Permanently removes all your data"
             gradient={[COLORS.errorDark ?? COLORS.error, COLORS.error]}
             onPress={() => navigation.navigate('DeleteAccount')} />
-        </AppCard>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View style={[styles.versionPill, { backgroundColor: COLORS.canvasSunken ?? COLORS.gray100, borderColor: COLORS.border }]}>
-            <AppText variant="caption" color={COLORS.textTertiary} align="center">
-              Version {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
+          <View style={styles.row}>
+            <GradientBadge icon="information-circle-outline" size={36} iconSize={16} colors={[COLORS.gray400 ?? COLORS.textTertiary, COLORS.gray600 ?? COLORS.textSecondary]} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyMedium" style={{ fontWeight: '600' }}>App Version</AppText>
+            </View>
+            <AppText variant="captionBold" color={COLORS.textSecondary} style={{ fontSize: SIZES.font.xl }}>
+              {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
             </AppText>
           </View>
-        </View>
+        </AppCard>
+
         <PoweredByFooter />
       </View>
 
@@ -399,7 +400,4 @@ const styles = StyleSheet.create({
 
   // List rows
   row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, gap: 13 },
-
-  footer:  { paddingTop: 24, paddingBottom: 10, alignItems: 'center' },
-  versionPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth },
 });

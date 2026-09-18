@@ -167,6 +167,7 @@ export default function TransactionsScreen() {
           .join(' · '),
         value: money(num(t.amount)),
         subValue: num(t.weight) ? `${num(t.weight).toFixed(3)} g` : undefined,
+        footerCenter: num(t.rate) > 0 ? `Rate ${money(num(t.rate))}` : undefined,
         timestamp: dayLabel(t.ts, t.updateTime),
         tone: 'success' as const,
         icon: 'arrow-up',

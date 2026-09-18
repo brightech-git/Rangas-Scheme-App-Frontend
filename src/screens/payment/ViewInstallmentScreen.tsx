@@ -46,6 +46,16 @@ const toNum = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+/** DD-MM-YYYY, no month name — used for the history table's date column. */
+const numericDate = (raw?: string | null): string => {
+  if (!raw) return '—';
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+};
+
 export default function ViewInstallmentScreen() {
   const { COLORS, FONTS, SIZES } = useTheme();
   const navigation = useNavigation<NavProps>();
@@ -160,7 +170,7 @@ export default function ViewInstallmentScreen() {
         const id = p.receiptNo ?? `receipt-${i}`;
         return {
           id,
-          date: p.updateTime ? prettyDate(p.updateTime) : '—',
+          date: numericDate(p.updateTime),
           instalment: `#${p.installment}`,
           rate: toNum(p.rate) > 0 ? money(toNum(p.rate)) : '—',
           weight: hasGold && toNum(p.weight) > 0 ? `${toNum(p.weight).toFixed(4)} g` : '—',
@@ -179,7 +189,8 @@ export default function ViewInstallmentScreen() {
   return (
     <View style={[s.container, { backgroundColor: COLORS.background }]}>
       <ScreenCanvas
-        overlap={SIZES.margin.xxl}
+        overlap={SIZES.margin.xxxl}
+        gutter={SIZES.layout.block}
         header={
           <PageHeader
             eyebrow={scheme?.schemeSName ?? ppData.groupCode}
@@ -336,8 +347,8 @@ export default function ViewInstallmentScreen() {
                       { backgroundColor: COLORS.canvasSunken ?? COLORS.gray100 },
                     ]}
                   >
-                    <Text style={[asText(FONTS.eyebrow), { flex: 1.1, color: COLORS.inkTertiary }]}>Date</Text>
-                    <Text style={[asText(FONTS.eyebrow), { flex: 0.8, color: COLORS.inkTertiary }]}>Inst.</Text>
+                    <Text style={[asText(FONTS.eyebrow), { flex: 1.6, color: COLORS.inkTertiary }]}>Date</Text>
+                    <Text style={[asText(FONTS.eyebrow), { flex: 0.6, color: COLORS.inkTertiary }]}>Inst</Text>
                     <Text style={[asText(FONTS.eyebrow), { flex: 1.1, color: COLORS.inkTertiary, textAlign: 'right' }]}>Rate</Text>
                     {hasGold && (
                       <Text style={[asText(FONTS.eyebrow), { flex: 1.2, color: COLORS.inkTertiary, textAlign: 'right' }]}>Weight</Text>
@@ -358,10 +369,10 @@ export default function ViewInstallmentScreen() {
                         },
                       ]}
                     >
-                      <Text numberOfLines={1} style={[asText(FONTS.micro), { flex: 1.1, color: COLORS.inkTertiary }]}>
+                      <Text numberOfLines={1} style={[asText(FONTS.micro), { flex: 1.6, color: COLORS.inkTertiary }]}>
                         {row.date}
                       </Text>
-                      <Text numberOfLines={1} style={[asText(FONTS.microBold), { flex: 0.8, color: COLORS.inkSecondary }]}>
+                      <Text numberOfLines={1} style={[asText(FONTS.microBold), { flex: 0.6, color: COLORS.inkSecondary }]}>
                         {row.instalment}
                       </Text>
                       <Text numberOfLines={1} style={[asText(FONTS.numeralSm), { flex: 1.1, color: COLORS.inkSecondary, textAlign: 'right' }]}>
@@ -437,7 +448,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     gap: 6,
   },
   tableHeadRow: {
@@ -465,12 +476,13 @@ const s = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderRadius: 14,
-    padding: 4,
-    gap: 4,
+    padding: 2,
+    gap: 2,
   },
   tab: {
     flex: 1,
     paddingVertical: 9,
+    paddingHorizontal: 4,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',

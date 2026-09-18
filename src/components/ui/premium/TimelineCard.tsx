@@ -25,8 +25,8 @@ export type TimelineEntry = {
   timestamp?: string;
   tone?: TimelineTone;
   icon?: string;
-  /** Extra label/value facts shown inline on the row (e.g. Rate, Weight, Instalment) */
-  stats?: { label: string; value: string }[];
+  /** Short colored chip centered in the otherwise-empty footer space, e.g. a rate */
+  footerCenter?: string;
   onPress?: () => void;
   /** View the full receipt — renders an explicit "eye" action button */
   onView?: () => void;
@@ -162,7 +162,7 @@ function TimelineCard({
                   {!!e.value && (
                     <Text
                       numberOfLines={1}
-                      style={[asText(FONTS.numeralSm), { color: fg }]}
+                      style={[asText(FONTS.numeralSm), { color: accent, fontWeight: '800' }]}
                     >
                       {e.value}
                     </Text>
@@ -181,24 +181,6 @@ function TimelineCard({
                 </View>
               </View>
 
-              {!!e.stats?.length && (
-                <View style={s.statsRow}>
-                  {e.stats.map((st, si) => (
-                    <View key={si} style={s.statItem}>
-                      <Text style={[asText(FONTS.micro), { color: dim, fontSize: 9 }]}>
-                        {st.label}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={[asText(FONTS.microBold), { color: fg, fontSize: 11, marginTop: 1 }]}
-                      >
-                        {st.value}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
               <View style={s.footerRow}>
                 {!!e.timestamp && (
                   <Text
@@ -209,6 +191,19 @@ function TimelineCard({
                   >
                     {e.timestamp}
                   </Text>
+                )}
+
+                {!!e.footerCenter && (
+                  <View style={s.footerCenterWrap}>
+                    <View style={[s.footerChip, { backgroundColor: accent + '1A' }]}>
+                      <Text
+                        numberOfLines={1}
+                        style={[asText(FONTS.microBold), { color: accent, fontSize: 11 }]}
+                      >
+                        {e.footerCenter}
+                      </Text>
+                    </View>
+                  </View>
                 )}
 
                 {(!!e.onView || !!e.onDownload) && (
@@ -282,8 +277,6 @@ const s = StyleSheet.create({
   spine: { flex: 1, width: StyleSheet.hairlineWidth, marginVertical: 4 },
   content: { flex: 1, paddingTop: 3 },
   contentRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 8 },
-  statItem: { minWidth: 64 },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -291,6 +284,12 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   actionsRow: { flexDirection: 'row', gap: 8, marginLeft: 'auto' },
+  footerCenterWrap: { flex: 1, alignItems: 'center' },
+  footerChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
   actionPill: {
     flexDirection: 'row',
     alignItems: 'center',
