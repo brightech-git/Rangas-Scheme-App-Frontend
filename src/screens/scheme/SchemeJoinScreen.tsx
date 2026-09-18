@@ -218,7 +218,7 @@ export default function SchemeJoinScreen() {
     if (showEmpId) return;
     empIdTapCount.current += 1;
     if (empIdTapTimer.current) clearTimeout(empIdTapTimer.current);
-    if (empIdTapCount.current >= 5) {
+    if (empIdTapCount.current >= 2) {
       setShowEmpId(true);
       empIdTapCount.current = 0;
       return;

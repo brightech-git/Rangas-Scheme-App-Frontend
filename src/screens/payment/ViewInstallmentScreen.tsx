@@ -166,7 +166,7 @@ export default function ViewInstallmentScreen() {
 
   const historyRows: HistoryRow[] = useMemo(
     () =>
-      (ppData.paymentHistoryList ?? []).map((p, i) => {
+      (ppData.paymentHistoryList ?? []).slice().reverse().map((p, i) => {
         const id = p.receiptNo ?? `receipt-${i}`;
         return {
           id,
