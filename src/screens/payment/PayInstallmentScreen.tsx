@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import { classifySchemeKind } from '../../utils/schemeKind';
 import { useSchemes } from '../../api/hooks/Schemes/useSchemes';
 import { ratesService } from '../../api/services/ratesService';
 import { RatesResponse } from '../../types/Rates/Rates';
+import { memberService } from '../../api/services/memberService';
 
 import {
   ScreenCanvas,
@@ -29,6 +31,7 @@ import {
   BottomActionBar,
   ProgressWidget,
   SectionHeading,
+  PremiumButton,
   asText,
   money,
   prettyDate,
@@ -105,6 +108,42 @@ export default function PayInstallmentScreen() {
   const isProcessing = status === 'initiating';
   const isVerifying  = status === 'pending';
 
+  // ── KYC gate — triggered at the instalment number defined by soft-control
+  // KYCUPDATION (ctlText). e.g. ctlText="2" → ask on instalment #2 onwards.
+  const personalId = ppData.personalInfo?.personalId ?? '';
+  const [kycDone, setKycDone] = useState(true);
+  const [kycModalVisible, setKycModalVisible] = useState(false);
+  const [kycTriggerAt, setKycTriggerAt] = useState<number>(1); // default: always
+
+  // Fetch soft-control once to know which instalment triggers KYC
+  useEffect(() => {
+    memberService.getKycSoftControl()
+      .then((controls) => {
+        const ctl = controls?.find((c) => c.ctlId === 'KYCUPDATION');
+        const at = ctl ? parseInt(ctl.ctlText, 10) : 1;
+        setKycTriggerAt(Number.isFinite(at) && at > 0 ? at : 1);
+      })
+      .catch(() => {}); // silently fall back to default
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      if (personalId) {
+        memberService.getKycStatus(personalId)
+          .then((res) => {
+            console.log('[KYC] status response:', JSON.stringify(res, null, 2));
+            if (alive) setKycDone(res?.KYCUPDATION === 'Y');
+          })
+          .catch((e) => {
+            console.log('[KYC] status error:', e);
+            if (alive) setKycDone(false);
+          });
+      }
+      return () => { alive = false; };
+    }, [personalId])
+  );
+
   const buildPayload = (): InitiatePaymentRequest => {
     const pi  = ppData.personalInfo;
     const now = new Date();
@@ -130,24 +169,15 @@ export default function PayInstallmentScreen() {
         schemeId:     scheme?.schemeId ? parseInt(scheme.schemeId) : 0,
         groupCode:    ppData.groupCode,
         regNo:        ppData.regNo,
-        rDate:        dt,
         amount:       String(effectiveAmount),
-        modePay:      'O',
-        accCode:      '',
-        updateTime:   dt,
         installment:  nextInstNum,
-        userID:       '999',
-        chqBankCode:  '',
-        chqCardNo:    '',
-        chqBranch:    '',
-        chkBank:      '',
-        chqRtnReason: '',
       },
     };
   };
 
   const handlePay = () => {
     if (!isReady) return;
+    if (!kycDone && nextInstNum >= kycTriggerAt) { setKycModalVisible(true); return; }
     const payload = buildPayload();
     console.log('[PayInstallment] Initiate payload:', JSON.stringify(payload, null, 2));
     initiate(payload, (url, orderId) => {
@@ -380,6 +410,30 @@ export default function PayInstallmentScreen() {
           <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary }]}>Please wait, do not close the app</Text>
         </View>
       )}
+
+      {/* KYC gate — blocks payment until KYC + nominee details are on file */}
+      <Modal visible={kycModalVisible} transparent animationType="fade" onRequestClose={() => setKycModalVisible(false)}>
+        <View style={[s.overlay, { backgroundColor: COLORS.blackOpacity60, justifyContent: 'center', alignItems: 'center', padding: SIZES.layout.gutter * 2 }]}>
+          <View style={[s.resultCard, { backgroundColor: COLORS.canvasElevated, borderRadius: SIZES.radius.sheet, padding: SIZES.padding.xxl }]}>
+            <View style={[s.resultIcon, { backgroundColor: COLORS.warningBg }]}>
+              <Ionicons name="shield-checkmark-outline" size={SIZES.icon.xl} color={COLORS.warning} />
+            </View>
+            <Text style={[asText(FONTS.displaySm), { color: COLORS.inkPrimary, marginTop: SIZES.margin.xl, textAlign: 'center' }]}>
+              Complete your KYC
+            </Text>
+            <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 6, textAlign: 'center', lineHeight: 19 }]}>
+              We need your KYC and nominee details on file before you can pay this instalment.
+            </Text>
+            <View style={{ marginTop: SIZES.margin.xxl, gap: 10, width: '100%' }}>
+              <PremiumButton
+                label="Complete KYC"
+                onPress={() => { setKycModalVisible(false); navigation.navigate('KycForm', { ppData }); }}
+              />
+               {/* <PremiumButton label="Not now" variant="outline" onPress={() => setKycModalVisible(false)} /> */}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -390,4 +444,6 @@ const s = StyleSheet.create({
   fixedBox:  { borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 14 },
   lockChip:  { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   overlay:   { flex: 1, justifyContent: 'flex-end' },
+  resultCard: { width: '100%', alignItems: 'center' },
+  resultIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
 });

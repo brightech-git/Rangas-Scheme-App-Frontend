@@ -18,7 +18,7 @@ export const AUTH = {
 
 export const MPIN = {
   CREATE:          '/mpin/create',
-  VERIFY:          '/mpin/verify',
+  VERIFY:          '/mpin/verify/mpin',
   RESET:           '/mpin/reset',
   FORGOT_SEND_OTP: '/mpin/forgot/send-otp',
   FORGOT_VERIFY:   '/mpin/forgot/verify',
@@ -44,8 +44,14 @@ export const SCHEMES = {
 };
 
 export const MEMBER = {
-  BY_SCHEME: '/member/schemeid',
-  CREATE:    '/member/create',
+  BY_SCHEME:  '/member/schemeid',
+  CREATE:     '/member/create',
+  KYC_STATUS:     (personalId: string) => `/member/kyc-status/${personalId.toLowerCase()}`,
+  UPDATE_DETAILS: (personalId: string) => `/member/details/${personalId.toLowerCase()}`,
+};
+
+export const SOFT_CONTROL = {
+  KYC_UPDATION: '/soft-control/kyc-updation',
 };
 
 export const ACCOUNT = {

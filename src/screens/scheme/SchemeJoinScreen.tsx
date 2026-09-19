@@ -118,6 +118,11 @@ export default function SchemeJoinScreen() {
   const loginMobile = user?.contactNumber ?? '';
   const loginEmail  = user?.email         ?? '';
 
+  const [customerName, setCustomerName] = useState(loginName);
+  useEffect(() => {
+    if (loginName) setCustomerName((prev) => (prev ? prev : loginName));
+  }, [loginName]);
+
   const isProcessing = status === 'initiating';
   const showFailed   = status === 'failed';
   const showSuccess  = status === 'success';
@@ -130,7 +135,7 @@ export default function SchemeJoinScreen() {
     return {
       amount:         effectiveAmount,
       currency:       'INR',
-      billingName:    loginName,
+      billingName:    customerName.trim() || loginName,
       billingEmail:   loginEmail,
       billingTel:     loginMobile,
       billingAddress: '',
@@ -138,21 +143,20 @@ export default function SchemeJoinScreen() {
       billingState:   '',
       billingZip:     '',
       billingCountry: 'India',
-      regno:          Number(regNo),
       groupcode:      groupCode,
       newJoin:        true,
       schemeDetails:  null,
       nmData: {
         newMember: {
-          pName:  loginName,
+          pName:  customerName.trim() || loginName,
           mobile: loginMobile,
-          userId: '9999',
-          appVer: 'APP',
+          userId: '999',
+          appVer: 'Web',
         } as any,
         createSchemeSummary: {
           schemeId:  scheme.SchemeId,
           groupCode: groupCode,
-          userId2:   '9999',
+          userId2:   '999',
           iEmp:      empId.trim() || '999',
         } as any,
         schemeCollectInsert: {
@@ -167,6 +171,7 @@ export default function SchemeJoinScreen() {
 
   const handleSubmit = () => {
     const fe: Record<string, string> = {};
+    if (!customerName.trim())      fe.name   = 'Enter your name';
     if (effectiveAmount <= 0)      fe.amount = 'Select or enter amount';
     if (isFixed && !selectedGroup) fe.group  = 'Select a group';
 
@@ -273,10 +278,31 @@ export default function SchemeJoinScreen() {
         }
       >
         <View ref={contentRef} collapsable={false}>
-          {/* ═══ PLAN ═══ */}
+          {/* ═══ YOUR DETAILS ═══ */}
           <View style={{ marginTop: SIZES.layout.sectionTight }}>
             <SectionHeading
               eyebrow="Step 1"
+              title="Your details"
+              caption="We've filled this in from your profile — change it if needed"
+            />
+            <View style={{ marginTop: SIZES.margin.lg }}>
+              <FormField
+                label="Full name"
+                indicator="required"
+                icon="person-outline"
+                value={customerName}
+                placeholder="Enter your name"
+                autoCapitalize="words"
+                onChangeText={(v) => { setCustomerName(v); clearErr('name'); }}
+                error={fieldErrors.name}
+              />
+            </View>
+          </View>
+
+          {/* ═══ PLAN ═══ */}
+          <View style={{ marginTop: SIZES.layout.section }}>
+            <SectionHeading
+              eyebrow="Step 2"
               title="Choose your plan"
               caption={
                 isFixed

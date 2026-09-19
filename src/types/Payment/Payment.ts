@@ -4,18 +4,18 @@ export interface PaymentSchemeDetails {
   schemeId:     number;
   groupCode:    string;
   regNo:        number;
-  rDate:        string;   // 'yyyy-MM-dd HH:mm:ss'
   amount:       string;
-  modePay:      string;   // 'O' = online
-  accCode:      string;
-  updateTime:   string;
   installment:  number;
-  userID:       string;
-  chqBankCode:  string;
-  chqCardNo:    string;
-  chqBranch:    string;
-  chkBank:      string;
-  chqRtnReason: string;
+  rDate?:       string;
+  modePay?:     string;
+  accCode?:     string;
+  updateTime?:  string;
+  userID?:      string;
+  chqBankCode?: string;
+  chqCardNo?:   string;
+  chqBranch?:   string;
+  chkBank?:     string;
+  chqRtnReason?:string;
 }
 
 export interface PaymentNMNewMember {
@@ -76,7 +76,7 @@ export interface InitiatePaymentRequest {
   billingState:   string;
   billingZip:     string;
   billingCountry: string;
-  regno:          number;
+  regno?:         number;
   groupcode:      string;
   newJoin:        boolean;
   schemeDetails:  PaymentSchemeDetails | null;

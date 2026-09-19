@@ -46,6 +46,7 @@ export type RootStackParamList = {
   SchemeTerms:             { scheme: SchemeItem };
   SchemeJoin:              { scheme: SchemeItem };
   PayInstallment:          { ppData: PPData };
+  KycForm:                 { ppData: PPData };
   ViewInstallment:         { ppData: PPData };
   Rates:                   { metal?: 'Gold' | 'Silver' };
   BuyGold:                 { scheme?: SchemeItem };
@@ -150,6 +151,7 @@ export default function RootNavigator() {
         <Stack.Screen name="SchemeTerms"      component={Screens.SchemeTermsScreen}      options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="SchemeJoin"       component={Screens.SchemeJoinScreen}       options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="PayInstallment"   component={Screens.PayInstallmentScreen}   options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="KycForm"          component={Screens.KycFormScreen}          options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="ViewInstallment"  component={Screens.ViewInstallmentScreen}  options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Rates"            component={Screens.RatesScreen}            options={{ animation: 'slide_from_bottom', headerShown: false }} />
         <Stack.Screen name="LoginLog"            component={Screens.LoginLog} />

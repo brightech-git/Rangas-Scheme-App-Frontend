@@ -2,6 +2,7 @@
 
 import { callApi } from '../apiClient';
 import { MPIN } from '../endpoints';
+import { API_BASE_URL } from '@env';
 
 export const mpinService = {
   create: (mpin: string) =>
@@ -11,14 +12,21 @@ export const mpinService = {
       params: { mpin },
     }),
 
-  verify: (enteredMpin: string) =>
-    callApi<null, string>({
+  verify: (enteredMpin: string) => {
+    console.log('[mpinService] verify → POST', `${API_BASE_URL}${MPIN.VERIFY}`);
+    console.log('[mpinService] verify → params:', { enteredMpin });
+    return callApi<null, string>({
       method: 'post',
       url: MPIN.VERIFY,
       params: { enteredMpin },
-
-      
-    }),
+    }).then((res) => {
+      console.log('[mpinService] verify → response:', res);
+      return res;
+    }).catch((err) => {
+      console.log('[mpinService] verify → error:', err);
+      throw err;
+    });
+  },
 
   reset: (oldMpin: string, newMpin: string) =>
     callApi<null, string>({

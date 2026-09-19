@@ -99,10 +99,16 @@ export default function ViewInstallmentScreen() {
   /* ---------------- Overview ---------------- */
 
   const moneyRows: SummaryRow[] = useMemo(() => {
+    if (isMultiPay) {
+      return [
+        { label: 'Total invested', value: money(mx.invested) },
+        { label: 'Gold held', value: mx.weight > 0 ? `${mx.weight.toFixed(4)} g` : '0.0000 g' },
+        { label: 'Last purchase', value: ppData.lastPaidDate ? prettyDate(ppData.lastPaidDate) : '—' },
+        { label: 'Total purchases', value: `${(ppData.paymentHistoryList ?? []).length}` },
+      ];
+    }
     const rows: SummaryRow[] = [
-      ...(isMultiPay
-        ? []
-        : [{ label: 'Instalments paid', value: `${paid} of ${total || '—'}` }]),
+      { label: 'Instalments paid', value: `${paid} of ${total || '—'}` },
       { label: 'Per instalment', value: money(mx.perInstalment) },
       { label: 'Amount received', value: money(mx.invested) },
       {
@@ -115,7 +121,7 @@ export default function ViewInstallmentScreen() {
       rows.push({ label: 'Total commitment', value: money(mx.committed) });
     }
     return rows;
-  }, [paid, total, mx, isMultiPay]);
+  }, [paid, total, mx, isMultiPay, ppData]);
 
   /* ---------------- Details ---------------- */
 

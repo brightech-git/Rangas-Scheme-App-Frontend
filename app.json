@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Rangas DigiGold",
-    "slug": "rangas-scheme",
-    "version": "1.2.0",
+    "slug": "agritrack",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
@@ -66,9 +66,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "08083d0b-79af-49cb-85bc-268b86581f16"
+        "projectId": "cad0862e-b0c0-48c0-bf27-7cde04e6d11f"
       }
     },
-    "owner": "kiruba08"
+    "owner": "jk_08"
   }
 }

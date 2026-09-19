@@ -30,6 +30,7 @@ import {
   SectionHeading,
   SkeletonBlock,
   PremiumButton,
+  FormField,
   asText,
   money,
   type SummaryRow,
@@ -110,6 +111,12 @@ export default function BuyGoldScreen() {
   const loginMobile = user?.contactNumber ?? '';
   const loginEmail  = user?.email         ?? '';
 
+  const [customerName, setCustomerName] = useState(loginName);
+  const [nameError, setNameError] = useState('');
+  useEffect(() => {
+    if (loginName) setCustomerName((prev) => (prev ? prev : loginName));
+  }, [loginName]);
+
   // ── Emp ID — hidden, revealed by 3 taps on summary heading ──
   const [empId,   setEmpId]   = useState('999');
   const [empName, setEmpName] = useState('');
@@ -128,7 +135,7 @@ export default function BuyGoldScreen() {
     return {
       amount:         finalAmount,
       currency:       'INR',
-      billingName:    loginName,
+      billingName:    customerName.trim() || loginName,
       billingEmail:   loginEmail,
       billingTel:     loginMobile,
       billingAddress: '',
@@ -136,13 +143,12 @@ export default function BuyGoldScreen() {
       billingState:   '',
       billingZip:     '',
       billingCountry: 'India',
-      regno:          Number(regNo),
       groupcode:      groupCode,
       newJoin:        true,
       schemeDetails:  null,
       nmData: {
         newMember: {
-          pName:  loginName,
+          pName:  customerName.trim() || loginName,
           mobile: loginMobile,
           userId: '9999',
           appVer: 'APP',
@@ -161,6 +167,12 @@ export default function BuyGoldScreen() {
   };
 
   const handleBuy = () => {
+    if (!customerName.trim()) {
+      setNameError('Enter your name');
+      toast.info('Enter your name', { message: 'Please enter the name for this purchase.' });
+      return;
+    }
+    setNameError('');
     if (amount <= 0) {
       toast.info('Enter an amount', { message: 'Please enter how much gold to buy.' });
       return;
@@ -248,6 +260,19 @@ export default function BuyGoldScreen() {
           />
         }
       >
+        <View style={{ marginTop: SIZES.margin.lg }}>
+          <FormField
+            label="Full name"
+            indicator="required"
+            icon="person-outline"
+            value={customerName}
+            placeholder="Enter your name"
+            autoCapitalize="words"
+            onChangeText={(v) => { setCustomerName(v); if (nameError) setNameError(''); }}
+            error={nameError}
+          />
+        </View>
+
         <View style={{ marginTop: SIZES.margin.lg }}>
           <GoldAmountInput
             amountInput={amountInput}

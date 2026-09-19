@@ -93,7 +93,10 @@ function MySchemeHoldings(
   const holdings = (excludeCompleted
     ? mySchemes.filter((m) => schemeMetrics(m).state !== 'completed')
     : mySchemes
-  ).slice(0, limit ?? undefined);
+  )
+    .slice()
+    .sort((a, b) => new Date(b.joinDate ?? 0).getTime() - new Date(a.joinDate ?? 0).getTime())
+    .slice(0, limit ?? undefined);
 
   const renderCard = useCallback(
     (item: PPData) => {

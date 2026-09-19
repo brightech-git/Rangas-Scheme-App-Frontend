@@ -39,12 +39,15 @@ export const verifyMpin = createAsyncThunk(
   'mpin/verify',
   async (enteredMpin: string, { rejectWithValue }: any) => {
     try {
-    const res= await mpinService.verify(enteredMpin);
-      await BiometricHelper.saveMpin(enteredMpin); // refresh secure copy on each successful verify
-      return res
-
-
-    } catch (err: any) { return rejectWithValue(err.message); }
+      console.log('[verifyMpin] dispatched with mpin length:', enteredMpin.length);
+      const res = await mpinService.verify(enteredMpin);
+      console.log('[verifyMpin] fulfilled:', res);
+      await BiometricHelper.saveMpin(enteredMpin);
+      return res;
+    } catch (err: any) {
+      console.log('[verifyMpin] rejected:', err?.message ?? err);
+      return rejectWithValue(err.message);
+    }
   }
 );
 
