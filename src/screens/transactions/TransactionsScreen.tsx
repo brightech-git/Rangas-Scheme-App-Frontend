@@ -87,7 +87,7 @@ export default function TransactionsScreen() {
   const { COLORS, FONTS, SIZES, moderateScale } = useTheme();
 
   const { mySchemes, loading, error, refetch } = useMySchemes();
-  const [filter, setFilter] = useState<number | 'all'>('all');
+  const [filter, setFilter] = useState<string | 'all'>('all');
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // ── Flatten payment history (same derivation as before) ──
@@ -112,7 +112,7 @@ export default function TransactionsScreen() {
     () =>
       filter === 'all'
         ? allTxns
-        : allTxns.filter((t) => t.regNo === filter),
+        : allTxns.filter((t) => t.schemeName === filter),
     [allTxns, filter],
   );
 
@@ -142,16 +142,18 @@ export default function TransactionsScreen() {
     }));
   }, [txns]);
 
-  const filterChips = useMemo(
-    () => [
-      { key: 'all' as const, label: 'All schemes' },
-      ...mySchemes.map((s) => ({
-        key: s.regNo,
-        label: s.schemeSummary?.schemeName || s.pName || `#${s.regNo}`,
-      })),
-    ],
-    [mySchemes],
-  );
+  const filterChips = useMemo(() => {
+    const seen = new Set<string>();
+    const unique: { key: string; label: string }[] = [];
+    for (const s of mySchemes) {
+      const name = s.schemeSummary?.schemeName || s.pName || `#${s.regNo}`;
+      if (!seen.has(name)) {
+        seen.add(name);
+        unique.push({ key: name, label: name });
+      }
+    }
+    return [{ key: 'all' as const, label: 'All schemes' }, ...unique];
+  }, [mySchemes]);
 
   const toEntries = useCallback(
     (items: Txn[]): TimelineEntry[] =>

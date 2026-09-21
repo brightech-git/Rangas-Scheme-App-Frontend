@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     maxWidth: '92%',
   },
 
-  signInBtn: { marginTop: 16, alignSelf: 'center' },
+  signInBtn: { marginTop: 1, alignSelf: 'center' },
   signInText: {
     fontSize: 13.5,
     fontWeight: '500',

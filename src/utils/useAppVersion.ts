@@ -1,6 +1,7 @@
 // src/utils/useAppVersion.ts
 
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import * as Application from 'expo-application';
 import { API_BASE_URL } from '@env';
 import { APP } from '../api/endpoints';
@@ -9,6 +10,8 @@ type AppConfig = {
   ID: number;
   VERSION: string;
   STORE_URL: string;
+  IOS_VERSION: string;
+  APPSTORE_URL: string;
   IS_MAINTENANCE: boolean;
   MAINTENANCE_MSG: string;
   UPDATED_AT: string;
@@ -29,14 +32,19 @@ export function useAppVersion() {
     fetch(`${API_BASE_URL}${APP.CONFIG}`)
       .then((res) => res.json())
       .then((data: AppConfig[]) => {
+        console.log('[useAppVersion] app-config response:', data);
         const config = data?.[0];
         if (!config) return;
         setIsMaintenance(config.IS_MAINTENANCE);
         setMaintenanceMsg(config.MAINTENANCE_MSG);
-        if (config.STORE_URL) setStoreUrl(config.STORE_URL);
-        console.log('[useAppVersion] installed:', installedVersion, '| latest:', config.VERSION, '| update needed:', config.VERSION > installedVersion);
-        if (config.VERSION > installedVersion) {
-          setLatestVersion(config.VERSION);
+
+        const remoteVersion = Platform.OS === 'ios' ? config.IOS_VERSION : config.VERSION;
+        const remoteStoreUrl = Platform.OS === 'ios' ? config.APPSTORE_URL : config.STORE_URL;
+
+        if (remoteStoreUrl) setStoreUrl(remoteStoreUrl);
+        console.log('[useAppVersion] platform:', Platform.OS, '| installed:', installedVersion, '| latest:', remoteVersion, '| update needed:', remoteVersion > installedVersion);
+        if (remoteVersion && remoteVersion > installedVersion) {
+          setLatestVersion(remoteVersion);
           setUpdateAvailable(true);
         }
       })

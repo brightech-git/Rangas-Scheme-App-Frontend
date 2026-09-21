@@ -345,7 +345,7 @@ export default function ProfileScreen() {
             <View style={{ flex: 1 }}>
               <AppText variant="bodyMedium" style={{ fontWeight: '600' }}>App Version</AppText>
             </View>
-            <AppText variant="captionBold" color={COLORS.textSecondary} style={{ fontSize: SIZES.font.xl }}>
+            <AppText variant="captionBold" color={COLORS.textSecondary} style={{ fontSize: SIZES.font.xl ,paddingTop:10}}>
               {require('expo-constants').default.expoConfig?.version ?? '1.0.0'}
             </AppText>
           </View>
