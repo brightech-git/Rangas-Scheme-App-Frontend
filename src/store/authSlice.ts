@@ -105,9 +105,20 @@ export const googleLogin = createAsyncThunk(
   async (data: { idToken: string }, { rejectWithValue }: { rejectWithValue: (v: string) => any }) => {
     try {
       const res = await authService.googleLogin(data);
-      if (res.token) {
-        await AsyncStorageHelper.saveUserSession(res);
-      }
+      if (res.token) await AsyncStorageHelper.saveUserSession(res);
+      return res;
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const appleLogin = createAsyncThunk(
+  'auth/appleLogin',
+  async (data: { idToken: string }, { rejectWithValue }: { rejectWithValue: (v: string) => any }) => {
+    try {
+      const res = await authService.appleLogin(data);
+      if (res.token) await AsyncStorageHelper.saveUserSession(res);
       return res;
     } catch (err: any) {
       return rejectWithValue(err.message);
@@ -181,6 +192,15 @@ const authSlice = createSlice({
       .addCase(googleLogin.pending,   pending)
       .addCase(googleLogin.rejected,  rejected)
       .addCase(googleLogin.fulfilled, (state, action) => {
+        state.loading    = false;
+        state.user       = action.payload;
+        state.token      = action.payload.token ?? null;
+        state.isLoggedIn = !!action.payload.token;
+      })
+      // appleLogin
+      .addCase(appleLogin.pending,   pending)
+      .addCase(appleLogin.rejected,  rejected)
+      .addCase(appleLogin.fulfilled, (state, action) => {
         state.loading    = false;
         state.user       = action.payload;
         state.token      = action.payload.token ?? null;

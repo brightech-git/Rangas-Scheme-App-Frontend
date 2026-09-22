@@ -66,6 +66,13 @@ export const authService = {
       data,
     }),
 
+  appleLogin: (data: { idToken: string }) =>
+    callApi<{ idToken: string }, UserData>({
+      method: 'post',
+      url: AUTH.APPLE_LOGIN,
+      data,
+    }),
+
   requestGoogleContactUpdate: (params: GoogleContactUpdateRequest) =>
     callApi<null, { message: string; otp?: string }>({
       method: 'post',

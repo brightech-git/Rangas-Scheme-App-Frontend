@@ -12,6 +12,7 @@ export const AUTH = {
   RESET_PASSWORD:              '/user/reset-password',
   PROFILE:                     '/user/profile',
   GOOGLE_LOGIN:                '/google-login',
+  APPLE_LOGIN:                 '/apple-login',
   GOOGLE_CONTACT_UPDATE:       '/request-google-contact-update',
   GOOGLE_CONTACT_VERIFY_OTP:   '/verify-google-contact-otp',
 };

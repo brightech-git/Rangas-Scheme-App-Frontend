@@ -42,12 +42,13 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 
+
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { loginUser, googleLogin } from '../../store/authSlice';
+import { loginUser, googleLogin, appleLogin } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useToast } from '../../components/ui/Toast';
@@ -92,6 +93,7 @@ export default function LoginScreen() {
   }>({});
 
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading]   = useState(false);
   const passwordRef = useRef<TextInput>(null);
 
   // ─────────────────────────────────────────────────────────────
@@ -289,6 +291,51 @@ export default function LoginScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    console.log('[AppleSignIn] button pressed');
+    try {
+      setAppleLoading(true);
+      console.log('[AppleSignIn] loading apple auth module...');
+      const { default: appleAuth } = await import('@invertase/react-native-apple-authentication');
+      console.log('[AppleSignIn] module loaded, performing request...');
+      const appleAuthResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
+      console.log('[AppleSignIn] response received:', JSON.stringify(appleAuthResponse));
+      const { identityToken } = appleAuthResponse;
+      if (!identityToken) {
+        console.log('[AppleSignIn] no identity token');
+        toast.error('Apple Sign-In Failed', { message: 'No identity token received' });
+        return;
+      }
+      console.log('[AppleSignIn] got token, calling API...');
+      const res = await dispatch(appleLogin({ idToken: identityToken }));
+      console.log('[AppleSignIn] API response:', JSON.stringify(res));
+      if (appleLogin.fulfilled.match(res)) {
+        const user = res.payload;
+        console.log('[AppleSignIn] login success, user:', JSON.stringify(user));
+        await AsyncStorageHelper.saveUserSession(user);
+        if (!user.contactNumber && user.id) {
+          toast.info('One more step!', { message: 'Please add your mobile number' });
+          navigation.navigate('GoogleContactUpdate', { userId: user.id, picture: user.picture });
+        } else {
+          toast.success('Welcome!', { message: `Signed in as ${user.username ?? user.email}` });
+          navigation.replace(user.mpinSet === 'Y' ? 'MpinLogin' : 'CreateMpin');
+        }
+      } else {
+        console.log('[AppleSignIn] login failed:', res.payload);
+        toast.error('Apple Sign-In Failed', { message: res.payload as string });
+      }
+    } catch (error: any) {
+      console.log('[AppleSignIn] error:', error.code, error.message, JSON.stringify(error));
+      if (error.code === '1001') return; // user cancelled
+      toast.error('Apple Sign-In Failed', { message: error.message ?? 'Something went wrong' });
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────
   // UI
   // ─────────────────────────────────────────────────────────────
@@ -445,7 +492,7 @@ export default function LoginScreen() {
               DIVIDER
           ─────────────────────────────────────────────── */}
 
-          <View
+          {/* <View
             style={[
               s.dividerRow,
               {
@@ -486,32 +533,37 @@ export default function LoginScreen() {
                 },
               ]}
             />
-          </View>
+          </View> */}
 
           {/* ───────────────────────────────────────────────
               GOOGLE LOGIN
           ─────────────────────────────────────────────── */}
 
-          <PremiumButton
-            label={
-              googleLoading
-                ? 'Signing in…'
-                : 'Continue with Google'
-            }
-            variant="outline"
-            size="lg"
-            icon="logo-google"
-            onPress={handleGoogleSignIn}
-            disabled={googleLoading}
-            loading={googleLoading}
-            style={{
-              ...s.secondaryButton,
-              marginTop:
-                SIZES.margin.xl,
-              borderRadius:
-                SIZES.radius.pill,
-            }}
-          />
+          {Platform.OS === 'android' && (
+            <PremiumButton
+              label={googleLoading ? 'Signing in…' : 'Continue with Google'}
+              variant="outline"
+              size="lg"
+              icon="logo-google"
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading}
+              loading={googleLoading}
+              style={{ ...s.secondaryButton, marginTop: SIZES.margin.xl, borderRadius: SIZES.radius.pill }}
+            />
+          )}
+
+          {/* {Platform.OS === 'ios' && (
+            <PremiumButton
+              label={appleLoading ? 'Signing in…' : 'Continue with Apple'}
+              variant="outline"
+              size="lg"
+              icon="logo-apple"
+              onPress={handleAppleSignIn}
+              disabled={appleLoading}
+              loading={appleLoading}
+              style={{ ...s.secondaryButton, marginTop: SIZES.margin.xl, borderRadius: SIZES.radius.pill }}
+            />
+          )} */}
 
           {/* Extra bottom breathing room.
               Helps the last button remain comfortably

@@ -10,7 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { registerUser, googleLogin } from '../../store/authSlice';
+import { registerUser, googleLogin, appleLogin } from '../../store/authSlice';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useToast } from '../../components/ui/Toast';
@@ -42,6 +42,7 @@ export default function RegisterScreen() {
 
   const [hashKey, setHashKey]         = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading]   = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const emailRef    = useRef<TextInput>(null);
@@ -159,6 +160,42 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      setAppleLoading(true);
+      const { default: appleAuth } = await import('@invertase/react-native-apple-authentication');
+      const appleAuthResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
+      const { identityToken } = appleAuthResponse;
+      if (!identityToken) {
+        toast.error('Apple Sign-In Failed', { message: 'No identity token received' });
+        return;
+      }
+      const res = await dispatch(appleLogin({ idToken: identityToken }));
+      if (appleLogin.fulfilled.match(res)) {
+        const user = res.payload;
+        await AsyncStorageHelper.saveUserSession(user);
+        if (!user.contactNumber && user.id) {
+          toast.info('One more step!', { message: 'Please add your mobile number' });
+          navigation.navigate('GoogleContactUpdate', { userId: user.id, picture: user.picture });
+        } else {
+          toast.success('Welcome!', { message: `Signed in as ${user.username ?? user.email}` });
+          const mpinSet = await AsyncStorageHelper.isMpinSet();
+          navigation.replace(mpinSet ? 'MpinLogin' : 'CreateMpin');
+        }
+      } else {
+        toast.error('Apple Sign-In Failed', { message: res.payload as string });
+      }
+    } catch (error: any) {
+      if (error.code === '1001') return; // user cancelled
+      toast.error('Apple Sign-In Failed', { message: error.message ?? 'Something went wrong' });
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   return (
     <WaveAuthShell
       activeTab="signup"
@@ -270,24 +307,39 @@ export default function RegisterScreen() {
       />
 
       {/* Divider */}
-      <View style={[s.dividerRow, { marginTop: SIZES.margin.xxl }]}>
+      {/* <View style={[s.dividerRow, { marginTop: SIZES.margin.xxl }]}>
         <View style={[s.rule, { backgroundColor: COLORS.hairline }]} />
         <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkMuted, fontSize: 9 }]}>
           or
         </Text>
         <View style={[s.rule, { backgroundColor: COLORS.hairline }]} />
-      </View>
+      </View> */}
 
-      <PremiumButton
-        label={googleLoading ? 'Signing in…' : 'Continue with Google'}
-        variant="outline"
-        size="lg"
-        icon="logo-google"
-        onPress={handleGoogleSignIn}
-        disabled={googleLoading}
-        loading={googleLoading}
-        style={{ marginTop: SIZES.margin.xl, borderRadius: SIZES.radius.pill }}
-      />
+      {Platform.OS === 'android' && (
+        <PremiumButton
+          label={googleLoading ? 'Signing in…' : 'Continue with Google'}
+          variant="outline"
+          size="lg"
+          icon="logo-google"
+          onPress={handleGoogleSignIn}
+          disabled={googleLoading}
+          loading={googleLoading}
+          style={{ marginTop: SIZES.margin.xl, borderRadius: SIZES.radius.pill }}
+        />
+      )}
+
+      {/* {Platform.OS === 'ios' && (
+        <PremiumButton
+          label={appleLoading ? 'Signing in…' : 'Continue with Apple'}
+          variant="outline"
+          size="lg"
+          icon="logo-apple"
+          onPress={handleAppleSignIn}
+          disabled={appleLoading}
+          loading={appleLoading}
+          style={{ marginTop: SIZES.margin.xl, borderRadius: SIZES.radius.pill }}
+        />
+      )} */}
     </WaveAuthShell>
   );
 }
