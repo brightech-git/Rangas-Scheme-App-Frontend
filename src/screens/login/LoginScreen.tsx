@@ -41,6 +41,7 @@ import {
   GoogleSignin,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import appleAuth from '@invertase/react-native-apple-authentication';
 
 
 import { useNavigation } from '@react-navigation/native';
@@ -296,8 +297,7 @@ export default function LoginScreen() {
     try {
       setAppleLoading(true);
       console.log('[AppleSignIn] loading apple auth module...');
-      const { default: appleAuth } = await import('@invertase/react-native-apple-authentication');
-      console.log('[AppleSignIn] module loaded, performing request...');
+      console.log('[AppleSignIn] performing request...');
       const appleAuthResponse = await appleAuth.performRequest({
         requestedOperation: appleAuth.Operation.LOGIN,
         requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
