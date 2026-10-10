@@ -9,7 +9,7 @@ export interface AccountInsertData {
   regNo:        number;
   rDate:        string;   // ISO yyyy-MM-dd (backend parses it as a LocalDate)
   amount:       number;   // rupees
-  modePay:      number;   // 4 = online
+  modePay:      number;  
   accCode:      string;   // "00001"
   updateTime:   string;
   installment:  number;
@@ -19,7 +19,7 @@ export interface AccountInsertData {
   schemeId:     number;   // -> backend SchemeCollectInsert.SchemeId (JSON "schemeId")
   chqBankCode:  number;   // 4 = Razorpay
   chqCardNo:    string;   // razorpay_payment_id
-  chqBranch:    string;   // "Online"
+  chqBranch:    string;   
   chkBank:      string;   // "Razorpay"
   chqRtnReason: string;   // razorpay_order_id
 }

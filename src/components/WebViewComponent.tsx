@@ -22,17 +22,6 @@ export default function WebViewComponent() {
 
   const didGoBack = React.useRef(false);
 
-  const UPI_SCHEMES = ['upi://', 'phonepe://', 'paytmmp://', 'gpay://', 'tez://', 'bhim://'];
-
-  const handleShouldStartLoadWithRequest = (request: WebViewNavigation): boolean => {
-    const url = request.url ?? '';
-    if (UPI_SCHEMES.some((s) => url.startsWith(s))) {
-      Linking.openURL(url).catch(() => {});
-      return false; // block WebView from navigating
-    }
-    return true;
-  };
-
   const handleNavigationChange = (navState: WebViewNavigation) => {
     const url = navState.url ?? '';
     if (url.includes('/api/v1/payments/callback') && !didGoBack.current) {
@@ -53,11 +42,26 @@ export default function WebViewComponent() {
 
       <WebView
         source={{ uri: params.url }}
+        originWhitelist={[
+          'http://*', 'https://*', 'phonepe://*', 'paytm://*',
+          'tez://*', 'upi://*', 'credpay://*', 'bhim://*',
+        ]}
         onLoadStart={() => { setPageLoaded(false); setError(false); }}
         onLoadEnd={() => setPageLoaded(true)}
         onError={() => { setPageLoaded(true); setError(true); }}
         onNavigationStateChange={handleNavigationChange}
-        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+        onShouldStartLoadWithRequest={(request) => {
+          const { url } = request;
+
+          if (url.includes('phonepe://pay?') || url.includes('paytm://pay?') || url.includes('tez://upi/pay?') || url.includes('upi://pay?') || url.includes('credpay://upi/pay?') || url.includes('bhim://upi/pay?')) {
+            // setTrUrl(navState.url);
+
+            Linking.openURL(url);
+
+            return false;
+          }
+          return true;
+        }}
         style={{ flex: 1 }}
         domStorageEnabled
         javaScriptEnabled
