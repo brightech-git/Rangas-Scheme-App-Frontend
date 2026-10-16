@@ -358,6 +358,7 @@ export default function PayInstallmentScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[asText(FONTS.eyebrow), { color: COLORS.inkTertiary }]}>Per instalment</Text>
                 <Text numberOfLines={1} style={[asText(FONTS.displayLg), { color: COLORS.inkPrimary, marginTop: 3 }]}>{money(effectiveAmount)}</Text>
+                {scheme?.weightLedger === 'Y' && (
                 <Text style={[asText(FONTS.micro), { color: COLORS.inkTertiary, marginTop: 4, fontSize: 10 }]}>
                   {ratesLoading && !rates
                     ? 'Calculating gold equivalent…'
@@ -365,6 +366,7 @@ export default function PayInstallmentScreen() {
                     ? `≈ ${effectiveWeight.toFixed(4)} g at ${money(goldRate)} / g`
                     : '—'}
                 </Text>
+                )}
               </View>
               <View style={[s.lockChip, { borderRadius: SIZES.radius.md, backgroundColor: COLORS.canvasSunken }]}>
                 <Ionicons name="lock-closed" size={SIZES.icon.sm} color={COLORS.inkTertiary} />

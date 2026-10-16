@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { PPData, PaymentHistory } from '../types/Account/PhoneDetails';
 import { Company } from '../types/Company/Company';
+import { receiptWeight } from './receiptWeight';
 
 // ── Brand palette — Rangas DigiGold (mirrors src/theme/theme.js) ──
 // This is a static fallback ONLY. This file builds a raw HTML string for
@@ -93,6 +94,9 @@ function buildReceiptHtml(
   const schemeName   = ppData.schemeSummary?.schemeName?.trim() || 'Scheme';
   const groupRegNo   = `${ppData.groupCode ?? 'N/A'}-${ppData.regNo ?? 'N/A'}`;
   const weight       = parseFloat(String(payment.weight ?? '0')) || 0;
+  const isWeightScheme = ppData.schemeSummary?.weightLedger === 'Y';
+  const { savedWeight, bonusWeight } = receiptWeight(ppData, payment);
+  const totalSavedWeight = savedWeight + bonusWeight;
 
   const bank           = (payment.chqBank ?? '').trim();
   const hasPaymentMode = (bank && bank !== 'N/A') || (payment.chq_CardNo && payment.chq_CardNo !== 'N/A');
@@ -138,6 +142,13 @@ function buildReceiptHtml(
            padding:13px 16px; margin-bottom:14px; }
   .total-lbl { font-size:13px; font-weight:600; color:${BRAND.textPrimary}; }
   .total-val { font-size:18px; font-weight:800; color:${BRAND.primaryDark}; }
+  .saved-weight { background:${BRAND.primaryPale}; border:1px solid ${BRAND.border};
+      border-left:3px solid ${BRAND.primary}; border-radius:8px; padding:12px 16px;
+      margin-bottom:14px; break-inside:avoid; page-break-inside:avoid; }
+  .saved-weight-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .saved-weight-value { font-size:18px; font-weight:800; color:${BRAND.primaryDark}; white-space:nowrap;
+      font-variant-numeric:tabular-nums; }
+  .saved-weight-detail { margin-top:5px; font-size:10px; line-height:15px; color:${BRAND.textSecondary}; }
   .paymode { background:${BRAND.surfaceMuted}; border-radius:8px; padding:12px 14px; margin-bottom:14px; }
   .paymode-title { font-size:11px; font-weight:700; color:${BRAND.primaryDark}; margin-bottom:6px; }
   .paymode-row { display:flex; font-size:11px; margin-bottom:3px; }
@@ -230,6 +241,16 @@ function buildReceiptHtml(
       <span class="total-lbl">Total Amount Paid</span>
       <span class="total-val">${formatCurrency(payment.amount)}</span>
     </div>
+
+    ${isWeightScheme ? `
+    <div class="saved-weight">
+      <div class="saved-weight-row">
+        <span class="total-lbl">Total saved weight</span>
+        <span class="saved-weight-value">${totalSavedWeight.toFixed(4)} g</span>
+      </div>
+      <div class="saved-weight-detail">Weight ${savedWeight.toFixed(4)} g + Bonus weight ${bonusWeight.toFixed(4)} g</div>
+      <div class="saved-weight-detail">Up to instalment ${payment.installment}, including bonus</div>
+    </div>` : ''}
 
     ${hasPaymentMode ? `
     <div class="paymode">

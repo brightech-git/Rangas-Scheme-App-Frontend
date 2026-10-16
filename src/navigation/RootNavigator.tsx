@@ -121,9 +121,9 @@ export default function RootNavigator() {
     return <UpdateScreen mode="maintenance" maintenanceMsg={maintenanceMsg} logo={LOGO} />;
   }
 
-  if (updateAvailable) {
-    return <UpdateScreen mode="update" latestVersion={latestVersion} storeUrl={storeUrl} logo={LOGO} />;
-  }
+  // if (updateAvailable) {
+  //   return <UpdateScreen mode="update" latestVersion={latestVersion} storeUrl={storeUrl} logo={LOGO} />;
+  // }
 
   return (
     <>

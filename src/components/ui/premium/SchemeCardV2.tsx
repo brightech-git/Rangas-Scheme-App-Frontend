@@ -33,6 +33,8 @@ type Props = {
   metalLabel?: string;
   /** Up to three facts rendered in a hairline strip */
   stats?: SchemeCardStat[];
+  /** Optional detail below the stats, before progress. */
+  children?: React.ReactNode;
   /** Status pill in the top-right */
   status?: { label: string; tone: ChipTone };
   /** Progress rail — only rendered when total > 0 */
@@ -64,6 +66,7 @@ function SchemeCardV2({
   metal = 'G',
   metalLabel,
   stats = [],
+  children,
   status,
   paid = 0,
   total = 0,
@@ -205,6 +208,7 @@ function SchemeCardV2({
         )}
 
         {/* ── Progress rail (holdings only) ── */}
+        {children}
         {variant === 'holding' && total > 0 && (
           <ProgressWidget
             paid={paid}

@@ -98,7 +98,7 @@ export default function SchemeScreen() {
 
   const tabs: { key: Tab; label: string; count: number }[] = useMemo(
     () => [
-      { key: 'my', label: 'Holdings', count: mySchemes.length },
+      { key: 'my', label: 'My Schemes', count: mySchemes.length },
       { key: 'all', label: 'Catalogue', count: catalogue.length },
     ],
     [mySchemes.length, catalogue.length],

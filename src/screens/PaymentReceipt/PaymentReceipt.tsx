@@ -13,6 +13,7 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 import { PaymentHistory } from '../../types/Account/PhoneDetails';
 import { useCompanies } from '../../api/hooks/Company/useCompanies';
 import { downloadPaymentReceipt } from '../../utils/PaymentReceiptPDF';
+import { receiptWeight } from '../../utils/receiptWeight';
 import AppHeader from '../../components/ui/appcomponents/AppHeader';
 
 type RouteProps = RouteProp<RootStackParamList, 'PaymentReceipt'>;
@@ -50,6 +51,8 @@ export default function PaymentReceipt() {
   const method = paymentMode(payment);
   const hasGold = ppData.schemeSummary?.weightLedger === 'Y';
   const weight = parseFloat(String(payment.weight ?? '0')) || 0;
+  const { savedWeight, bonusWeight } = receiptWeight(ppData, payment);
+  const totalSavedWeight = savedWeight + bonusWeight;
   const groupRegNo = `${ppData.groupCode ?? 'N/A'}-${ppData.regNo ?? 'N/A'}`;
   const pi = ppData.personalInfo;
   const userAddrLine1 = [pi?.doorNo, pi?.area].filter(Boolean).join(', ');
@@ -221,6 +224,30 @@ export default function PaymentReceipt() {
             </Text>
           </View>
 
+          {hasGold && (
+            <View style={[st.savedWeightBox, { backgroundColor: COLORS.metalGoldSoft, borderColor: COLORS.border, borderLeftColor: COLORS.metalGold }]}>
+              <View style={st.savedWeightRow}>
+                <Text style={[st.savedWeightLabel, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
+                  Total saved weight
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                  style={[st.savedWeightValue, { color: COLORS.textPrimary, fontFamily: FONTS.family.bold }]}
+                >
+                  {totalSavedWeight.toFixed(4)} g
+                </Text>
+              </View>
+              {/* <Text style={[st.savedWeightDetail, { color: COLORS.textSecondary, fontFamily: FONTS.family.regular }]}>
+                Weight {savedWeight.toFixed(4)} g + Bonus weight {bonusWeight.toFixed(4)} g
+              </Text> */}
+              <Text style={[st.savedWeightDetail, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>
+                Up to instalment {payment.installment}, including bonus
+              </Text>
+            </View>
+          )}
+
           {/* Payment mode */}
           {hasPaymentMode && (
             <View style={[st.paymodeBox, { backgroundColor: COLORS.gray100 }]}>
@@ -347,6 +374,11 @@ const st = StyleSheet.create({
   },
   totalLbl: { fontSize: 13.5 },
   totalVal: { fontSize: 18 },
+  savedWeightBox: { borderWidth: 1, borderLeftWidth: 3, borderRadius: 10, padding: 14, marginBottom: 16 },
+  savedWeightRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  savedWeightLabel: { flex: 1, fontSize: 13 },
+  savedWeightValue: { flexShrink: 1, fontSize: 18, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  savedWeightDetail: { fontSize: 10.5, lineHeight: 16, marginTop: 5 },
 
   paymodeBox: { borderRadius: 10, padding: 12, marginBottom: 16 },
   paymodeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },

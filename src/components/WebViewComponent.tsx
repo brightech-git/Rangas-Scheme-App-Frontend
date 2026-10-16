@@ -74,7 +74,7 @@ export default function WebViewComponent() {
         <View style={[s.overlay, { backgroundColor: COLORS.background }]}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={[s.label, { color: COLORS.inkSecondary }]}>
-            Loading payment page…
+            Loading…
           </Text>
         </View>
       )}

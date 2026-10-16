@@ -33,8 +33,8 @@
 // ─────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Dimensions, FlatList } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Dimensions, FlatList, AppState } from 'react-native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -90,6 +90,11 @@ function schemeState(pp: PPData): 'active' | 'pending' | 'completed' {
 export default function HomeScreen() {
   const { COLORS, SIZES, moderateScale } = useTheme();
   const navigation = useNavigation<Nav>();
+  const isFocused = useIsFocused();
+  const catalogueRef = useRef<FlatList<ApiScheme>>(null);
+  const catalogueIndex = useRef(0);
+  const catalogueDragging = useRef(false);
+  const catalogueResumeAt = useRef(0);
 
   // ── Data (identical calls to before) ──
   const { schemes, loading: schemesLoading, refetch: refetchSchemes } =
@@ -131,24 +136,7 @@ export default function HomeScreen() {
   // every figure below comes from instalment/principal/weight data only.
   const portfolio = useMemo(() => portfolioMetrics(mySchemes), [mySchemes]);
 
-  const heroStats: HeroStat[] = useMemo(
-    () => [
-      {
-        label: 'Active schemes',
-        value: String(portfolio.activeCount),
-      },
-      {
-        label: 'Metal accrued',
-        value: portfolio.weight > 0 ? grams(portfolio.weight, 3) : '—',
-        tone: 'gold',
-      },
-      {
-        label: 'Next due',
-        value: portfolio.nextDueDate ? shortDate(portfolio.nextDueDate) : '—',
-      },
-    ],
-    [portfolio],
-  );
+
 
   // ── Quick actions ──
   const actions: GridAction[] = useMemo(
@@ -190,6 +178,27 @@ export default function HomeScreen() {
   const G = SIZES.layout.gutterTight;
   const RAIL_CARD_W = Math.min(SCREEN_W - G * 2 - moderateScale(36), 360);
 
+  useEffect(() => {
+    catalogueIndex.current = 0;
+    catalogueRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [catalogue, RAIL_CARD_W]);
+
+  useEffect(() => {
+    if (!isFocused || schemesLoading || refreshing || catalogue.length < 2) return;
+
+    const timer = setInterval(() => {
+      if (AppState.currentState !== 'active' || catalogueDragging.current || Date.now() < catalogueResumeAt.current) return;
+      const next = (catalogueIndex.current + 1) % catalogue.length;
+      catalogueIndex.current = next;
+      catalogueRef.current?.scrollToOffset({
+        offset: next * (RAIL_CARD_W + 12),
+        animated: true,
+      });
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [isFocused, schemesLoading, refreshing, catalogue.length, RAIL_CARD_W]);
+
   const gold = rates?.gold;
   const silver = rates?.silver;
 
@@ -205,7 +214,8 @@ export default function HomeScreen() {
         metalLabel={METAL_LABEL[item.MetalType] ?? 'Gold'}
         stats={[
           item.SchemeId === 6
-            ? { label: 'Purity', value: (item.MetalType === 'S' ? silver?.purity : gold?.purity) ?? '—' }
+            // ? { label: 'Purity', value: (item.MetalType === 'S' ? silver?.purity : gold?.purity) ?? '—' }
+            ? {label: 'Instalments', value: String(item.Instalment)  }
             : { label: 'Instalments', value: String(item.Instalment) },
           {
             label: 'Type',
@@ -258,7 +268,7 @@ export default function HomeScreen() {
               rate={gold ? money(gold.currentRate) : '—'}
               purity={gold?.purity}
               unit={gold?.unit}
-              changePct={gold?.changePct ?? 0}
+              changePct={gold?.history && gold.history.length > 1 ? gold.changePct : undefined}
               updatedAt={gold?.updatedAt}
               history={gold?.history?.map((h) => h.rate) ?? []}
              
@@ -271,7 +281,7 @@ export default function HomeScreen() {
               rate={silver ? money(silver.currentRate) : '—'}
               purity={silver?.purity}
               unit={silver?.unit}
-              changePct={silver?.changePct ?? 0}
+              changePct={silver?.history && silver.history.length > 1 ? silver.changePct : undefined}
               updatedAt={silver?.updatedAt}
               history={silver?.history?.map((h) => h.rate) ?? []}
               onPress={() => navigation.navigate('Rates', { metal: 'Silver' })}
@@ -310,6 +320,7 @@ export default function HomeScreen() {
         />
       ) : (
         <FlatList
+          ref={catalogueRef}
           horizontal
           data={catalogue}
           keyExtractor={(item) => String(item.SchemeId)}
@@ -318,6 +329,31 @@ export default function HomeScreen() {
           snapToInterval={RAIL_CARD_W + 12}
           decelerationRate="fast"
           disableIntervalMomentum
+          onTouchStart={() => {
+            catalogueDragging.current = true;
+          }}
+          onTouchEnd={() => {
+            catalogueDragging.current = false;
+            catalogueResumeAt.current = Date.now() + 4000;
+          }}
+          onTouchCancel={() => {
+            catalogueDragging.current = false;
+            catalogueResumeAt.current = Date.now() + 4000;
+          }}
+          onScrollBeginDrag={() => {
+            catalogueDragging.current = true;
+          }}
+          onScrollEndDrag={() => {
+            catalogueDragging.current = false;
+            catalogueResumeAt.current = Date.now() + 4000;
+          }}
+          onMomentumScrollEnd={({ nativeEvent }) => {
+            const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+            const atEnd = contentOffset.x >= contentSize.width - layoutMeasurement.width - 2;
+            catalogueIndex.current = atEnd
+              ? catalogue.length - 1
+              : Math.max(0, Math.min(catalogue.length - 1, Math.round(contentOffset.x / (RAIL_CARD_W + 12))));
+          }}
           initialNumToRender={3}
           maxToRenderPerBatch={4}
           windowSize={5}
@@ -354,11 +390,10 @@ export default function HomeScreen() {
           }
         />
 
-        <View style={{ marginTop: SIZES.margin.lg, marginHorizontal: -G }}>
+        <View style={{ marginTop: SIZES.margin.lg }}>
           <MySchemeHoldings
             ref={holdingsRef}
-            variant="rail"
-            cardWidth={RAIL_CARD_W}
+            variant="list"
             limit={3}
             excludeCompleted
             emptyTitle="No schemes yet"

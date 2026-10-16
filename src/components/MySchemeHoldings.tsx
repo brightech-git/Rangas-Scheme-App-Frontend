@@ -13,7 +13,7 @@
 // with a layout variant — no data plumbing required.
 
 import React, { useCallback, useImperativeHandle, forwardRef } from 'react';
-import { View, FlatList } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -76,7 +76,7 @@ function MySchemeHoldings(
   }: Props,
   ref: React.Ref<MySchemeHoldingsHandle>,
 ) {
-  const { SIZES } = useTheme();
+  const { SIZES, COLORS, FONTS } = useTheme();
   const navigation = useNavigation<Nav>();
   const { mySchemes, loading, refetch } = useMySchemes();
 
@@ -101,6 +101,8 @@ function MySchemeHoldings(
   const renderCard = useCallback(
     (item: PPData) => {
       const mx = schemeMetrics(item);
+      const isWeightScheme = item.schemeSummary?.weightLedger === 'Y';
+      const bonusWeight = num(item.bonusWeight);
       const isFullyPaid = mx.total > 0 && mx.paid >= mx.total;
       const isMultiPay = classifySchemeKind(
         item.schemeSummary?.fixedIns,
@@ -163,10 +165,47 @@ function MySchemeHoldings(
               ? () => navigation.navigate('PayInstallment', { ppData: item })
               : undefined
           }
-        />
+        >
+          {isWeightScheme && (
+            <View
+              accessible
+              accessibilityLabel={`Total saved weight including bonus: ${grams(mx.weight + bonusWeight, 4)}`}
+              style={{
+                marginTop: SIZES.margin.lg,
+                paddingVertical: SIZES.padding.md,
+                paddingHorizontal: SIZES.padding.md,
+                borderRadius: SIZES.radius.sm,
+                backgroundColor: COLORS.metalGoldSoft,
+                borderLeftWidth: 2,
+                borderLeftColor: COLORS.metalGold,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: SIZES.padding.sm,
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+                style={{ flex: 1, fontFamily: FONTS.family.medium, color: COLORS.inkSecondary, fontSize: 12, letterSpacing: 0.3 }}
+              >
+                Total saved weight
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                style={{ flexShrink: 1, textAlign: 'right', fontFamily: FONTS.family.bold, color: COLORS.inkPrimary, fontSize: 18, fontVariant: ['tabular-nums'] }}
+              >
+                {grams(mx.weight + bonusWeight, 4)}
+              </Text>
+            </View>
+          )}
+        </SchemeCardV2>
       );
     },
-    [cardWidth, navigation],
+    [cardWidth, navigation, SIZES, COLORS, FONTS],
   );
 
   const G = SIZES.layout.gutter;

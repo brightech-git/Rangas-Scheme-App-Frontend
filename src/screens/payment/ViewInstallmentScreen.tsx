@@ -172,8 +172,11 @@ export default function ViewInstallmentScreen() {
 
   const historyRows: HistoryRow[] = useMemo(
     () =>
-      (ppData.paymentHistoryList ?? []).slice().reverse().map((p, i) => {
-        const id = p.receiptNo ?? `receipt-${i}`;
+      (ppData.paymentHistoryList ?? []).slice().sort((a, b) =>
+        toNum(a.installment) - toNum(b.installment) ||
+        (Date.parse(a.updateTime) - Date.parse(b.updateTime) || 0),
+      ).map((p, i) => {
+        const id = `${p.receiptNo}-${p.installment}-${i}`;
         return {
           id,
           date: numericDate(p.updateTime),
@@ -181,7 +184,23 @@ export default function ViewInstallmentScreen() {
           rate: toNum(p.rate) > 0 ? money(toNum(p.rate)) : '—',
           weight: hasGold && toNum(p.weight) > 0 ? `${toNum(p.weight).toFixed(4)} g` : '—',
           amount: money(toNum(p.amount)),
-          onView: () => navigation.navigate('PaymentReceipt', { ppData, payment: p }),
+          onView: () => {
+            if (__DEV__) {
+              console.log('[ReceiptWeight] Open selected receipt', JSON.stringify({
+                receiptNo: p.receiptNo,
+                instalment: p.installment,
+                weight: p.weight,
+                bonusWeight: p.bonusWeight,
+                history: ppData.paymentHistoryList.map((entry) => ({
+                  receiptNo: entry.receiptNo,
+                  instalment: entry.installment,
+                  weight: entry.weight,
+                  bonusWeight: entry.bonusWeight,
+                })),
+              }, null, 2));
+            }
+            navigation.push('PaymentReceipt', { ppData, payment: p });
+          },
         };
       }),
     [ppData, hasGold, navigation],
@@ -413,7 +432,7 @@ export default function ViewInstallmentScreen() {
                     style={[s.moreBtn, { marginTop: SIZES.margin.lg }]}
                   >
                     <Text style={[s.moreLabel, { color: accent }]}>
-                      Show {hiddenCount} earlier {hiddenCount === 1 ? 'receipt' : 'receipts'}
+                      Show {hiddenCount} more {hiddenCount === 1 ? 'receipt' : 'receipts'}
                     </Text>
                   </Pressable>
                 )}

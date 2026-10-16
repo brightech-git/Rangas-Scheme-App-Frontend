@@ -30,7 +30,7 @@ function GoldRateWidget({
   rate,
   unit = 'per gram',
   purity,
-  changePct = 0,
+  changePct,
   updatedAt,
   history = [],
   onPress,
@@ -48,8 +48,10 @@ function GoldRateWidget({
   const fg = onHero ? COLORS.heroTextPrimary : COLORS.inkPrimary;
   const dim = onHero ? COLORS.heroTextTertiary : COLORS.inkTertiary;
 
-  const up = changePct >= 0;
-  const trendColor = up
+  const hasChange = typeof changePct === 'number' && Number.isFinite(changePct);
+  const change = hasChange ? changePct : 0;
+  const up = change > 0;
+  const trendColor = !hasChange || change === 0 ? dim : up
     ? onHero
       ? COLORS.heroSuccess
       : COLORS.success
@@ -106,12 +108,34 @@ function GoldRateWidget({
           {!!updatedAt && (
             <Text
               numberOfLines={1}
-              style={[asText(FONTS.microBold), { color: dim, fontSize: 10, marginTop: 2 }]}
+              style={[asText(FONTS.microBold), { color: dim, fontSize: 10, marginTop: 4 }]}
             >
               {updatedAt}
             </Text>
           )}
         </View>
+
+          {hasChange && change !== 0 && (
+          <View
+            style={s.trendCol}
+            accessible
+            accessibilityLabel={`${metal} rate ${!hasChange ? 'change unavailable' : change === 0 ? 'unchanged' : `${up ? 'up' : 'down'} ${Math.abs(change).toFixed(2)} percent`}`}
+          >
+            <Ionicons
+              name={!hasChange || change === 0 ? 'remove-outline' : up ? 'trending-up-outline' : 'trending-down-outline'}
+              size={24}
+              color={trendColor}
+            />
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              style={[asText(FONTS.microBold), { color: trendColor, fontSize: 10, textAlign: 'center' }]}
+            >
+              {!hasChange ? 'N/A' : change === 0 ? '0.00%' : `${up ? '+' : '-'}${Math.abs(change).toFixed(2)}%`}
+            </Text>
+          </View>
+          )}
       </View>
     </Wrapper>
   );
@@ -123,7 +147,7 @@ const s = StyleSheet.create({
   body: { flexDirection: 'row', alignItems: 'center', paddingLeft: 6 },
   leftCol: { flex: 1, minWidth: 0 },
   metalRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  footRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
+  trendCol: { alignItems: 'center', justifyContent: 'center', gap: 3, width: 44, marginLeft: 6 },
 });
 
 export default memo(GoldRateWidget);
