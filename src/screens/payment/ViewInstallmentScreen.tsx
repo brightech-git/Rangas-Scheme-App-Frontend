@@ -78,6 +78,10 @@ export default function ViewInstallmentScreen() {
 
   const canPay = !mx.closed && (isMultiPay || (isLumpsum && paid < 1) || mx.remaining > 0 || (total > 0 && paid < total));
   const hasGold = scheme?.weightLedger === 'Y';
+  const bonusWeight = ppData.bonusWeight != null
+    ? toNum(ppData.bonusWeight)
+    : (ppData.paymentHistoryList ?? []).reduce((sum, payment) => sum + toNum(payment.bonusWeight), 0);
+  const totalSavedWeight = mx.weight + bonusWeight;
 
   const status = useMemo(() => {
     if (mx.state === 'completed') return { tone: 'success' as const, label: 'Completed' };
@@ -227,17 +231,31 @@ export default function ViewInstallmentScreen() {
               <StatusChip label={status.label} tone={status.tone} surface="hero" dot />
             </View>
 
+            {(hasGold || isMultiPay) && (
+              <View style={[s.metricsRow, { marginTop: SIZES.margin.lg }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>Total saved weight</Text>
+                  <Text selectable adjustsFontSizeToFit numberOfLines={1} style={[asText(FONTS.numeral), { color: COLORS.heroAccent, marginTop: 4 }]}>
+                    {totalSavedWeight.toFixed(4)} g
+                  </Text>
+                  <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 2, fontSize: 10 }]}>Including bonus weight</Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>Amount paid</Text>
+                  <Text selectable adjustsFontSizeToFit numberOfLines={1} style={[asText(FONTS.numeral), { color: COLORS.heroAccent, marginTop: 4, textAlign: 'right' }]}>
+                    {money(mx.invested)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {isMultiPay ? (
               <View style={{ marginTop: SIZES.margin.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[asText(FONTS.eyebrow), { color: COLORS.heroTextTertiary }]}>Gold held</Text>
                   <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, fontSize: 10 }]}>
                     Flexible · buy anytime
                   </Text>
                 </View>
-                <Text style={[asText(FONTS.numeral), { color: COLORS.heroAccent, marginTop: 4 }]}>
-                  {mx.weight > 0 ? `${mx.weight.toFixed(4)} g` : '0.0000 g'}
-                </Text>
                 <Text style={[asText(FONTS.micro), { color: COLORS.heroTextMuted, marginTop: 2, fontSize: 10 }]}>
                   {ppData.lastPaidDate ? `Last bought ${prettyDate(ppData.lastPaidDate)}` : 'No purchases yet'}
                 </Text>

@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PPData, PaymentHistory } from '../types/Account/PhoneDetails';
 import { Company } from '../types/Company/Company';
 import { receiptWeight } from './receiptWeight';
+import { paymentDetails } from './paymentDetails';
 
 // ── Brand palette — Rangas DigiGold (mirrors src/theme/theme.js) ──
 // This is a static fallback ONLY. This file builds a raw HTML string for
@@ -44,6 +45,10 @@ export interface ReceiptData {
 }
 
 // ── Formatting helpers ─────────────────────────────────────────────
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function formatDate(raw?: string | null): string {
   if (!raw || raw.startsWith('1900-01-01')) return 'N/A';
   const iso = raw.includes(' ') ? raw.replace(' ', 'T').replace(/\.\d+$/, '') : raw;
@@ -94,12 +99,14 @@ function buildReceiptHtml(
   const schemeName   = ppData.schemeSummary?.schemeName?.trim() || 'Scheme';
   const groupRegNo   = `${ppData.groupCode ?? 'N/A'}-${ppData.regNo ?? 'N/A'}`;
   const weight       = parseFloat(String(payment.weight ?? '0')) || 0;
+  const parsedBonusWeight = Number(String(payment.bonusWeight ?? '0').trim().replace(/,/g, ''));
+  const installmentBonusWeight = Number.isFinite(parsedBonusWeight) ? parsedBonusWeight : 0;
   const isWeightScheme = ppData.schemeSummary?.weightLedger === 'Y';
   const { savedWeight, bonusWeight } = receiptWeight(ppData, payment);
   const totalSavedWeight = savedWeight + bonusWeight;
 
-  const bank           = (payment.chqBank ?? '').trim();
-  const hasPaymentMode = (bank && bank !== 'N/A') || (payment.chq_CardNo && payment.chq_CardNo !== 'N/A');
+  const paymentDetailRows = paymentDetails(payment);
+  const hasPaymentMode = paymentDetailRows.length > 0;
 
   return `<!DOCTYPE html>
 <html>
@@ -152,8 +159,8 @@ function buildReceiptHtml(
   .paymode { background:${BRAND.surfaceMuted}; border-radius:8px; padding:12px 14px; margin-bottom:14px; }
   .paymode-title { font-size:11px; font-weight:700; color:${BRAND.primaryDark}; margin-bottom:6px; }
   .paymode-row { display:flex; font-size:11px; margin-bottom:3px; }
-  .paymode-row .k { width:70px; font-weight:600; color:${BRAND.textMuted}; }
-  .paymode-row .v { color:${BRAND.textPrimary}; }
+  .paymode-row .k { width:100px; flex-shrink:0; font-weight:600; color:${BRAND.textMuted}; }
+  .paymode-row .v { min-width:0; overflow-wrap:anywhere; color:${BRAND.textPrimary}; }
   .footer { margin-top:22px; padding-top:14px; border-top:1px solid ${BRAND.borderLight}; text-align:center; }
   .footer .f1 { font-size:12px; font-weight:600; color:${BRAND.textSecondary}; margin-bottom:4px; }
   .footer .f2 { font-size:10px; color:${BRAND.textMuted}; font-style:italic; }
@@ -200,18 +207,23 @@ function buildReceiptHtml(
         <div class="item">
           <div class="lbl">Mobile</div>
           <div class="val" style="font-size:12px;">${mobile}</div>
+          ${(userAddrLine1 || userAddrLine2) ? `
+          <div style="margin-top:10px;">
+            <div class="lbl">Address</div>
+            ${userAddrLine1 ? `<div class="val" style="font-size:12px;">${userAddrLine1}</div>` : ''}
+            ${userAddrLine2 ? `<div class="val" style="font-size:12px;">${userAddrLine2}</div>` : ''}
+          </div>` : ''}
         </div>
         <div class="item">
           <div class="lbl">Group Code - Reg No</div>
           <div class="val" style="font-size:12px;">${groupRegNo}</div>
+          ${isWeightScheme ? `
+          <div style="margin-top:10px;">
+            <div class="lbl">Bonus Weight</div>
+            <div class="val" style="font-size:12px;">${installmentBonusWeight.toFixed(4)} g</div>
+          </div>` : ''}
         </div>
       </div>
-      ${(userAddrLine1 || userAddrLine2) ? `
-      <div style="margin-top:4px;">
-        <div class="lbl">Address</div>
-        ${userAddrLine1 ? `<div class="val" style="font-size:12px;">${userAddrLine1}</div>` : ''}
-        ${userAddrLine2 ? `<div class="val" style="font-size:12px;">${userAddrLine2}</div>` : ''}
-      </div>` : ''}
     </div>
 
     <table>
@@ -255,9 +267,7 @@ function buildReceiptHtml(
     ${hasPaymentMode ? `
     <div class="paymode">
       <div class="paymode-title">Payment Details</div>
-      ${bank && bank !== 'N/A' ? `<div class="paymode-row"><span class="k">Mode</span><span class="v">${bank}</span></div>` : ''}
-      ${payment.chqBranch && payment.chqBranch !== 'N/A' ? `<div class="paymode-row"><span class="k">Branch</span><span class="v">${payment.chqBranch}</span></div>` : ''}
-      ${payment.chq_CardNo && payment.chq_CardNo !== 'N/A' ? `<div class="paymode-row"><span class="k">Ref No</span><span class="v">${payment.chq_CardNo}</span></div>` : ''}
+      ${paymentDetailRows.map(({ label, value }) => `<div class="paymode-row"><span class="k">${label}</span><span class="v">${escapeHtml(value)}</span></div>`).join('')}
     </div>` : ''}
 
     <div class="footer">

@@ -64,6 +64,12 @@ export interface PaymentHistory {
   rate: string | null;
   bonusAmount: string | null;
   bonusWeight: string | null;
+  paymentMode?: string | null;
+  trackingId?: string | null;
+  orderId?: string | null;
+  orderStatus?: string | null;
+  bankRefNo?: string | null;
+  bankName?: string | null;
 }
 
 export interface PPData {

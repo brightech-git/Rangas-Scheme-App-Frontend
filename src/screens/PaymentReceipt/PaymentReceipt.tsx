@@ -14,6 +14,7 @@ import { PaymentHistory } from '../../types/Account/PhoneDetails';
 import { useCompanies } from '../../api/hooks/Company/useCompanies';
 import { downloadPaymentReceipt } from '../../utils/PaymentReceiptPDF';
 import { receiptWeight } from '../../utils/receiptWeight';
+import { paymentDetails } from '../../utils/paymentDetails';
 import AppHeader from '../../components/ui/appcomponents/AppHeader';
 
 type RouteProps = RouteProp<RootStackParamList, 'PaymentReceipt'>;
@@ -32,6 +33,9 @@ function currency(v: string | number | null | undefined): string {
 }
 
 function paymentMode(p: PaymentHistory): { label: string; icon: keyof typeof Ionicons.glyphMap } {
+  if (p.paymentMode || p.trackingId || p.orderId) {
+    return { label: p.paymentMode || 'Online Payment', icon: 'phone-portrait-outline' };
+  }
   const bank = (p.chqBank ?? '').toLowerCase();
   if (bank.includes('razorpay') || (p.chq_CardNo ?? '').startsWith('pay_')) {
     return { label: 'Online Payment', icon: 'phone-portrait-outline' };
@@ -51,15 +55,16 @@ export default function PaymentReceipt() {
   const method = paymentMode(payment);
   const hasGold = ppData.schemeSummary?.weightLedger === 'Y';
   const weight = parseFloat(String(payment.weight ?? '0')) || 0;
+  const parsedBonusWeight = Number(String(payment.bonusWeight ?? '0').trim().replace(/,/g, ''));
+  const installmentBonusWeight = Number.isFinite(parsedBonusWeight) ? parsedBonusWeight : 0;
   const { savedWeight, bonusWeight } = receiptWeight(ppData, payment);
   const totalSavedWeight = savedWeight + bonusWeight;
   const groupRegNo = `${ppData.groupCode ?? 'N/A'}-${ppData.regNo ?? 'N/A'}`;
   const pi = ppData.personalInfo;
   const userAddrLine1 = [pi?.doorNo, pi?.area].filter(Boolean).join(', ');
   const userAddrLine2 = [pi?.city, pi?.state, pi?.pinCode].filter(Boolean).join(', ');
-  const hasPaymentMode =
-    (payment.chqBank && payment.chqBank !== 'N/A') ||
-    (payment.chq_CardNo && payment.chq_CardNo !== 'N/A');
+  const paymentDetailRows = paymentDetails(payment);
+  const hasPaymentMode = paymentDetailRows.length > 0;
 
   const handleDownload = async () => {
     if (downloading) return;
@@ -167,29 +172,38 @@ export default function PaymentReceipt() {
                 <Text style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
                   {pi?.mobile ?? 'N/A'}
                 </Text>
+                {!!(userAddrLine1 || userAddrLine2) && (
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={[st.custLbl, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Address</Text>
+                    {!!userAddrLine1 && (
+                      <Text style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
+                        {userAddrLine1}
+                      </Text>
+                    )}
+                    {!!userAddrLine2 && (
+                      <Text style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
+                        {userAddrLine2}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[st.custLbl, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Group Code - Reg No</Text>
                 <Text style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
                   {groupRegNo}
                 </Text>
+                {hasGold && (
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={[st.custLbl, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Bonus Weight</Text>
+                    <Text selectable style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
+                      {installmentBonusWeight.toFixed(4)} g
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
-            {!!(userAddrLine1 || userAddrLine2) && (
-              <View style={{ marginTop: 2 }}>
-                <Text style={[st.custLbl, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Address</Text>
-                {!!userAddrLine1 && (
-                  <Text style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
-                    {userAddrLine1}
-                  </Text>
-                )}
-                {!!userAddrLine2 && (
-                  <Text style={[st.custVal, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>
-                    {userAddrLine2}
-                  </Text>
-                )}
-              </View>
-            )}
+
           </View>
 
           {/* Payment table */}
@@ -255,24 +269,12 @@ export default function PaymentReceipt() {
                 <Ionicons name={method.icon} size={13} color={COLORS.primary} />
                 <Text style={[st.paymodeTitle, { color: COLORS.primaryDark, fontFamily: FONTS.family.bold }]}>Payment Details</Text>
               </View>
-              {!!payment.chqBank && payment.chqBank !== 'N/A' && (
-                <View style={st.pmRow}>
-                  <Text style={[st.pmK, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Mode</Text>
-                  <Text style={[st.pmV, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{payment.chqBank}</Text>
+              {paymentDetailRows.map(({ label, value }) => (
+                <View key={label} style={st.pmRow}>
+                  <Text style={[st.pmK, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>{label}</Text>
+                  <Text selectable style={[st.pmV, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{value}</Text>
                 </View>
-              )}
-              {!!payment.chqBranch && payment.chqBranch !== 'N/A' && (
-                <View style={st.pmRow}>
-                  <Text style={[st.pmK, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Branch</Text>
-                  <Text style={[st.pmV, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]}>{payment.chqBranch}</Text>
-                </View>
-              )}
-              {!!payment.chq_CardNo && payment.chq_CardNo !== 'N/A' && (
-                <View style={st.pmRow}>
-                  <Text style={[st.pmK, { color: COLORS.textTertiary, fontFamily: FONTS.family.regular }]}>Ref No</Text>
-                  <Text style={[st.pmV, { color: COLORS.textPrimary, fontFamily: FONTS.family.semiBold }]} numberOfLines={1}>{payment.chq_CardNo}</Text>
-                </View>
-              )}
+              ))}
             </View>
           )}
 
@@ -384,8 +386,8 @@ const st = StyleSheet.create({
   paymodeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
   paymodeTitle: { fontSize: 11.5 },
   pmRow: { flexDirection: 'row', marginBottom: 4 },
-  pmK: { width: 66, fontSize: 11 },
-  pmV: { flex: 1, fontSize: 11.5 },
+  pmK: { width: 96, fontSize: 11 },
+  pmV: { flex: 1, flexShrink: 1, fontSize: 11.5 },
 
   footer: { borderTopWidth: 1, paddingTop: 14, alignItems: 'center' },
   footerTxt: { fontSize: 12, marginBottom: 4 },

@@ -234,7 +234,7 @@ export default function ProfileScreen() {
       refreshing={refreshing}
       paddingHorizontal={0}
       paddingTop={0}
-      paddingBottom={100}
+      paddingBottom={140}
     >
       {/* ── Header — shared AppHeader (curved + gradient + glass everywhere) ── */}
       <AppHeader
@@ -351,7 +351,7 @@ export default function ProfileScreen() {
           </View>
         </AppCard>
 
-        <PoweredByFooter />
+        <PoweredByFooter style={{ marginTop: 16, marginBottom: 24 }} />
       </View>
 
       {/* ── Alert ───────────────────────────────────────────── */}

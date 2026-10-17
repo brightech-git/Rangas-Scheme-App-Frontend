@@ -39,6 +39,7 @@ import {
   PremiumButton,
   asText,
 } from "../../components/ui/premium";
+import PoweredByFooter from "../../components/ui/PoweredByFooter";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -193,14 +194,17 @@ export default function VerifyMpinScreen() {
     <WaveAuthShell
       title="Welcome back"
       footer={
-        <Pressable
-          onPress={async () => { await dispatch(logoutUser()); navigation.replace('Login'); }}
-          hitSlop={10}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8 })}
-        >
-          <Ionicons name="log-out-outline" size={14} color={COLORS.inkTertiary} />
-          <Text style={[asText(FONTS.microBold), { color: COLORS.inkTertiary }]}>Logout & switch account</Text>
-        </Pressable>
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <Pressable
+            onPress={async () => { await dispatch(logoutUser()); navigation.replace('Login'); }}
+            hitSlop={10}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8 })}
+          >
+            <Ionicons name="log-out-outline" size={14} color={COLORS.inkTertiary} />
+            <Text style={[asText(FONTS.microBold), { color: COLORS.inkTertiary }]}>Logout & switch account</Text>
+          </Pressable>
+          <PoweredByFooter style={{ fontSize: FONTS.button.fontSize }} />
+        </View>
       }
     >
       <View style={{ alignItems: "center", gap: moderateScale(4) }}>

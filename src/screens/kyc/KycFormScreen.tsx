@@ -21,6 +21,7 @@ import { useTheme } from '../../theme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useToast } from '../../components/ui/Toast';
 import { memberService } from '../../api/services/memberService';
+import { ApiError } from '../../api/apiClient';
 import { useAppSelector } from '../../store/hooks';
 import { kycStorage } from '../../utils/kycStorage';
 import {
@@ -157,7 +158,8 @@ export default function KycFormScreen() {
     return e;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (saving) return;
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) { scrollToFirstError(e); return; }
@@ -193,16 +195,32 @@ export default function KycFormScreen() {
       nomineeRelationship: payload.nomineeRelationship,
     };
 
-    Promise.all([
-      kycStorage.saveKycData(personalId, payload),
-      memberService.updateMemberDetails(personalId, apiPayload),
-    ])
-      .then(() => {
-        toast.success('KYC details saved', { position: 'top', duration: 2500 });
-        navigation.goBack();
-      })
-      .catch(() => toast.error('Could not save KYC details', { position: 'top', duration: 3500 }))
-      .finally(() => setSaving(false));
+    let stage = 'member API update';
+    try {
+      if (__DEV__) console.log('[KYC] Starting member API update');
+      await memberService.updateMemberDetails(personalId, apiPayload);
+      stage = 'local storage';
+      if (__DEV__) console.log('[KYC] Member API update succeeded; saving locally');
+      await kycStorage.saveKycData(personalId, payload);
+      toast.success('KYC details saved', { position: 'top', duration: 2500 });
+      navigation.goBack();
+    } catch (error: unknown) {
+      const failure = error as Partial<ApiError> | null;
+      const message = typeof failure?.message === 'string' ? failure.message : 'Unknown error';
+      if (__DEV__) console.error('[KYC] Save failed', {
+        stage,
+        statusCode: failure?.statusCode,
+        message,
+      });
+      toast.error(
+        stage === 'local storage'
+          ? 'KYC updated on server, but could not save on this device. Please retry.'
+          : `Could not save KYC details: ${message}`,
+        { position: 'top', duration: 5000 },
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const G = SIZES.layout.gutter;
